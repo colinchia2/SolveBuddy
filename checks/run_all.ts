@@ -3,7 +3,7 @@ import { makeFullGrid, isValidSolution } from "../engine/sudoku/fullGrid.ts";
 import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
-import { makeEasy } from "../engine/sudoku/makePuzzle.ts";
+import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
 import { existsSync, readFileSync } from "node:fs";
 
 let failed = 0;
@@ -53,8 +53,13 @@ check("grader: empty grid is not Easy", grade(empty).level !== "Easy");
 type Saved = { givens: number[][]; solution: number[][] };
 function goodEasy(p: Saved) {
   const givensMatch = p.givens.every((row, r) => row.every((n, c) => n === 0 || n === p.solution[r][c]));
-  return isValidSolution(p.solution) && givensMatch && countSolutions(p.givens) === 1 && grade(p.givens).level === "Easy";
+  const { min, max } = spread(p.givens);
+  const evenSpread = min >= EASY_MIN_PER && max <= EASY_MAX_PER;
+  return isValidSolution(p.solution) && givensMatch && evenSpread && countSolutions(p.givens) === 1 && grade(p.givens).level === "Easy";
 }
+const lopsided = grids[2].map((r) => [...r]);
+lopsided[8].fill(0); // an empty bottom row
+check("spread test catches an empty row", spread(lopsided).min === 0);
 check("maker: 10 new Easy puzzles are all good", Array.from({ length: 10 }, makeEasy).every(goodEasy));
 const packFile = "packs/sudoku9-easy-starter.json";
 if (existsSync(packFile)) {
