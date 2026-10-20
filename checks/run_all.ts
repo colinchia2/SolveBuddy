@@ -4,6 +4,7 @@ import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
 import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
+import { hint } from "../engine/sudoku/hint.ts";
 import { existsSync, readFileSync } from "node:fs";
 
 let failed = 0;
@@ -65,6 +66,29 @@ const packFile = "packs/sudoku9-easy-starter.json";
 if (existsSync(packFile)) {
   const pack = JSON.parse(readFileSync(packFile, "utf8"));
   check("saved pack: 5 puzzles, all good", pack.puzzles.length === 5 && pack.puzzles.every(goodEasy));
+
+  // Hints: tapping "Show me" over and over must finish every puzzle, with only correct moves.
+  const solvedByHints = pack.puzzles.every((p: Saved) => {
+    const b = p.givens.map((r) => [...r]);
+    for (let i = 0; i < 81; i++) {
+      const h = hint(b, p.solution);
+      if (h.kind !== "step") break;
+      const [r, c] = h.target!;
+      if (b[r][c] !== 0 || h.value !== p.solution[r][c]) return false;
+      b[r][c] = h.value;
+    }
+    return b.every((row, r) => row.every((v, c) => v === p.solution[r][c]));
+  });
+  check("hints alone solve all 5 pack puzzles", solvedByHints);
+
+  // A wrong number must be pointed out before any other hint.
+  const p0: Saved = pack.puzzles[0];
+  const b = p0.givens.map((r) => [...r]);
+  const firstStep = hint(b, p0.solution);
+  const [er, ec] = firstStep.target!;
+  b[er][ec] = (p0.solution[er][ec] % 9) + 1; // a wrong number
+  const h = hint(b, p0.solution);
+  check("hint points at a mistake first", h.kind === "mistake" && h.target![0] === er && h.target![1] === ec);
 }
 
 if (failed) process.exit(1);

@@ -1,5 +1,5 @@
 // Human-style tricks, easiest first. Each one looks at the board and finds one next move, or nothing.
-// The grader uses these to rate a puzzle; later the Hint button will use the same list.
+// The grader uses these to rate a puzzle, and the Hint button uses the same list.
 import { type Grid, fits } from "./fullGrid.ts";
 
 export type Step = {
@@ -7,6 +7,8 @@ export type Step = {
   row: number;
   col: number;
   value: number;
+  focus: [number, number][]; // cells to highlight (the row, column or box the trick looks at)
+  nudge: string; // where to look (the "Nudge" level of a hint)
   why: string; // plain-English reason (the "Explain" level of a hint)
 };
 
@@ -39,7 +41,8 @@ function lastCell(grid: Grid): Step | null {
     const [row, col] = empty[0];
     const present = new Set(unit.cells.map(([r, c]) => grid[r][c]));
     const value = [1, 2, 3, 4, 5, 6, 7, 8, 9].find((n) => !present.has(n))!;
-    return { technique: `Last cell in ${unit.kind}`, row, col, value,
+    return { technique: `Last cell in ${unit.kind}`, row, col, value, focus: unit.cells,
+      nudge: `Look at ${unit.label}.`,
       why: `${cap(unit.label)} has only one empty cell, and ${value} is the only number missing.` };
   }
   return null;
@@ -53,7 +56,8 @@ function onlySpot(grid: Grid): Step | null {
       const spots = unit.cells.filter(([r, c]) => grid[r][c] === 0 && fits(grid, r, c, n));
       if (spots.length !== 1) continue;
       const [row, col] = spots[0];
-      return { technique: `Only spot in ${unit.kind}`, row, col, value: n,
+      return { technique: `Only spot in ${unit.kind}`, row, col, value: n, focus: unit.cells,
+        nudge: `Where can ${n} go in ${unit.label}?`,
         why: `In ${unit.label}, every other empty cell already sees a ${n}, so ${n} must go at ${cellName(row, col)}.` };
     }
   }
@@ -67,7 +71,8 @@ function onlyNumber(grid: Grid): Step | null {
       if (grid[row][col] !== 0) continue;
       const options = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => fits(grid, row, col, n));
       if (options.length !== 1) continue;
-      return { technique: "Only number for cell", row, col, value: options[0],
+      return { technique: "Only number for cell", row, col, value: options[0], focus: peers(row, col),
+        nudge: `Which numbers could go at ${cellName(row, col)}?`,
         why: `Every number except ${options[0]} is already in this cell's row, column or box.` };
     }
   }
@@ -86,3 +91,16 @@ export function nextStep(grid: Grid): Step | null {
 }
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+// Every cell that shares a row, column or box with this one.
+function peers(row: number, col: number): [number, number][] {
+  const box = Math.floor(row / 3) * 3 + Math.floor(col / 3);
+  const seen = new Set<string>();
+  const out: [number, number][] = [];
+  const add = (r: number, c: number) => {
+    if (!seen.has(`${r},${c}`)) seen.add(`${r},${c}`), out.push([r, c]);
+  };
+  for (let i = 0; i < 9; i++) add(row, i), add(i, col);
+  for (const [r, c] of boxCells(box)) add(r, c);
+  return out;
+}

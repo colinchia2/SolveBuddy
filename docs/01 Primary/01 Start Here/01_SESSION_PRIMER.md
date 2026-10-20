@@ -35,6 +35,9 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 ## How to run things
 - Node 24 runs the TypeScript files directly. No install step.
 - `node scripts/step1_full_grid.ts`, `step2_erase.ts`, `step3_grade.ts` show each Sudoku step working.
+- **Test page:** `node web/server.ts`, then open http://localhost:4321 to play the Easy 9×9 pack with real hints.
+  It runs the real engine in the browser (the server strips the TypeScript types). Keyboard: 1–9, arrows,
+  Backspace, Ctrl+Z.
 
 ## Gotchas already hit
 - The answer-counter must reject a puzzle that already breaks a rule. Otherwise a full but wrong grid counts as
