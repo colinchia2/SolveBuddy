@@ -11,7 +11,7 @@ const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, r
 
 // Game settings: shared with the Sudoku page and the Settings screen.
 const SETTINGS_KEY = "solvebuddy.settings";
-const settings = { timer: true, mistakes: false, hl: true, same: true, auto: true };
+const settings = { timer: true, mistakes: false, hl: true, same: true, autoCross: false }; // auto-cross off by default (Colin, 10/20)
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {}
@@ -45,7 +45,7 @@ const stars = () => Object.keys(s.marks).filter((k) => s.marks[k] === STAR).map(
 // so removing the star removes them too.
 function autoCrossed() {
   const out = new Set();
-  if (!settings.auto) return out;
+  if (!settings.autoCross) return out;
   for (const [r, c] of stars()) {
     for (let a = r - 1; a <= r + 1; a++) {
       for (let b = c - 1; b <= c + 1; b++) {
@@ -223,11 +223,54 @@ const fmt = (ms) => {
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 };
 
-// Wiring
-$("board").onclick = (e) => {
+// Tap = cycle empty → × → star. Press and drag across cells = paint × on every empty cell you pass
+// (or, if you started on an ×, wipe the × marks you pass). Works for mouse and finger alike.
+let drag = null; // { start: [r, c], cells: Set, mode: "paint" | "wipe" }
+const cellAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".cell");
+$("board").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cell");
-  if (b) tap(Number(b.dataset.r), Number(b.dataset.c));
-};
+  if (!b || s.solved) return;
+  e.preventDefault();
+  const r = Number(b.dataset.r), c = Number(b.dataset.c);
+  drag = { start: [r, c], cells: new Set(), mode: s.marks[key(r, c)] === CROSS ? "wipe" : "paint", moved: false };
+});
+document.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const b = cellAt(e.clientX, e.clientY);
+  if (!b) return;
+  const r = Number(b.dataset.r), c = Number(b.dataset.c);
+  if (!drag.moved) {
+    if (r === drag.start[0] && c === drag.start[1]) return;
+    drag.moved = true;
+    undoStack.push(JSON.stringify(s.marks)); // one Undo for the whole drag
+    drag.last = drag.start;
+    paint(...drag.start);
+  }
+  // A fast swipe can skip cells between two moves, so mark every cell on the straight line in between.
+  const [r0, c0] = drag.last;
+  const steps = Math.max(Math.abs(r - r0), Math.abs(c - c0));
+  for (let i = 1; i <= steps; i++) paint(Math.round(r0 + ((r - r0) * i) / steps), Math.round(c0 + ((c - c0) * i) / steps));
+  drag.last = [r, c];
+});
+document.addEventListener("pointerup", () => {
+  if (!drag) return;
+  const d = drag;
+  drag = null;
+  if (!d.moved) return tap(...d.start);
+  s.hint = null;
+  s.hinted.clear();
+  checkSolved();
+  render();
+});
+function paint(r, c) {
+  const k = key(r, c);
+  if (drag.cells.has(k)) return;
+  drag.cells.add(k);
+  if (drag.mode === "paint" && !s.marks[k]) s.marks[k] = CROSS;
+  if (drag.mode === "wipe" && s.marks[k] === CROSS) delete s.marks[k];
+  s.hint = null;
+  render();
+}
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
   s.marks = JSON.parse(undoStack.pop());

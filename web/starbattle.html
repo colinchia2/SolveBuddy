@@ -14,7 +14,8 @@
   .stage.lifted { transform: translateY(-90px); }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
   .board { display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink);
-    border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14); }
+    border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14);
+    touch-action: none; user-select: none; -webkit-user-select: none; } /* so a finger drag marks cells instead of scrolling */
   .cell { width: 44px; height: 44px; margin: 0; padding: 0; border: none; display: grid; place-items: center;
     border-right: 1px solid rgba(42,33,27,0.16); border-bottom: 1px solid rgba(42,33,27,0.16); transition: background 0.15s ease; }
   .cell.br { border-right: 3px solid var(--ink); }
@@ -53,7 +54,7 @@
 
     <div class="stage" id="stage">
       <div class="board" id="board"></div>
-      <p class="tip">Tap once for ×, twice for a star</p>
+      <p class="tip">Tap once for ×, twice for a star · drag to mark ×</p>
     </div>
   </div>
 
@@ -98,7 +99,7 @@
       <div class="group">
         <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>Star Battle</h3>
         <div class="card">
-          <div class="opt"><span>Auto-cross around stars</span><button class="switch" role="switch" data-set="auto" aria-label="Auto-cross around stars"></button></div>
+          <div class="opt"><span>Auto-cross around stars</span><button class="switch" role="switch" data-set="autoCross" aria-label="Auto-cross around stars"></button></div>
         </div>
       </div>
       <button class="dark" data-close>Done</button>

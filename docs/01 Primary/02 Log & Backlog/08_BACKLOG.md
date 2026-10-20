@@ -20,6 +20,9 @@ Top item = what's next.
   "Game settings" sheet with the toggles for that puzzle (Show timer, Show mistakes as I play, plus the
   per-game ones), so you don't have to leave the puzzle. Same settings as the main Settings screen.
   Why: sometimes he wants wrong numbers flagged as he places them, sometimes not.
+- 10/20 (Colin): Star Battle "Auto-cross around stars" is **off by default** (the Settings mockup had it on).
+- 10/20 (Colin): Star Battle **press-and-drag marks ×** on every empty cell you pass (starting on an × wipes
+  instead). Same on mouse and finger. One drag = one Undo. Fast swipes fill the cells in between.
 
 ## Parked
 - Harder Sudoku tricks (pairs, pointing, etc.) for Medium / Hard / Expert grades. Today the grader only says
