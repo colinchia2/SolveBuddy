@@ -6,9 +6,11 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Done:** 5 Easy 9×9 Sudokus + 5 Easy 8×8 Star Battles, each with real hints, playable on a localhost
   test page (Sudoku ↔ Star Battle switch above the phone). Colin has played them and likes them.
 - **In progress:** 1 Expert Star Battle is built (`packs/starbattle8-expert.json`, "Expert: 1" on the test page).
-  Colin is about to pressure-test its harder hints (Would block, groups, What if).
-- **Next step:** collect Colin's feedback on the Expert hints and fix what feels unclear. Then Expert Sudoku
-  the same way (explain each new trick → add it → 1 puzzle → Colin tests).
+  Colin hasn't played it yet (he was on his phone, and localhost only works on his computer).
+- **Next step:** Colin plays the Expert puzzle with hints and gives feedback. Likely first fix: his idea to
+  play the "What if" chain out on the board step by step. Then Expert Sudoku the same way.
+- **New ideas parked (10/20):** screenshot import, Water Sort, two-star Star Battle, a block-dropping game.
+  Flow Free is a no. See the backlog's "New ideas". Don't start them until Colin picks one.
 - **Open questions:** the backlog's list, one at a time, when Colin is ready.
 - **To pick up, read:**
   1. This file (rules + how to start the test page below).

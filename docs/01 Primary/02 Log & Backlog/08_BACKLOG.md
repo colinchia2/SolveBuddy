@@ -8,12 +8,33 @@ Top item = what's next.
    needs them, and Colin plays it with hints to pressure-test the less obvious hints.
    Harder tricks to consider: "Would block" (already written, graded as Medium), "N regions share N rows/columns",
    and more as needed. Grade = the hardest trick required.
+   - Built 10/20 (see build log). Waiting on Colin to play it (he was away from his computer).
+   - **Colin's idea (10/20): show the "What if" chain step by step.** Don't just say "after 3 forced moves";
+     play the forced moves out on the board one at a time so he can *see* why the row, column or region runs dry.
+     Why: he tries What-if in his head all the time and loses track. Keep chains short (3–5) so it fits.
 2. **Expert Sudoku**, the same way: pairs, pointing, box/line, then harder (X-wing, etc.).
+
+## New ideas from Colin (10/20), not started, one at a time
+- **Import a puzzle from a screenshot** (changes the earlier "no importing" decision). Two cases: a fresh puzzle
+  ("put it in SolveBuddy so I can solve it there") and a half-done one ("help me from here"). For Star Battle,
+  Sudoku and Water Sort. Hints are the whole point: he wants to *learn* by getting hints on puzzles he finds.
+  Example: `docs/03 Ideas/import-example-starbattle-in-progress.png` (8×8 1-star Hard, partly solved).
+  Open: how the screenshot becomes a board (reading an image needs AI or typing it in; the solver/hints stay code).
+- **Water Sort** (pour-the-colors tube game). Make new levels + hints, plus "help me from here" on his phone game.
+  Example: `docs/03 Ideas/watersort-example-level171.png` (14 tubes, 12 colors × 4, 2 empty).
+  Note: it's a planning puzzle, not deduction. With every color visible there's no luck, so a solver can search
+  for a full solution and hints = the next good move plus the strategy behind it. Versions that hide colors
+  do involve luck. Colin also wants the strategy and best practices written up.
+- **Two-star Star Battle** (2 stars per row, column and region, e.g. 10×10). Partly answers open question 2.
+- **Block-dropping game** (Tetris-style), offline for the subway. No logic or hints: random pieces, speed
+  increases, swipe or tap to move/rotate/drop. Needs a generic name (not "Tetris", a trademark; handoff rule).
+- **Said no: Flow Free.** His App Store version is already perfect and free, so there's no reason to rebuild it.
 
 ## Decided
 - 10/20: v1 = **Star Battle + Sudoku** (Mini 6×6 and Classic 9×9). Both have finished screens, and they're
   the ones Colin gets stuck on most. Other games and Sudoku variants come later.
-- 10/20: puzzles are **made by the app**, with no importing for now. Made puzzles are always checked and graded;
+- 10/20: puzzles are **made by the app**, with no importing for now (later the same day Colin asked for
+  screenshot import as a future feature; see New ideas). Made puzzles are always checked and graded;
   imported ones may belong to someone else and would still need checking.
 - 10/20: first build = 5 Easy 9×9 Sudokus + 5 Easy 8×8 Star Battles, step by step so Colin understands how
   each is made. Done.
