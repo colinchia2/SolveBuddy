@@ -12,6 +12,7 @@
     --accent: #C24E2A; --accent-dark: #A23F20; --accent-soft: #FBE3D6; --accent-mid: #F4C7B2;
     --sel: #C9DBF7; --sel-ring: #2F6FD6; --peer: #EEF3FA; --same: #D7E4F8; --pencil: #2F5FB8;
     --board: #FFFDF9; --line: #E6DACD;
+    --conflict-cell: color-mix(in srgb, #F4A6A0 45%, #FFFDF9); --conflict-star: #B3261E;
     --glass-bg: rgba(255,255,255,0.3); --glass-border: rgba(255,255,255,0.75);
     --glass-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9);
   }
@@ -53,6 +54,7 @@
   .cell .v { font: 600 21px Inter, sans-serif; color: var(--pencil); }
   .cell .v.given { font-weight: 700; color: var(--ink); }
   .cell .v.shown { color: var(--accent-dark); }
+  .cell .v.wrong { color: var(--conflict-star); }
   .cell .ctr { font-size: 10px; font-weight: 600; letter-spacing: -0.02em; color: var(--pencil); }
   .cell .cn { position: absolute; font-size: 9px; font-weight: 600; line-height: 1; color: var(--pencil); }
 
@@ -92,6 +94,23 @@
   .row { display: flex; gap: 12px; align-items: flex-start; }
   .ico { width: 32px; height: 32px; flex: none; border-radius: 9px; display: grid; place-items: center; }
   .sheet .dark { min-height: 50px; font-size: 15px; font-weight: 700; }
+  .info-right { display: flex; gap: 6px; }
+  .restart.sqs { width: 36px; padding: 0; justify-content: center; }
+
+  /* Game settings sheet: rows and switches from the Settings mockup. */
+  .group h3 { margin: 0 4px 6px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .card { border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%); border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 8px 22px rgba(30,30,30,0.06), inset 0 1px 0 rgba(255,255,255,0.95); }
+  .opt { display: flex; align-items: center; gap: 12px; padding: 0 14px; min-height: 46px; }
+  .opt + .opt { border-top: 1px solid rgba(42,33,27,0.08); }
+  .opt span { flex: 1; font-size: 15px; }
+  .switch { width: 50px; height: 30px; flex: none; padding: 0; border: none; border-radius: 15px; position: relative;
+    background: rgba(42,33,27,0.16); transition: background 0.2s ease; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px;
+    background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: left 0.2s ease; }
+  .switch[aria-checked="true"] { background: var(--ink); }
+  .switch[aria-checked="true"]::after { left: 23px; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -112,8 +131,11 @@
     </header>
 
     <div class="info">
-      <span class="timer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span></span>
-      <button class="restart glass" id="restartBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Restart</button>
+      <span class="timer" id="timer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span></span>
+      <div class="info-right">
+        <button class="restart glass sqs" id="settingsBtn" aria-label="Game settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10 M18 7h2 M4 17h2 M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+        <button class="restart glass" id="restartBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Restart</button>
+      </div>
     </div>
 
     <div class="board" id="board"></div>
@@ -153,6 +175,27 @@
       <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><circle cx="9.5" cy="12" r="1.3" fill="#C24E2A"/><circle cx="14.5" cy="12" r="1.3" fill="#C24E2A"/></svg></span><span><strong>Center</strong> marks: every number this one cell could still be.</span></div>
       <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint checks for mistakes first, then shows the simplest next step.</span></div>
       <button class="dark" data-close>Got it</button>
+    </section>
+  </div>
+
+  <div class="scrim" id="settings" hidden>
+    <section class="sheet" role="dialog" aria-label="Game settings">
+      <div class="sheet-top"><h2>Game settings</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
+      <div class="group">
+        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"/></svg>All puzzles</h3>
+        <div class="card">
+          <div class="opt"><span>Show timer</span><button class="switch" role="switch" data-set="timer" aria-label="Show timer"></button></div>
+          <div class="opt"><span>Show mistakes as I play</span><button class="switch" role="switch" data-set="mistakes" aria-label="Show mistakes as I play"></button></div>
+        </div>
+      </div>
+      <div class="group">
+        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z M4 9.3h16 M4 14.7h16 M9.3 4v16 M14.7 4v16"/></svg>Sudoku</h3>
+        <div class="card">
+          <div class="opt"><span>Highlight row, column &amp; box</span><button class="switch" role="switch" data-set="hl" aria-label="Highlight row, column and box"></button></div>
+          <div class="opt"><span>Highlight matching numbers</span><button class="switch" role="switch" data-set="same" aria-label="Highlight matching numbers"></button></div>
+        </div>
+      </div>
+      <button class="dark" data-close>Done</button>
     </section>
   </div>
 

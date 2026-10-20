@@ -15,12 +15,26 @@ let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(new URLSearchPara
 let s; // game state
 const undoStack = []; // board snapshots for Undo
 
+// Game settings: same names and defaults as the Settings screen mockup. Remembered in this browser.
+const SETTINGS_KEY = "solvebuddy.settings";
+const settings = { timer: true, mistakes: false, hl: true, same: true };
+try {
+  Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
+} catch {}
+function flipSetting(name) {
+  settings[name] = !settings[name];
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch {}
+  render();
+}
+
 function load(i) {
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, mode: s?.mode || "normal",
-    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false };
+    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
   $("sub").textContent = `Classic 9×9 · Easy · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?p=${i + 1}`);
@@ -131,18 +145,20 @@ function render() {
       const g = s.givens[r][c];
       const v = valueAt(r, c);
       const isSel = !h && r === sr && c === sc;
-      const peer = !h && s.sel && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3)));
-      const same = !h && selVal && v === selVal && !isSel;
+      const peer = settings.hl && !h && s.sel && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3)));
+      const same = settings.same && !h && selVal && v === selVal && !isSel;
+      const wrong = settings.mistakes && !g && v && v !== s.solution[r][c];
       let bg = "var(--board)";
       if (peer) bg = "var(--peer)";
       if (same) bg = "var(--same)";
+      if (wrong) bg = "var(--conflict-cell)";
       if (isSel) bg = "var(--sel)";
       if (focus.has(k)) bg = "var(--accent-soft)";
       if (k === target) bg = "var(--accent-mid)";
       const ring = k === target ? "inset 0 0 0 3px var(--accent)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
       let inner = "";
       if (v) {
-        const cls = g ? "v given" : k === target && h.level === 3 ? "v shown" : "v";
+        const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
         inner = `<span class="${cls}">${v}</span>`;
       } else if (s.center[k]) {
         inner = `<span class="ctr">${s.center[k].join("")}</span>`;
@@ -178,6 +194,9 @@ function render() {
   }
 
   $("rules").hidden = !s.rules;
+  $("settings").hidden = !s.settingsOpen;
+  document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
+  $("timer").style.visibility = settings.timer ? "visible" : "hidden";
   $("solved").hidden = !s.solved;
   if (s.solved) {
     $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
@@ -229,9 +248,13 @@ $("hintNext").onclick = advanceHint;
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 $("nextPuzzle").onclick = () => load(idx + 1);
+$("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
+document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
+document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));
 
 // Keyboard, for playing on a computer: 1–9, arrows, Backspace, Ctrl+Z.
 document.addEventListener("keydown", (e) => {
+  if (s.rules || s.settingsOpen) return;
   if ((e.ctrlKey || e.metaKey) && e.key === "z") return $("undoBtn").onclick();
   if (/^[1-9]$/.test(e.key)) return press(Number(e.key));
   if (e.key === "Backspace" || e.key === "Delete") return erase();

@@ -16,6 +16,10 @@ Top item = what's next.
 - 10/20 (Claude's pick, Colin didn't object): the engine is written in **TypeScript** so the iPhone app and the
   website share one copy of the puzzle logic. Tricks live in one ordered list, and the same list will drive
   the Hint button.
+- 10/20 (Colin): the game screen gets its own **settings button** (sliders icon, next to Restart). It opens a
+  "Game settings" sheet with the toggles for that puzzle (Show timer, Show mistakes as I play, plus the
+  per-game ones), so you don't have to leave the puzzle. Same settings as the main Settings screen.
+  Why: sometimes he wants wrong numbers flagged as he places them, sometimes not.
 
 ## Parked
 - Harder Sudoku tricks (pairs, pointing, etc.) for Medium / Hard / Expert grades. Today the grader only says
