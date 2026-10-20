@@ -10,8 +10,8 @@
   /* Star Battle only: the 8×8 board from the StarBattle8 mockup, plus hint marks from the 6×6 hint mockup. */
   .screen { height: 844px; }
   .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-    padding-bottom: 70px; transition: padding-bottom 0.35s cubic-bezier(0.2,0.9,0.3,1); }
-  .stage.lifted { padding-bottom: 250px; }
+    padding-bottom: 70px; transition: transform 0.35s cubic-bezier(0.2,0.9,0.3,1); }
+  .stage.lifted { transform: translateY(-90px); }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
   .board { display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink);
     border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14); }
