@@ -1,7 +1,13 @@
-// Star Battle play page: the approved 8×8 design, wired to the real engine and the Easy pack.
+// Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "/engine/starbattle/hint.ts";
 
-const pack = await (await fetch("/packs/starbattle8-easy-starter.json")).json();
+const PACKS = {
+  easy: await (await fetch("/packs/starbattle8-easy-starter.json")).json(),
+  expert: await (await fetch("/packs/starbattle8-expert.json")).json(),
+};
+const query = new URLSearchParams(location.search);
+let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+let pack = PACKS[packName];
 const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
 const N = 8;
@@ -23,19 +29,21 @@ function flipSetting(name) {
   render();
 }
 
-let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(new URLSearchParams(location.search).get("p") || 1) - 1));
+let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 let s; // game state
 const undoStack = [];
 
-function load(i) {
+function load(i, name = packName) {
+  packName = name;
+  pack = PACKS[name];
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { regions: p.regions, solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
-  $("sub").textContent = `8×8 · Easy · #${i + 1}`;
+  $("sub").textContent = `8×8 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?p=${i + 1}`);
+  history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
   renderPicker();
   render();
 }
@@ -208,14 +216,21 @@ function render() {
 
 function renderPicker() {
   const p = $("picker");
-  p.querySelectorAll("button").forEach((b) => b.remove());
-  pack.puzzles.forEach((_, i) => {
-    const b = document.createElement("button");
-    b.textContent = i + 1;
-    b.className = i === idx ? "on" : "";
-    b.onclick = () => load(i);
-    p.appendChild(b);
-  });
+  p.querySelectorAll("button, .lbl").forEach((b) => b.remove());
+  for (const [name, pk] of Object.entries(PACKS)) {
+    const lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = `${pk.difficulty}:`;
+    lbl.style.marginLeft = "6px";
+    p.appendChild(lbl);
+    pk.puzzles.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.textContent = i + 1;
+      b.className = name === packName && i === idx ? "on" : "";
+      b.onclick = () => load(i, name);
+      p.appendChild(b);
+    });
+  }
 }
 
 const fmt = (ms) => {

@@ -2,6 +2,20 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Star Battle (folder now `Python\Buddies\SolveBuddy`)
+- **New tricks** (`engine/starbattle/techniques.ts`), in ladder order: Would block (Medium), Groups: N regions in
+  N rows/columns and the mirror, N = 2–4 (Hard), What if: pretend a star, follow forced moves, and if a row,
+  column or region runs dry, cross the cell (Expert). The grade is the lowest tier that solves it, and
+  "Too hard" is never shipped.
+- **Survey** (`scripts/starbattle_grade_survey.ts`, 100 even-region layouts): Easy 6, Medium 14, Hard 59,
+  Expert 21, Too hard 0.
+- **1 Expert puzzle** (`scripts/starbattle_make_expert.ts`): made 8 Expert candidates and kept the toughest
+  (What if ×5, groups ×2). Test page: "Expert: 1" (`?pack=expert`).
+- **Hint fix:** What if first picked the first failing cell in reading order (chains up to 11 moves, too hard to
+  follow). Now it picks the shortest chain (3–5 moves).
+- **Checked:** 24 checks, including "every move of every trick matches the answer on 15 random puzzles" and
+  "hints alone solve the Expert puzzle with only correct moves" (41 hints).
+
 ## 2026-10-20 — Easy packs for both games + localhost test page with hints
 - **Sudoku step 4** (`makePuzzle.ts`): an erase is kept only if the puzzle keeps one answer, stays Easy, and
   every row, column and box keeps 2–6 numbers. 5 puzzles (36 numbers showing) saved to

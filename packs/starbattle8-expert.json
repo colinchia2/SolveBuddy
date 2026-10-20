@@ -1,0 +1,42 @@
+{
+ "id": "starbattle8-expert",
+ "game": "starbattle",
+ "size": 8,
+ "difficulty": "Expert",
+ "puzzles": [
+  {
+   "id": "starbattle8-expert-1",
+   "regions": [
+    "AAAAABCC",
+    "AAADDBCC",
+    "EEADDBBC",
+    "EEGGDDDD",
+    "EEGGFFDD",
+    "EEGGGFFF",
+    "HHGHGHHF",
+    "HHHHHHHF"
+   ],
+   "solution": [
+    3,
+    5,
+    7,
+    4,
+    1,
+    6,
+    2,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "4 regions, 4 columns",
+    "Confined region",
+    "What if",
+    "Row inside one region",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  }
+ ]
+}

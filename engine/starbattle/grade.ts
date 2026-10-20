@@ -1,11 +1,19 @@
-// Star Battle step 4, grading: solve it like a person, easiest tricks first.
-// Easy = the four easy tricks finish it. Medium = it also needs "Would block". Otherwise: Hard.
+// Star Battle grading: solve it like a person, easiest tricks first.
+// The grade is the lowest tier whose tricks finish the puzzle:
+//   Easy = tricks 1–4 · Medium = + "Would block" · Hard = + groups · Expert = + "What if".
+// "Too hard" = even all our tricks get stuck (never shipped, because hints would get stuck too).
 import { type Regions } from "./layout.ts";
-import { type Board, type Step, EMPTY, STAR, EASY_TECHNIQUES, ALL_TECHNIQUES, nextStep, applyStep } from "./techniques.ts";
+import { type Board, type Step, EMPTY, STAR, EASY_TECHNIQUES, MEDIUM_TECHNIQUES, HARD_TECHNIQUES, EXPERT_TECHNIQUES,
+  nextStep, applyStep } from "./techniques.ts";
 
-export type Grade = { level: "Easy" | "Medium" | "Hard"; steps: Step[] };
+export type Level = "Easy" | "Medium" | "Hard" | "Expert" | "Too hard";
+export type Grade = { level: Level; steps: Step[] };
 
-export function solveWith(regions: Regions, techniques = ALL_TECHNIQUES): { board: Board; steps: Step[] } {
+const TIERS: [Level, typeof EASY_TECHNIQUES][] = [
+  ["Easy", EASY_TECHNIQUES], ["Medium", MEDIUM_TECHNIQUES], ["Hard", HARD_TECHNIQUES], ["Expert", EXPERT_TECHNIQUES],
+];
+
+export function solveWith(regions: Regions, techniques = EXPERT_TECHNIQUES): { board: Board; steps: Step[] } {
   const n = regions.length;
   const board: Board = Array.from({ length: n }, () => Array(n).fill(EMPTY));
   const steps: Step[] = [];
@@ -20,9 +28,11 @@ export function solveWith(regions: Regions, techniques = ALL_TECHNIQUES): { boar
 const starCount = (b: Board) => b.flat().filter((v) => v === STAR).length;
 
 export function grade(regions: Regions): Grade {
-  const easy = solveWith(regions, EASY_TECHNIQUES);
-  if (starCount(easy.board) === regions.length) return { level: "Easy", steps: easy.steps };
-  const all = solveWith(regions, ALL_TECHNIQUES);
-  if (starCount(all.board) === regions.length) return { level: "Medium", steps: all.steps };
-  return { level: "Hard", steps: all.steps };
+  let last: Step[] = [];
+  for (const [level, techniques] of TIERS) {
+    const { board, steps } = solveWith(regions, techniques);
+    if (starCount(board) === regions.length) return { level, steps };
+    last = steps;
+  }
+  return { level: "Too hard", steps: last };
 }

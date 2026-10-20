@@ -6,7 +6,8 @@ import { grade } from "../engine/sudoku/grade.ts";
 import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
 import { hint } from "../engine/sudoku/hint.ts";
 import { existsSync, readFileSync } from "node:fs";
-import { placeStars, regionSizes } from "../engine/starbattle/layout.ts";
+import { placeStars, regionSizes, growRegions, repair } from "../engine/starbattle/layout.ts";
+import { solveWith as sbSolveWith } from "../engine/starbattle/grade.ts";
 import { countSolutions as sbCount } from "../engine/starbattle/countSolutions.ts";
 import { grade as sbGrade } from "../engine/starbattle/grade.ts";
 import { MIN_REGION, MAX_REGION } from "../engine/starbattle/makePuzzle.ts";
@@ -143,6 +144,31 @@ if (existsSync(sbPackFile)) {
   b1[0][wrongCol] = SB_STAR;
   const h1 = sbHint(b1, p1.regions, p1.solution);
   check("SB hint points at a wrong star first", h1.kind === "mistake" && h1.clear![1] === wrongCol);
+}
+
+// The harder tricks (Would block, groups, What if) must never make a move that disagrees with the answer.
+const sbSound = Array.from({ length: 15 }, () => {
+  const sol = placeStars(8);
+  const regions = repair(growRegions(sol), sol, (r, found) => sbCount(r, 2, found));
+  if (!regions) return true;
+  return sbSolveWith(regions).steps.every((st) =>
+    (!st.star || sol[st.star[0]] === st.star[1]) && st.cross.every(([r, c]) => sol[r] !== c));
+});
+check("SB all tricks: every move in 15 random puzzles matches the answer", sbSound.every(Boolean));
+
+const sbExpertFile = "packs/starbattle8-expert.json";
+if (existsSync(sbExpertFile)) {
+  const ex = JSON.parse(readFileSync(sbExpertFile, "utf8")).puzzles[0] as SbSaved;
+  check("SB Expert puzzle: one answer, graded Expert", sbCount(ex.regions) === 1 && sbGrade(ex.regions).level === "Expert");
+  const b = ex.regions.map(() => Array(8).fill(SB_EMPTY));
+  let ok = true;
+  for (let i = 0; i < 300 && ok; i++) {
+    const h = sbHint(b, ex.regions, ex.solution);
+    if (h.kind !== "step") break;
+    if (h.star) ok = ex.solution[h.star[0]] === h.star[1], b[h.star[0]][h.star[1]] = SB_STAR;
+    for (const [r, c] of h.cross) ok &&= ex.solution[r] !== c, b[r][c] = SB_CROSS;
+  }
+  check("SB Expert: hints alone solve it, every move correct", ok && ex.solution.every((c, r) => b[r][c] === SB_STAR));
 }
 
 if (failed) process.exit(1);

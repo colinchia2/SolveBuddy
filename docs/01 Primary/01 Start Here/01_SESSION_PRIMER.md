@@ -5,9 +5,10 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 ## Right now (2026-10-20)
 - **Done:** 5 Easy 9×9 Sudokus + 5 Easy 8×8 Star Battles, each with real hints, playable on a localhost
   test page (Sudoku ↔ Star Battle switch above the phone). Colin has played them and likes them.
-- **In progress:** nothing mid-edit. Colin said yes to building Expert puzzles; work hadn't started.
-- **Next step:** Expert Star Battle. Explain each new harder trick in plain English → add it → make 1 Expert
-  8×8 → Colin plays it with hints. Then Expert Sudoku the same way. One step at a time.
+- **In progress:** 1 Expert Star Battle is built (`packs/starbattle8-expert.json`, "Expert: 1" on the test page).
+  Colin is about to pressure-test its harder hints (Would block, groups, What if).
+- **Next step:** collect Colin's feedback on the Expert hints and fix what feels unclear. Then Expert Sudoku
+  the same way (explain each new trick → add it → 1 puzzle → Colin tests).
 - **Open questions:** the backlog's list, one at a time, when Colin is ready.
 - **To pick up, read:**
   1. This file (rules + how to start the test page below).

@@ -144,8 +144,98 @@ function wouldBlock(b: Board, regions: Regions): Step | null {
   return null;
 }
 
+// 6. (Hard) Groups: N regions whose open cells all fit inside N rows (or columns) use up those rows' stars,
+//    so nothing else in those rows can have one. And the mirror: N rows (or columns) whose open cells all
+//    sit inside N regions use up those regions' stars. (N = 1 is tricks 3 and 4; this is N = 2 to 4.)
+function groups(b: Board, regions: Regions): Step | null {
+  const all = units(regions);
+  const regs = all.filter((u) => u.kind === "region" && !hasStar(b, u.cells));
+  for (const kind of ["row", "column"] as const) {
+    const idx = kind === "row" ? 0 : 1;
+    const lines = all.filter((u) => u.kind === kind && !hasStar(b, u.cells));
+    const plural = kind === "row" ? "rows" : "columns";
+    for (let n = 2; n <= 4; n++) {
+      // N regions squeezed into N lines.
+      for (const set of combos(regs, n)) {
+        const cells = set.flatMap((u) => open(b, u.cells));
+        const used = [...new Set(cells.map((p) => p[idx]))].sort((x, y) => x - y);
+        if (used.length !== n) continue;
+        const letters = new Set(set.map((u) => u.letter));
+        const cross = lines.filter((l) => used.includes(l.cells[0][idx]))
+          .flatMap((l) => open(b, l.cells)).filter(([r, c]) => !letters.has(regions[r][c]));
+        if (!cross.length) continue;
+        const names = listOf(set.map((u) => COLOR_NAMES[u.letter!]));
+        const where = `${plural} ${listOf(used.map((i) => String(i + 1)))}`;
+        return { technique: `${n} regions, ${n} ${plural}`, star: null, cross, focus: set.flatMap((u) => u.cells),
+          nudge: `Look at the ${names} regions together.`,
+          why: `The ${names} regions all fit inside ${where}. That's ${n} regions in ${n} ${plural}, so those ${plural}' stars all belong to them. Nothing else in ${where} can have a star.` };
+      }
+      // N lines squeezed into N regions.
+      for (const set of combos(lines, n)) {
+        const cells = set.flatMap((l) => open(b, l.cells));
+        const used = [...new Set(cells.map(([r, c]) => regions[r][c]))];
+        if (used.length !== n) continue;
+        const inLines = new Set(set.flatMap((l) => l.cells).map((p) => p.join()));
+        const cross = regs.filter((u) => used.includes(u.letter!))
+          .flatMap((u) => open(b, u.cells)).filter((p) => !inLines.has(p.join()));
+        if (!cross.length) continue;
+        const where = `${plural} ${listOf(set.map((l) => String(l.cells[0][idx] + 1)))}`;
+        const names = listOf(used.sort().map((l) => COLOR_NAMES[l]));
+        return { technique: `${n} ${plural}, ${n} regions`, star: null, cross, focus: set.flatMap((l) => l.cells),
+          nudge: `Look at ${where} together.`,
+          why: `Every open cell in ${where} is in the ${names} regions. ${n} ${plural} need ${n} stars from just those ${n} regions, so the rest of those regions is out.` };
+      }
+    }
+  }
+  return null;
+}
+
+// 7. (Expert) What if: pretend a cell has a star and follow the forced moves (tricks 1–6).
+//    If that ends with a row, column or region that has nowhere left for its star, the cell can't have one.
+// Of all the cells that fail, the hint uses the one with the shortest chain: easiest to follow in your head.
+function whatIf(b: Board, regions: Regions): Step | null {
+  const all = units(regions);
+  let best: (Step & { forced: number }) | null = null;
+  for (let r = 0; r < b.length; r++) {
+    for (let c = 0; c < b.length; c++) {
+      if (b[r][c] !== EMPTY) continue;
+      const trial = b.map((row) => [...row]);
+      trial[r][c] = STAR;
+      let forced = 0;
+      let dead: Unit | undefined;
+      for (;;) {
+        dead = all.find((u) => !hasStar(trial, u.cells) && !open(trial, u.cells).length);
+        if (dead) break;
+        const step = nextStep(trial, regions, HARD_TECHNIQUES);
+        if (!step) break;
+        applyStep(trial, step);
+        forced++;
+      }
+      if (!dead || (best && best.forced <= forced)) continue;
+      best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced,
+        nudge: `Imagine a star at row ${r + 1}, column ${c + 1}. What happens?`,
+        why: `If row ${r + 1}, column ${c + 1} had a star, ${forced === 0 ? "straight away" : `after ${forced} forced move${forced === 1 ? "" : "s"}`} ${dead.label} would have nowhere left for its star. So that cell can't have one.` };
+    }
+  }
+  if (!best) return null;
+  const { forced, ...step } = best;
+  return step;
+}
+
+function combos<T>(items: T[], n: number, start = 0): T[][] {
+  if (n === 0) return [[]];
+  const out: T[][] = [];
+  for (let i = start; i <= items.length - n; i++) for (const rest of combos(items, n - 1, i + 1)) out.push([items[i], ...rest]);
+  return out;
+}
+const listOf = (xs: string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+
+// The ladder, easiest first. A puzzle's grade is the lowest tier whose tricks solve it.
 export const EASY_TECHNIQUES = [starRulesOut, lastCell, confinedRegion, lineInsideRegion];
-export const ALL_TECHNIQUES = [...EASY_TECHNIQUES, wouldBlock];
+export const MEDIUM_TECHNIQUES = [...EASY_TECHNIQUES, wouldBlock];
+export const HARD_TECHNIQUES = [...MEDIUM_TECHNIQUES, groups];
+export const EXPERT_TECHNIQUES = [...HARD_TECHNIQUES, whatIf];
+export const ALL_TECHNIQUES = EXPERT_TECHNIQUES;
 
 export function nextStep(b: Board, regions: Regions, techniques = ALL_TECHNIQUES): Step | null {
   for (const t of techniques) {
