@@ -6,6 +6,11 @@ import { grade } from "../engine/sudoku/grade.ts";
 import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
 import { hint } from "../engine/sudoku/hint.ts";
 import { existsSync, readFileSync } from "node:fs";
+import { placeStars, regionSizes } from "../engine/starbattle/layout.ts";
+import { countSolutions as sbCount } from "../engine/starbattle/countSolutions.ts";
+import { grade as sbGrade } from "../engine/starbattle/grade.ts";
+import { MIN_REGION, MAX_REGION } from "../engine/starbattle/makePuzzle.ts";
+import { hint as sbHint, EMPTY as SB_EMPTY, CROSS as SB_CROSS, STAR as SB_STAR } from "../engine/starbattle/hint.ts";
 
 let failed = 0;
 function check(name: string, ok: boolean) {
@@ -89,6 +94,55 @@ if (existsSync(packFile)) {
   b[er][ec] = (p0.solution[er][ec] % 9) + 1; // a wrong number
   const h = hint(b, p0.solution);
   check("hint points at a mistake first", h.kind === "mistake" && h.target![0] === er && h.target![1] === ec);
+}
+
+// ---------- Star Battle ----------
+const sbBroken = ["ABC", "ABC", "ABC"]; // 3×3 can't fit 3 non-touching stars
+check("SB checker: an impossible layout has 0 answers", sbCount(sbBroken) === 0);
+const sbTwo = ["ABCDEF", "ABCDEF", "ABCDEF", "ABCDEF", "ABCDEF", "ABCDEF"]; // columns as regions: many answers
+check("SB checker: a loose layout has 2+ answers", sbCount(sbTwo) === 2);
+
+const sbStars = Array.from({ length: 50 }, () => placeStars(8));
+const starsOk = (s: number[]) => new Set(s).size === 8 && s.every((c, r) => r === 0 || Math.abs(c - s[r - 1]) > 1);
+check("SB step 1: 50 star placements follow the rules", sbStars.every(starsOk));
+
+type SbSaved = { regions: string[]; solution: number[] };
+function goodSb(p: SbSaved) {
+  const oneStarPerRegion = new Set(p.solution.map((c, r) => p.regions[r][c])).size === 8;
+  const { min, max } = regionSizes(p.regions);
+  return starsOk(p.solution) && oneStarPerRegion && min >= MIN_REGION && max <= MAX_REGION &&
+    sbCount(p.regions) === 1 && sbGrade(p.regions).level === "Easy";
+}
+const sbPackFile = "packs/starbattle8-easy-starter.json";
+if (existsSync(sbPackFile)) {
+  const sbPack = JSON.parse(readFileSync(sbPackFile, "utf8"));
+  check("SB saved pack: 5 puzzles, one answer each, even regions, Easy", sbPack.puzzles.length === 5 && sbPack.puzzles.every(goodSb));
+
+  // Every trick move must agree with the answer, and "Show me" over and over must finish each puzzle.
+  const sbHintsOk = sbPack.puzzles.every((p: SbSaved) => {
+    const b = p.regions.map(() => Array(8).fill(SB_EMPTY));
+    for (let i = 0; i < 200; i++) {
+      const h = sbHint(b, p.regions, p.solution);
+      if (h.kind !== "step") break;
+      if (h.star) {
+        if (p.solution[h.star[0]] !== h.star[1]) return false;
+        b[h.star[0]][h.star[1]] = SB_STAR;
+      }
+      for (const [r, c] of h.cross) {
+        if (p.solution[r] === c) return false;
+        b[r][c] = SB_CROSS;
+      }
+    }
+    return p.solution.every((c, r) => b[r][c] === SB_STAR);
+  });
+  check("SB hints alone solve all 5 pack puzzles, every move correct", sbHintsOk);
+
+  const p1: SbSaved = sbPack.puzzles[0];
+  const b1 = p1.regions.map(() => Array(8).fill(SB_EMPTY));
+  const wrongCol = p1.solution[0] === 0 ? 1 : 0;
+  b1[0][wrongCol] = SB_STAR;
+  const h1 = sbHint(b1, p1.regions, p1.solution);
+  check("SB hint points at a wrong star first", h1.kind === "mistake" && h1.clear![1] === wrongCol);
 }
 
 if (failed) process.exit(1);
