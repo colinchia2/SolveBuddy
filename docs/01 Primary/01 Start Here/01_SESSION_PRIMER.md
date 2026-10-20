@@ -3,18 +3,18 @@
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
 ## Right now (2026-10-20)
-- **Building:** the first puzzles: 5 Easy 9×9 Sudokus, then 5 Easy 8×8 Star Battles. Slowly, one step at a time,
-  so Colin understands how each is made. Explain each step in plain English before and after building it.
-- **Done:** Sudoku steps 1–3 (fill a full grid → erase while keeping one answer → grade with human-style tricks).
-- **Next step:** Sudoku step 4: make the 5 Easy 9×9 Sudokus. While erasing, keep an erase only if the puzzle
-  still has one answer AND stays Easy. Show Colin the 5 puzzles. Then start Star Battle the same slow way.
-- **Open questions:** the backlog's list, asked one at a time, after the first puzzles.
+- **Done:** 5 Easy 9×9 Sudokus + 5 Easy 8×8 Star Battles, each with real hints, playable on a localhost
+  test page (Sudoku ↔ Star Battle switch above the phone). Colin has played them and likes them.
+- **In progress:** nothing mid-edit. Colin said yes to building Expert puzzles; work hadn't started.
+- **Next step:** Expert Star Battle. Explain each new harder trick in plain English → add it → make 1 Expert
+  8×8 → Colin plays it with hints. Then Expert Sudoku the same way. One step at a time.
+- **Open questions:** the backlog's list, one at a time, when Colin is ready.
 - **To pick up, read:**
-  1. This file.
+  1. This file (rules + how to start the test page below).
   2. `../02 Log & Backlog/06_BUILD_LOG.md`: the newest entry.
-  3. `../02 Log & Backlog/08_BACKLOG.md`: Decided + Parked.
-  4. `engine/sudoku/` (fullGrid → countSolutions → erase → techniques → grade) and `checks/run_all.ts`.
-  5. When needed: `docs/02 Hand-off from Chat/SOLVEBUDDY_HANDOFF.md` §2–3 (solver + hints), §4 (games).
+  3. `../02 Log & Backlog/08_BACKLOG.md`: Next, Decided, Parked.
+  4. `engine/starbattle/techniques.ts` and `grade.ts` (where the harder tricks go), then `checks/run_all.ts`.
+  5. When needed: `docs/02 Hand-off from Chat/SOLVEBUDDY_HANDOFF.md` §3 (hints), §5–6 (design).
 
 ## Read in this order (general)
 1. `05_PROJECT_STATUS.md` (this folder): where things stand.
@@ -35,10 +35,15 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 ## How to run things
 - Node 24 runs the TypeScript files directly. No install step.
 - `node scripts/step1_full_grid.ts`, `step2_erase.ts`, `step3_grade.ts` show each Sudoku step working.
-- **Test page:** `node web/server.ts`, then open http://localhost:4321 to play the Easy 9×9 pack with real hints.
-  It runs the real engine in the browser (the server strips the TypeScript types). Keyboard: 1–9, arrows,
-  Backspace, Ctrl+Z.
+- `node scripts/step4_make_easy.ts` / `node scripts/starbattle_make_easy.ts` remake the Easy packs (overwrites).
+- **Test page:** `node web/server.ts`, then open http://localhost:4321. Plays both packs with real hints.
+  It runs the real engine in the browser (the server strips the TypeScript types). Shared styles live in
+  `web/common.css`. Settings are remembered in the browser under `solvebuddy.settings`.
+- `npm run checks`: 21 free checks (rules, one answer, grades, hints solve every pack puzzle, mistakes first).
 
 ## Gotchas already hit
+- **Never bulk-edit files with PowerShell `Get-Content`/`Set-Content`.** It read UTF-8 as the wrong encoding and
+  garbled every ×, · and →. Use the Edit tool, or Python reading/writing bytes as UTF-8.
+- Browser test tools drag in one jump, and so can a fast finger. Drag code must fill in the cells in between.
 - The answer-counter must reject a puzzle that already breaks a rule. Otherwise a full but wrong grid counts as
   "1 answer". It's fixed and covered by a check.
