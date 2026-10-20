@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SolveBuddy — Star Battle 8×8</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;overflow:hidden;scrollbar-width:none}
+::-webkit-scrollbar{display:none}
+a{color:#C24E2A}a:hover{color:#9A3B1F}
+@keyframes sbUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F6F4F1; color: #2A211B; font-family: Inter, system-ui, sans-serif; font-size: 15px; line-height: 1.4">
+<div aria-hidden="true" style="position: absolute; top: -90px; left: -80px; width: 280px; height: 280px; border-radius: 50%; background: #DCE9F2; opacity: 0.7; filter: blur(50px)"></div>
+<div aria-hidden="true" style="position: absolute; top: 560px; right: -110px; width: 280px; height: 280px; border-radius: 50%; background: #BFE3D8; opacity: 0.6; filter: blur(50px)"></div>
+
+<div style="position: relative; height: 844px; box-sizing: border-box; padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 14px">
+
+<header style="display: flex; align-items: center; gap: 6px">
+<a href="Main.dc.html" aria-label="Back to library" style="width: 44px; height: 44px; border-radius: 12px; box-sizing: border-box; display: grid; place-items: center; color: #2A211B; background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"></path></svg></a>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; line-height: 1.1">Star Battle</span>
+<span style="font-size: 12px; color: #6B5D52">8×8 · Hard</span>
+</div>
+<button onClick="{{openRules}}" aria-label="How to play" style="width: 44px; height: 44px; border-radius: 12px; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"></path></svg></button>
+<button aria-label="Undo" style="width: 44px; height: 44px; border-radius: 12px; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"></path></svg></button>
+<button aria-label="Hint" style="width: 44px; height: 44px; border-radius: 12px; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"></path></svg></button>
+</header>
+
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+<span style="display: flex; align-items: center; gap: 6px; font-weight: 600"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>2:51</span>
+<span style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #4E433A"><svg width="15" height="15" viewBox="0 0 24 24" fill="#C24E2A" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"></path></svg>{{starCount}} / 8 stars</span>
+<button onClick="{{restart}}" style="min-height: 36px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 6px; font: 600 13px Inter, sans-serif; color: #2A211B; background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 4px 12px rgba(30,30,30,0.06), inset 0 1px 0 rgba(255,255,255,0.9)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"></path></svg>Restart</button>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 70px">
+<div style="display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid #2A211B; border-left: 3px solid #2A211B; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14)">
+<sc-for list="{{cells}}" as="cell" hint-placeholder-count="64">
+<button onClick="{{cell.tap}}" aria-label="{{cell.label}}" style="{{cell.style}}">
+<sc-if value="{{cell.star}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z" fill="{{cell.starFill}}"></path></svg></sc-if>
+<sc-if value="{{cell.x}}" hint-placeholder-val="{{false}}"><span style="font-size: 22px; font-weight: 600; line-height: 1; color: #7A6B5F" aria-hidden="true">×</span></sc-if>
+</button>
+</sc-for>
+</div>
+
+<p style="margin: 0; text-align: center; font-size: 13px; color: #6B5D52">Tap once for ×, twice for a star</p>
+</div>
+
+</div>
+
+<sc-if value="{{showRules}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; display: flex; align-items: flex-end; background: rgba(42,33,27,0.22); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px)">
+<section role="dialog" aria-label="How to play Star Battle" style="width: 100%; box-sizing: border-box; padding: 20px 20px 28px; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; gap: 14px; background: rgba(255,255,255,0.72); -webkit-backdrop-filter: blur(28px) saturate(170%); backdrop-filter: blur(28px) saturate(170%); border-top: 1px solid rgba(255,255,255,0.95); box-shadow: 0 -12px 40px rgba(30,30,30,0.16); animation: sbUp 0.35s cubic-bezier(0.2,0.9,0.3,1) both">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px">How to play</h2>
+<button onClick="{{closeRules}}" aria-label="Close" style="width: 44px; height: 44px; border-radius: 12px; padding: 0; display: grid; place-items: center; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.9)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"></path></svg></button>
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 32px; height: 32px; flex: none; border-radius: 9px; background: #FBE3D6; display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#C24E2A" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"></path></svg></span><span>Place exactly <strong>one star</strong> in every row, every column and every colored region.</span></div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 32px; height: 32px; flex: none; border-radius: 9px; background: #D7EEEA; display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2" aria-hidden="true"><path d="M4 4h16v16H4z M12 4v16 M4 12h16"></path></svg></span><span>Stars can <strong>never touch</strong> — not even diagonally.</span></div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 32px; height: 32px; flex: none; border-radius: 9px; background: #EDE5DC; display: grid; place-items: center; font-weight: 700; color: #4E433A">×</span><span>Tap once to mark × where a star can't go. Tap twice for a star.</span></div>
+<div style="display: flex; gap: 12px; align-items: flex-start"><span style="width: 32px; height: 32px; flex: none; border-radius: 9px; background: #F8EBC9; display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"></path></svg></span><span>Stuck? Hint checks your board for mistakes first, then shows the simplest next step.</span></div>
+<button onClick="{{closeRules}}" style="min-height: 50px; border-radius: 12px; border: none; background: #2A211B; color: #FFFFFF; font: 700 15px Inter, sans-serif">Got it</button>
+</section>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const marks = st.marks || { '0,1': 2, '0,0': 1, '0,2': 1, '1,0': 1, '1,1': 1, '1,2': 1 };
+    const R = ['AAABBBCC', 'AABBBCCC', 'ADBBCCHH', 'DDDEECHH', 'DDEEEFFH', 'DEEEFFGG', 'DDFFFGGG', 'DFFFGGGG'];
+    const col = { A: '#D8C3EA', B: '#FFD08A', C: '#A6D8D0', D: '#C6E2A6', E: '#F5C2C9', F: '#FFB48A', G: '#BFD3F2', H: '#E9D9B8' };
+    const stars = Object.keys(marks).filter((k) => marks[k] === 2).map((k) => k.split(',').map(Number));
+    const bad = {};
+    for (let i = 0; i < stars.length; i++) {
+      for (let j = i + 1; j < stars.length; j++) {
+        const [a, b] = stars[i], [c, d] = stars[j];
+        if (a === c || b === d || R[a][b] === R[c][d] || (Math.abs(a - c) <= 1 && Math.abs(b - d) <= 1)) { bad[a + ',' + b] = 1; bad[c + ',' + d] = 1; }
+      }
+    }
+    const thick = '3px solid #2A211B', thin = '1px solid rgba(42,33,27,0.16)';
+    const cells = [];
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const key = r + ',' + c, reg = R[r][c], m = marks[key] || 0;
+        const br = (c === 7 || R[r][c + 1] !== reg) ? thick : thin;
+        const bb = (r === 7 || R[r + 1][c] !== reg) ? thick : thin;
+        const bg = bad[key] ? '#F4A6A0' : 'color-mix(in srgb, ' + col[reg] + ' 48%, #FFFDF9)';
+        cells.push({
+          star: m === 2, x: m === 1, starFill: bad[key] ? '#B3261E' : '#2A211B',
+          label: 'Row ' + (r + 1) + ' column ' + (c + 1) + (m === 2 ? ', star' : m === 1 ? ', crossed' : ''),
+          style: 'width: 44px; height: 44px; box-sizing: border-box; margin: 0; padding: 0; border: none; display: grid; place-items: center; border-right: ' + br + '; border-bottom: ' + bb + '; background: ' + bg,
+          tap: () => { const n = Object.assign({}, marks); n[key] = (m + 1) % 3; if (!n[key]) delete n[key]; this.setState({ marks: n }); }
+        });
+      }
+    }
+    return {
+      cells, starCount: stars.length,
+      showRules: !!st.rules,
+      openRules: () => this.setState({ rules: true }),
+      closeRules: () => this.setState({ rules: false }),
+      restart: () => this.setState({ marks: {} })
+    };
+  }
+}
+</script>
+</body>
+</html>
