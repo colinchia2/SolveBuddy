@@ -6,7 +6,8 @@ import { countSolutions } from "./countSolutions.ts";
 export type EraseResult = { puzzle: Grid; kept: number; putBack: number };
 
 // Stops once only `minClues` numbers are left (or every cell has been tried).
-export function erase(solution: Grid, minClues: number): EraseResult {
+// `stillOk` is an extra test an erase must pass (e.g. "still Easy"); by default, any one-answer puzzle is fine.
+export function erase(solution: Grid, minClues: number, stillOk: (p: Grid) => boolean = () => true): EraseResult {
   const puzzle = solution.map((row) => [...row]);
   const cells = shuffled(Array.from({ length: 81 }, (_, i) => i));
   let clues = 81;
@@ -17,10 +18,10 @@ export function erase(solution: Grid, minClues: number): EraseResult {
     const col = cell % 9;
     const saved = puzzle[row][col];
     puzzle[row][col] = 0;
-    if (countSolutions(puzzle) === 1) {
+    if (countSolutions(puzzle) === 1 && stillOk(puzzle)) {
       clues--;
     } else {
-      puzzle[row][col] = saved; // two or more answers now: put it back
+      puzzle[row][col] = saved; // two or more answers, or failed the extra test: put it back
       putBack++;
     }
   }

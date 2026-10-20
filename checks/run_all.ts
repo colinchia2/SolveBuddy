@@ -3,6 +3,8 @@ import { makeFullGrid, isValidSolution } from "../engine/sudoku/fullGrid.ts";
 import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
+import { makeEasy } from "../engine/sudoku/makePuzzle.ts";
+import { existsSync, readFileSync } from "node:fs";
 
 let failed = 0;
 function check(name: string, ok: boolean) {
@@ -46,5 +48,18 @@ const oneHole = grids[1].map((r) => [...r]);
 oneHole[4][4] = 0;
 check("grader: one missing number = Easy", grade(oneHole).level === "Easy");
 check("grader: empty grid is not Easy", grade(empty).level !== "Easy");
+
+// A puzzle is only good if it has one answer, that answer is the saved one, and the easy tricks solve it.
+type Saved = { givens: number[][]; solution: number[][] };
+function goodEasy(p: Saved) {
+  const givensMatch = p.givens.every((row, r) => row.every((n, c) => n === 0 || n === p.solution[r][c]));
+  return isValidSolution(p.solution) && givensMatch && countSolutions(p.givens) === 1 && grade(p.givens).level === "Easy";
+}
+check("maker: 10 new Easy puzzles are all good", Array.from({ length: 10 }, makeEasy).every(goodEasy));
+const packFile = "packs/sudoku9-easy-starter.json";
+if (existsSync(packFile)) {
+  const pack = JSON.parse(readFileSync(packFile, "utf8"));
+  check("saved pack: 5 puzzles, all good", pack.puzzles.length === 5 && pack.puzzles.every(goodEasy));
+}
 
 if (failed) process.exit(1);
