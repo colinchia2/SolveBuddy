@@ -6,7 +6,7 @@ Paste the block below at the end of a session to bring the docs up to date.
 
 Please update the SolveBuddy docs with what we did this session. Keep them accurate and current, with no duplication.
 
-**Repo (`C:\Users\colin\OneDrive\Documents\Python\SolveBuddy`, docs in `docs/01 Primary/`):**
+**Repo (`C:\Users\colin\OneDrive\Documents\Python\Buddies\SolveBuddy`, docs in `docs/01 Primary/`):**
 - `02 Log & Backlog/06_BUILD_LOG.md`: add a dated entry at the top (`## YYYY-MM-DD — title`): what shipped,
   how it was checked, lessons.
 - `01 Start Here/05_PROJECT_STATUS.md`: current state only, about one screen. Don't append history.
