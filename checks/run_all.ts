@@ -2,6 +2,7 @@
 import { makeFullGrid, isValidSolution } from "../engine/sudoku/fullGrid.ts";
 import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { erase } from "../engine/sudoku/erase.ts";
+import { grade } from "../engine/sudoku/grade.ts";
 
 let failed = 0;
 function check(name: string, ok: boolean) {
@@ -33,5 +34,17 @@ const erased = Array.from({ length: 10 }, () => {
   return keepsGivens && countSolutions(puzzle) === 1;
 });
 check("10 erased puzzles each have exactly one answer", erased.every(Boolean));
+
+// Every move the tricks make must match the real answer, or a hint could be wrong.
+const graded = Array.from({ length: 20 }, () => {
+  const solution = makeFullGrid();
+  const g = grade(erase(solution, 30).puzzle);
+  return g.steps.every((s) => solution[s.row][s.col] === s.value);
+});
+check("grader: every trick move in 20 puzzles matches the answer", graded.every(Boolean));
+const oneHole = grids[1].map((r) => [...r]);
+oneHole[4][4] = 0;
+check("grader: one missing number = Easy", grade(oneHole).level === "Easy");
+check("grader: empty grid is not Easy", grade(empty).level !== "Easy");
 
 if (failed) process.exit(1);
