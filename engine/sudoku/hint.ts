@@ -9,7 +9,7 @@
 //    The rule-out picked is the first step of the shortest path (up to MAX_CHAIN) to a number.
 // Each hint has three levels the player clicks through: Nudge → Explain → Show me.
 import { type Grid, fits } from "./fullGrid.ts";
-import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, nextStep } from "./techniques.ts";
+import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -43,11 +43,24 @@ const withStep = (out: RuledOut, step: Step) => {
 
 // Where a ruled-out fact came from: a cell's center marks leaving it out, or a group of marks (a note, the
 // marked cells, and the line they block, shown like blocking numbers).
-type Group = { note: string; cells: Cell[]; line: Cell[] };
+// `why` says it for one cell and number, e.g. "column 6's 2 is at R2C6 or R7C6".
+type Group = { note: string; why: (r: number, c: number, n: number) => string; cells: Cell[]; line: Cell[] };
 type Sources = Map<string, Cell | Group>;
 
+// "R2C6 or R7C6"
+const either = (cells: Cell[]) => list(cells.map((p) => cellName(...p)), "or");
+
 // Add the step's sources to its explanation, e.g. "(Your pencil marks at row 8, column 2 leave out 5.)"
+// A step that says {ruled} gets one short reason per ruled-out number instead, in place.
 function withNotes(step: Step, from: Sources) {
+  if (step.why.includes("{ruled}")) {
+    const reasons = (step.uses ?? []).map(([r, c, n]) => {
+      const src = from.get(`${r},${c},${n}`);
+      const because = !src ? "it's ruled out" : Array.isArray(src) ? "your pencil marks there leave it out" : src.why(r, c, n);
+      return `It can't be ${n}: ${because}.`;
+    });
+    return step.why.replace("{ruled}", [...new Set(reasons)].join(" "));
+  }
   const byCell = new Map<string, number[]>();
   const texts = new Set<string>();
   for (const [r, c, n] of step.uses ?? []) {
@@ -104,6 +117,7 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
         const m = marks[`${q[0]},${q[1]}`];
         if (m[0] !== a || m[1] !== b) continue;
         const g = { note: `Your pencil marks ${a}${b} at ${cellName(...p)} and ${cellName(...q)} make a pair, so no other cell in ${u.label} can be ${a} or ${b}.`,
+          why: () => `your pencil marks ${a}${b} at ${cellName(...p)} and ${cellName(...q)} take the ${a} and ${b} for ${u.label}`,
           cells: [p, q], line: u.cells };
         for (const x of u.cells) if (!same(x, p) && !same(x, q)) add(x[0], x[1], a, g), add(x[0], x[1], b, g);
       }
@@ -122,6 +136,7 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
         note: line
           ? `Your ${n}s marked in box ${b + 1} are all in ${line}. The box's ${n} is one of them, so ${n} can't go in the rest of box ${b + 1} or ${line}.`
           : `Your ${n} marks in box ${b + 1} show where the box's ${n} goes, so ${n} can't go in the rest of box ${b + 1}.`,
+        why: (r: number, c: number) => `your marked ${n}s say ${boxOf(r, c) === b ? `box ${b + 1}` : line}'s ${n} is at ${either(at)}`,
         cells: at,
         line: line ? NUMS.map((_, i) => (sameRow ? [at[0][0], i] : [i, at[0][1]]) as Cell) : box, // shade just the row or column
       };
@@ -149,6 +164,11 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
           const cells = [at(two[a].i, j1), at(two[a].i, j2), at(two[b].i, j1), at(two[b].i, j2)];
           const g = {
             note: `Your ${n}s marked in ${kind}s ${two[a].i + 1} and ${two[b].i + 1} are in ${other}s ${j1 + 1} and ${j2 + 1}. Each ${kind}'s ${n} is one of them, so ${n} can't go anywhere else in ${other}s ${j1 + 1} and ${j2 + 1}.`,
+            // The cell's own column (or row): its N is one of your two marks in it.
+            why: (r: number, c: number) => {
+              const j = byRow ? c : r;
+              return `your marked ${n}s say ${other} ${j + 1}'s ${n} is at ${either(cells.filter((p) => (byRow ? p[1] : p[0]) === j))}`;
+            },
             cells,
             line: [j1, j2].flatMap((j) => NUMS.map((_, i) => at(i, j))),
           };

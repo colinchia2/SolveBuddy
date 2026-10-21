@@ -205,3 +205,11 @@ Newest first.
   places the number. A single corner mark in a box no longer counts as "the box's N is here".
 - Colin: Tricks 1–4 good now. Y-wing (Tricks 6) still writes pencil lists in the cell it clears; see what he says.
 - **Checked:** 35 checks (new: X-wing marks its 4 corners, then a number follows). Browser: Tricks 3 and 5.
+
+## 2026-10-21: "Only number for cell" in two steps when marks are involved
+- Colin (Tricks 5, the 3 hints after the X-wing): "every number except 3 is either already in its row, column or
+  box, or ruled out" was too much at once. Now: "R5C6's row, column and box already have 1, 4, 5, 6, 7, 8 and 9.
+  That leaves 2 or 3. It can't be 2: your marked 2s say column 6's 2 is at R2C6 or R7C6. So it's a 3."
+- How: the step's text has a `{ruled}` slot; `withNotes` fills it with one reason per ruled-out number, from each
+  mark group's new `why(r, c, n)` (pairs, box corner marks, X-wing corner marks, the cell's own pencil marks).
+- **Checked:** 35 checks; Test 5's next 3 hints printed from the engine.

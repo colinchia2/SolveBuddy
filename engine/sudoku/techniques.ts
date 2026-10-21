@@ -128,10 +128,14 @@ function onlyNumber(grid: Grid, out: RuledOut): Step | null {
       const options = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => canGo(grid, out, row, col, n));
       if (options.length !== 1) continue;
       const uses = usedOut(grid, out, [[row, col]], ALL_NUMS);
+      // Two steps when marks are involved (Colin, 10/21: "every number except 3… or ruled out" was too much at once):
+      // what its row, column and box already have, then why the rest are out. The hint fills in {ruled}.
+      const seen = ALL_NUMS.filter((n) => !fits(grid, row, col, n));
+      const left = ALL_NUMS.filter((n) => fits(grid, row, col, n));
       return { technique: "Only number for cell", row, col, value: options[0], focus: peers(row, col), uses,
         nudge: `Which numbers could go at ${cellName(row, col)}?`,
         why: uses.length
-          ? `At ${cellName(row, col)}, every number except ${options[0]} is either already in its row, column or box, or ruled out.`
+          ? `${cellName(row, col)}'s row, column and box already have ${list(seen)}. That leaves ${list(left, "or")}. {ruled} So it's ${options[0] === 8 ? "an" : "a"} ${options[0]}.`
           : `At ${cellName(row, col)}, every number except ${options[0]} is already in its row, column or box.` };
     }
   }
@@ -366,7 +370,7 @@ export function nextStep(grid: Grid, out: RuledOut = new Set(), techniques = ALL
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 // 2, 3 and 9
-const list = (ns: number[]) => (ns.length < 2 ? `${ns.join("")}` : `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`);
+export const list = (ns: (number | string)[], and = "and") => (ns.length < 2 ? `${ns.join("")}` : `${ns.slice(0, -1).join(", ")} ${and} ${ns[ns.length - 1]}`);
 
 // Every cell that shares a row, column or box with this one.
 function peers(row: number, col: number): [number, number][] {
