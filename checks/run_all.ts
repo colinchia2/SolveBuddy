@@ -102,14 +102,15 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
   check(`board-only hints on 10 hard puzzles: no wrong move (${chains} chains, ${pencils} pencil-mark hints)`, bad === 0);
 }
 
-// Trick tests: each has one answer, and following the hints solves it and shows its trick. Expert: graded Expert.
+// Trick tests: each has one answer, its very first hint is its trick (they start at the spot), and following the
+// hints solves it. Expert: graded Expert.
 if (existsSync("packs/sudoku9-tricks.json")) {
   const tests = JSON.parse(readFileSync("packs/sudoku9-tricks.json", "utf8")).puzzles;
   const ok = tests.map((p: Saved & { trick: string }) => {
     const play = playHints(p.givens, p.solution);
-    return countSolutions(p.givens) === 1 && play.solved && tricksShown(play.shown).has(p.trick);
+    return countSolutions(p.givens) === 1 && play.solved && play.shown[0].technique === p.trick;
   });
-  check(`trick tests: ${tests.length} puzzles, each solved by hints and showing its trick`, tests.length === 6 && ok.every(Boolean));
+  check(`trick tests: ${tests.length} puzzles, each opening on its trick and solved by hints`, tests.length === 6 && ok.every(Boolean));
 }
 if (existsSync("packs/sudoku9-expert.json")) {
   const ex = JSON.parse(readFileSync("packs/sudoku9-expert.json", "utf8")).puzzles[0];

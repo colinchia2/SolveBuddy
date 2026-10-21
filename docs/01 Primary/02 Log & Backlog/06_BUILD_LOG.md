@@ -152,3 +152,9 @@ Newest first.
 ## 2026-10-20 — Project set up
 - Took over from a Claude Chat agent. Unzipped its handoff into `docs/02 Hand-off from Chat/`.
 - Created the docs layout (same shape as CheckBuddy). Local git repo started.
+
+## 2026-10-21: Trick tests start at the trick
+- Colin couldn't find Pairs, Hidden pairs, X-wing or Y-wing: each showed up only 11–23 hints in.
+- The maker now fills in the easy numbers first, so each test's very first hint is its trick. Pairs needed
+  a new puzzle (the old one always needed Pointing first). The Expert puzzle is left as it was.
+- Check updated: each trick test opens on its trick. 34 checks pass.
