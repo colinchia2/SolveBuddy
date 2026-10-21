@@ -4,6 +4,7 @@ import { hint as findHint } from "/engine/sudoku/hint.ts";
 const PACKS = {
   easy: await (await fetch("/packs/sudoku9-easy-starter.json")).json(),
   medium: await (await fetch("/packs/sudoku9-medium.json")).json(),
+  hard: await (await fetch("/packs/sudoku9-hard.json")).json(),
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
@@ -134,10 +135,11 @@ function advanceHint() {
     if (d.remove) {
       for (const [r, c] of d.remove) {
         const k = key(r, c);
-        s.ruledOut.add(`${k},${d.value}`);
+        const values = d.values || [d.value];
+        for (const v of values) s.ruledOut.add(`${k},${v}`);
         for (const map of [s.corner, s.center]) {
           if (!map[k]) continue;
-          map[k] = map[k].filter((n) => n !== d.value);
+          map[k] = map[k].filter((n) => !values.includes(n));
           if (!map[k].length) delete map[k];
         }
       }

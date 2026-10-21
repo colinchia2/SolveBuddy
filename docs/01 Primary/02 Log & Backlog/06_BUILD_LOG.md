@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 2: Pairs (+ 1 Hard puzzle)
+- **Pairs** (`techniques.ts`): two empty cells in a row, column or box that can each only be the same two numbers
+  take both, so those numbers are ruled out of the rest of the unit. Steps can now rule out several numbers
+  (`values`). Grades: Easy → Medium (Pointing) → Hard (Pairs) → "Harder than Hard".
+- **Survey** (100 fully erased): Easy 39, Medium 11, Hard 3, harder 47. Pairs alone unlocks few puzzles; more
+  tricks are needed before Expert.
+- **1 Hard puzzle** (`makeLevel("Hard")`, `scripts/sudoku_make_hard.ts` → `packs/sudoku9-hard.json`, "Hard: 1").
+- **Checked:** 30 checks (Pairs is in the "every move matches the answer" check; hints alone solve the Hard
+  puzzle). Browser: pair ringed, cleared cell striped.
+
 ## 2026-10-20 — Expert Sudoku, trick 1: Pointing (+ 1 Medium puzzle)
 - **Pointing** (`engine/sudoku/techniques.ts`): in a box, if every spot for a number is in one row/column, the
   number is ruled out of the rest of that line. First trick that rules out instead of placing, so the engine

@@ -1,9 +1,9 @@
 // Step 3 of making a Sudoku: solve it like a person would, using the tricks in techniques.ts.
-// The grade is the easiest set of tricks that finishes it: Easy, then Medium (adds Pointing).
+// The grade is the easiest set of tricks that finishes it: Easy, then Medium (adds Pointing), then Hard (adds Pairs).
 import { type Grid } from "./fullGrid.ts";
-import { nextStep, applyStep, type Step, type RuledOut, EASY_TECHNIQUES, MEDIUM_TECHNIQUES } from "./techniques.ts";
+import { nextStep, applyStep, type Step, type RuledOut, EASY_TECHNIQUES, MEDIUM_TECHNIQUES, HARD_TECHNIQUES } from "./techniques.ts";
 
-export type Level = "Easy" | "Medium" | "Harder than Medium";
+export type Level = "Easy" | "Medium" | "Hard" | "Harder than Hard";
 
 export type Grade = {
   level: Level;
@@ -11,7 +11,7 @@ export type Grade = {
   stuckWith: number; // empty cells left when the tricks ran out (0 = solved)
 };
 
-export function solveWith(puzzle: Grid, techniques = MEDIUM_TECHNIQUES) {
+export function solveWith(puzzle: Grid, techniques = HARD_TECHNIQUES) {
   const grid = puzzle.map((row) => [...row]);
   const out: RuledOut = new Set();
   const steps: Step[] = [];
@@ -27,5 +27,7 @@ export function grade(puzzle: Grid): Grade {
   const easy = solveWith(puzzle, EASY_TECHNIQUES);
   if (!easy.stuckWith) return { level: "Easy", ...easy };
   const medium = solveWith(puzzle, MEDIUM_TECHNIQUES);
-  return { level: medium.stuckWith ? "Harder than Medium" : "Medium", ...medium };
+  if (!medium.stuckWith) return { level: "Medium", ...medium };
+  const hard = solveWith(puzzle, HARD_TECHNIQUES);
+  return { level: hard.stuckWith ? "Harder than Hard" : "Hard", ...hard };
 }

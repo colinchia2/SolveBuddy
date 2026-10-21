@@ -9,6 +9,7 @@ export type Step = {
   value: number;
   // Harder tricks don't place a number: they rule `value` out of these cells instead (row/col = the first one).
   remove?: [number, number][];
+  values?: number[]; // when it rules out more than one number (Pairs); otherwise just `value`
   spots?: [number, number][]; // Pointing: the cells in the box where the number can still go (ringed in a hint)
   focus: [number, number][]; // cells to highlight (the row, column or box the trick looks at)
   // The placed numbers that block the other cells, each with the row, column or box it blocks through
@@ -53,7 +54,7 @@ const canGo = (grid: Grid, out: RuledOut, r: number, c: number, n: number) =>
 
 // Apply a step: place its number, or remember what it ruled out.
 export function applyStep(grid: Grid, out: RuledOut, step: Step) {
-  if (step.remove) for (const [r, c] of step.remove) out.add(outKey(r, c, step.value));
+  if (step.remove) for (const [r, c] of step.remove) for (const n of step.values ?? [step.value]) out.add(outKey(r, c, n));
   else grid[step.row][step.col] = step.value;
 }
 
@@ -157,10 +158,38 @@ function pointing(grid: Grid, out: RuledOut): Step | null {
   return null;
 }
 
+// 5. (Hard) Pairs: two empty cells in a row, column or box can each only hold the same two numbers. They take
+//    those two numbers between them, so no other cell in that unit can hold either one.
+function pairs(grid: Grid, out: RuledOut): Step | null {
+  for (const unit of UNITS) {
+    const two = unit.cells
+      .filter(([r, c]) => grid[r][c] === 0)
+      .map((p) => ({ p, opts: [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => canGo(grid, out, p[0], p[1], n)) }))
+      .filter((x) => x.opts.length === 2);
+    for (let i = 0; i < two.length; i++) {
+      for (let j = i + 1; j < two.length; j++) {
+        const [a, b] = two[i].opts;
+        if (two[j].opts[0] !== a || two[j].opts[1] !== b) continue;
+        const pair = [two[i].p, two[j].p];
+        const remove = unit.cells.filter(([r, c]) => !pair.some(([x, y]) => x === r && y === c)
+          && (canGo(grid, out, r, c, a) || canGo(grid, out, r, c, b)));
+        if (!remove.length) continue;
+        const [p, q] = pair;
+        return { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
+          focus: unit.cells,
+          nudge: `Look for two cells in ${unit.label} that can only hold the same two numbers.`,
+          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.` };
+      }
+    }
+  }
+  return null;
+}
+
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
 export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing];
-export const ALL_TECHNIQUES = MEDIUM_TECHNIQUES;
+export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs];
+export const ALL_TECHNIQUES = HARD_TECHNIQUES;
 
 // Next move using the easiest trick that works, or null if none of them do.
 export function nextStep(grid: Grid, out: RuledOut = new Set(), techniques = ALL_TECHNIQUES): Step | null {

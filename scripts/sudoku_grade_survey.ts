@@ -5,11 +5,12 @@ import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
 
 const tally: Record<string, number> = {};
-let pointingUsed = 0;
+let pointingUsed = 0, pairsUsed = 0;
 for (let i = 0; i < 100; i++) {
   const g = grade(erase(makeFullGrid(), 0).puzzle);
   tally[g.level] = (tally[g.level] || 0) + 1;
   if (g.steps.some((s) => s.technique === "Pointing")) pointingUsed++;
+  if (g.steps.some((s) => s.technique === "Pairs")) pairsUsed++;
 }
 console.log(tally);
-console.log(`Puzzles where Pointing was used: ${pointingUsed}`);
+console.log(`Puzzles where Pointing was used: ${pointingUsed} · Pairs: ${pairsUsed}`);

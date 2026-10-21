@@ -27,19 +27,23 @@ export function makeEasy(): Puzzle {
   }
 }
 
-// Medium: same idea, erasing further, but the puzzle must need Pointing (at least `minPointing` times).
+// Medium / Hard: same idea, erasing further, but the puzzle must be exactly that level and use its new trick
+// (Pointing for Medium, Pairs for Hard) at least `minUses` times.
 export const MEDIUM_CLUES = 26;
-export function makeMedium(minPointing = 2): Puzzle {
+const NEW_TRICK = { Medium: "Pointing", Hard: "Pairs" } as const;
+const UP_TO = { Medium: ["Easy", "Medium"], Hard: ["Easy", "Medium", "Hard"] };
+export function makeLevel(level: "Medium" | "Hard", minUses = 2): Puzzle {
   for (;;) {
     const solution = makeFullGrid();
-    const { puzzle } = erase(solution, MEDIUM_CLUES, (p) => spread(p).min >= EASY_MIN_PER && grade(p).level !== "Harder than Medium");
+    const { puzzle } = erase(solution, MEDIUM_CLUES, (p) => spread(p).min >= EASY_MIN_PER && UP_TO[level].includes(grade(p).level));
     const g = grade(puzzle);
-    if (g.level !== "Medium" || spread(puzzle).max > EASY_MAX_PER) continue;
-    if (g.steps.filter((s) => s.technique === "Pointing").length < minPointing) continue;
+    if (g.level !== level || spread(puzzle).max > EASY_MAX_PER) continue;
+    if (g.steps.filter((s) => s.technique === NEW_TRICK[level]).length < minUses) continue;
     return { givens: puzzle, solution, clues: puzzle.flat().filter((n) => n !== 0).length,
       techniquesUsed: [...new Set(g.steps.map((s) => s.technique))] };
   }
 }
+export const makeMedium = (minPointing = 2) => makeLevel("Medium", minPointing);
 
 // Fewest and most numbers showing in any row, column or box.
 export function spread(grid: Grid): { min: number; max: number } {

@@ -12,6 +12,7 @@ export type Hint = {
   target: [number, number] | null; // the one cell the hint is about (shown from Explain on)
   value: number; // what "Show me" places (0 = clear the cell), or the number it rules out
   remove: [number, number][] | null; // harder tricks: rule `value` out of these cells instead of placing it
+  values?: number[]; // ...or all of these numbers (Pairs)
   spots?: [number, number][]; // cells ringed from Explain on (e.g. where Pointing's number can still go)
   blockers?: { cell: [number, number]; line: [number, number][] }[]; // numbers that block the other cells (blue)
   nudge: string;
@@ -41,8 +42,9 @@ export function hint(board: Grid, solution: Grid, out: RuledOut = new Set()): Hi
   if (step.remove) {
     const k = step.remove.length;
     return {
-      kind: "step", technique: step.technique, focus: step.focus, target: null, value: step.value, remove: step.remove, spots: step.spots, blockers: step.blockers,
-      nudge: step.nudge, explain: step.why, showMe: `${step.value} is ruled out of ${k === 1 ? "1 cell" : `${k} cells`}.`,
+      kind: "step", technique: step.technique, focus: step.focus, target: null, value: step.value, values: step.values, remove: step.remove, spots: step.spots, blockers: step.blockers,
+      nudge: step.nudge, explain: step.why,
+      showMe: `${step.values ? step.values.join(" and ") + " are" : `${step.value} is`} ruled out of ${k === 1 ? "1 cell" : `${k} cells`}.`,
     };
   }
   return {
