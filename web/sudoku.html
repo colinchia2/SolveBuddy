@@ -21,6 +21,11 @@
   .cell .v.wrong { color: var(--conflict-star); }
   .cell .ctr { font-size: 10px; font-weight: 600; letter-spacing: -0.02em; color: var(--pencil); }
   .cell .cn { position: absolute; font-size: 9px; font-weight: 600; line-height: 1; color: var(--pencil); }
+  /* Hint: the row or column a blocking number blocks through, drawn across the whole line. */
+  .cell .bar { position: absolute; background: var(--sel-ring); opacity: 0.45; pointer-events: none; }
+  .cell .bar-h { left: -1px; right: -3px; top: calc(50% - 2px); height: 4px; }
+  .cell .bar-v { top: -1px; bottom: -3px; left: calc(50% - 2px); width: 4px; }
+  .cell .v, .cell .ctr { position: relative; }
 
   .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; padding: 4px; border-radius: 14px; }
   .seg { min-height: 48px; border-radius: 10px; border: none; background: transparent; display: flex; flex-direction: column;

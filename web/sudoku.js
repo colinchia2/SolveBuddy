@@ -133,13 +133,7 @@ function advanceHint() {
   if (h.level === 3) {
     saveUndo();
     const d = h.data;
-    // Show me, a chain: play each rule-out on the board first (Next), then place the number.
-    if (d.chain) {
-      undoStack.pop();
-      h.play = 0;
-      return render();
-    }
-    // Show me, a lone rule-out: write it into pencil marks so it's on the board for the next hint.
+    // Show me, a rule-out: write it into pencil marks so it's on the board for the next hint.
     if (d.pencil) {
       for (const { cell, marks } of d.pencil) {
         const k = key(...cell);
@@ -150,16 +144,6 @@ function advanceHint() {
       return render();
     }
     placeHint(d);
-  }
-  render();
-}
-// Next during a chain play-through: one more step, then the number goes in.
-function advancePlay(h) {
-  if (h.play < h.data.chain.length) h.play++;
-  else {
-    h.play = null;
-    saveUndo();
-    placeHint(h.data);
   }
   render();
 }
@@ -176,18 +160,26 @@ function placeHint(d) {
 
 function render() {
   const h = s.hint;
-  // What the board shows for the hint: its own cells, or the current step of a chain play-through.
-  const step = h?.play != null ? (h.play < h.data.chain.length ? h.data.chain[h.play]
-    : { ...h.data.place, last: true, spots: h.data.chain.flatMap((c) => c.spots ?? []) }) : h?.data; // last step keeps the chain's cells ringed
+  const step = h?.data;
   const shown = h && h.level >= 2;
   const focus = new Set(step ? step.focus.map(([r, c]) => key(r, c)) : []);
-  const target = shown && h.data.target && (h.play == null || step.last) ? key(...h.data.target) : null;
+  const target = shown && h.data.target ? key(...h.data.target) : null;
   const striped = new Set(shown && step.remove ? step.remove.map(([r, c]) => key(r, c)) : []);
   const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
-  // From Explain on: the numbers that block the other cells (blue), and the line each blocks through (light blue).
+  // From Explain on: the numbers that block the other cells (blue), and the line each blocks through: a blue bar
+  // across the whole row or column (drawn over the hint's own shading so it stays visible), or a tint for a box.
   const blockers = shown && step.blockers ? step.blockers : [];
   const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
-  const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
+  const bars = new Map(); // cell → "h" and/or "v"
+  const blockBoxes = new Set();
+  for (const { cell: [br, bc], line } of blockers) {
+    for (const [r, c] of line) {
+      if (r === br && c === bc) continue; // the blocking number itself is outlined instead
+      const dir = r === br ? "h" : c === bc ? "v" : null;
+      if (dir) bars.set(key(r, c), (bars.get(key(r, c)) ?? "") + dir);
+      else blockBoxes.add(key(r, c));
+    }
+  }
   const [sr, sc] = s.sel || [-1, -1];
   const selVal = s.sel ? valueAt(sr, sc) : 0;
 
@@ -206,18 +198,18 @@ function render() {
       if (same) bg = "var(--same)";
       if (wrong) bg = "var(--conflict-cell)";
       if (isSel) bg = "var(--sel)";
-      if (blockLines.has(k)) bg = "color-mix(in srgb, var(--same) 55%, var(--board))";
+      if (blockBoxes.has(k)) bg = "color-mix(in srgb, var(--same) 55%, var(--board))";
       if (focus.has(k)) bg = "var(--accent-soft)";
       if (blockerCells.has(k)) bg = "var(--same)";
       if (k === target) bg = "var(--accent-mid)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
       const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--sel-ring)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
-      let inner = "";
+      let inner = [...(bars.get(k) ?? "")].map((d) => `<span class="bar bar-${d}"></span>`).join("");
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
-        inner = `<span class="${cls}">${v}</span>`;
+        inner += `<span class="${cls}">${v}</span>`;
       } else if (s.center[k]) {
-        inner = `<span class="ctr">${s.center[k].join("")}</span>`;
+        inner += `<span class="ctr">${s.center[k].join("")}</span>`;
       }
       if (!v && s.corner[k]) inner += s.corner[k].map((d, i) => `<span class="cn" style="${CORNER_POS[i]}">${d}</span>`).join("");
       const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : ""].join(" ");
@@ -238,17 +230,12 @@ function render() {
     $("hintChip").textContent = d.technique;
     $("hintChip").hidden = !d.technique || h.level === 1;
     [1, 2, 3].forEach((n) => $("d" + n).classList.toggle("on", h.level >= n));
-    let text = [
+    const text = [
       [d.nudge, ""],
       [d.nudge, d.explain],
       [d.showMe, d.explain],
     ][stuck ? 1 : h.level - 1];
-    let next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
-    if (h.play != null) {
-      const k = d.chain.length;
-      text = step.last ? [`So it's ${d.value === 8 ? "an" : "a"} ${d.value}.`, step.why] : [`Step ${h.play + 1} of ${k + 1}`, step.why];
-      next = step.last ? "Place it" : "Next";
-    }
+    const next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
     $("hintTitle").textContent = text[0];
     $("hintBody").textContent = text[1];
     $("hintBody").hidden = !text[1];
@@ -315,7 +302,7 @@ $("undoBtn").onclick = () => {
 $("restartBtn").onclick = () => load(idx);
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
-$("hintNext").onclick = () => (s.hint.play != null ? advancePlay(s.hint) : advanceHint());
+$("hintNext").onclick = advanceHint;
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 $("nextPuzzle").onclick = () => load(idx + 1);

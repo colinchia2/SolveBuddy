@@ -53,7 +53,7 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
   check(`${level} pack: one answer, graded ${level}`, countSolutions(m.givens) === 1 && grade(m.givens).level === level);
   const b = m.givens.map((r: number[]) => [...r]);
   const marks: Record<string, number[]> = {};
-  let ok = true, chains = 0, pencils = 0;
+  let ok = true, pencils = 0;
   const sound = (cells: [number, number][], values: number[]) => cells.every(([r, c]) => !values.includes(m.solution[r][c]));
   for (let i = 0; i < 200 && ok; i++) {
     const h = hint(b, m.solution, marks);
@@ -64,20 +64,19 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
       h.pencil.forEach((p) => (marks[`${p.cell[0]},${p.cell[1]}`] = p.marks));
       continue;
     }
-    if (h.chain) chains++, (ok = h.chain.every((s) => sound(s.remove!, s.values!)));
     const [r, c] = h.target!;
     ok &&= h.value === m.solution[r][c];
     b[r][c] = h.value;
     delete marks[`${r},${c}`];
   }
-  check(`${level}: hints alone solve it from the board only (${chains} chains, ${pencils} pencil-mark hints)`,
+  check(`${level}: hints alone solve it from the board only (${pencils} pencil-mark hints)`,
     ok && b.every((row: number[], r: number) => row.every((v, c) => v === m.solution[r][c])));
 }
 
 // On hard random puzzles, keep tapping Show me (numbers + pencil marks only) until solved or stuck:
 // every number right, every rule-out true, every pencil mark keeps the answer.
 {
-  let bad = 0, pencils = 0, chains = 0;
+  let bad = 0, pencils = 0;
   for (let i = 0; i < 10; i++) {
     const sol = makeFullGrid();
     const b = erase(sol, 0).puzzle;
@@ -88,18 +87,18 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
       if (h.kind !== "step") { bad += h.kind === "mistake" ? 1 : 0; break; }
       if (h.pencil) {
         pencils++;
+        if (h.target) bad++; // a trick hint never shows the answer cell; the number is the next hint (Colin, 10/21)
         if (!sound(h.remove!, h.values!) || !h.pencil.every((p) => p.marks.includes(sol[p.cell[0]][p.cell[1]]))) bad++;
         h.pencil.forEach((p) => (marks[`${p.cell[0]},${p.cell[1]}`] = p.marks));
         continue;
       }
-      if (h.chain) chains++, (bad += h.chain.every((s) => sound(s.remove!, s.values!)) ? 0 : 1);
       const [r, c] = h.target!;
       if (sol[r][c] !== h.value) bad++;
       b[r][c] = h.value;
       delete marks[`${r},${c}`];
     }
   }
-  check(`board-only hints on 10 hard puzzles: no wrong move (${chains} chains, ${pencils} pencil-mark hints)`, bad === 0);
+  check(`board-only hints on 10 hard puzzles: no wrong move (${pencils} pencil-mark hints)`, bad === 0);
 }
 
 // Trick tests: each has one answer, its very first hint is its trick (they start at the spot), and following the

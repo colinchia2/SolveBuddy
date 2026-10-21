@@ -8,9 +8,11 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Done too:** 1 Expert Star Battle (`packs/starbattle8-expert.json`). Colin played it through: What if hints
   play out step by step on the board, and wrong-star hints say why. He liked it.
 - **Expert Sudoku (10/20):** 6 harder tricks built (Pointing, Claiming, Pairs, Hidden pairs, X-wing, Y-wing).
-  Hints only use what's on the board (numbers + center pencil marks) and play short chains. Test page has
-  Medium 1, Hard 1, Expert 1 and Tricks 1–6 (one per trick).
-- **Next step:** Colin clicks through Tricks 1–6 and Expert 1 and gives feedback.
+  Hints only use what's on the board (numbers + center pencil marks). A trick hint writes pencil marks;
+  the next hint places the number (10/21). Test page has Medium 1, Hard 1, Expert 1 and Tricks 1–6
+  (one per trick, each starting right at its trick).
+- **Next step:** Colin redoes Tricks 1–4 with the two-hint version, then 5, 6 and Expert 1. Go through
+  anything confusing one test at a time.
 - **New ideas parked (10/20):** screenshot import, Water Sort, two-star Star Battle, a block-dropping game.
   Flow Free is a no. See the backlog's "New ideas". Don't start them until Colin picks one.
 - **Open questions:** the backlog's list, one at a time, when Colin is ready.

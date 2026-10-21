@@ -158,3 +158,12 @@ Newest first.
 - The maker now fills in the easy numbers first, so each test's very first hint is its trick. Pairs needed
   a new puzzle (the old one always needed Pointing first). The Expert puzzle is left as it was.
 - Check updated: each trick test opens on its trick. 34 checks pass.
+
+## 2026-10-21: A trick and its number are two hints
+- Colin clicked through Tests 1–4 and got lost: the answer cell lit up while he was still reading about the
+  pair, the pair was never written down, and the blue blocking lines were too faint to see.
+- Now a trick hint never shows an answer cell. Its Show me writes pencil marks (e.g. "8 9" in a hidden pair,
+  the pair plus cleared cells for Pairs, the three cells for Y-wing). The next hint reads those marks and
+  places the number. The chain play-through ("Step 1 of 2") is gone.
+- Blocking numbers draw a solid blue bar along the whole row or column they block (a tint for a box).
+- New check: a rule-out hint never points at an answer cell. 34 checks pass.
