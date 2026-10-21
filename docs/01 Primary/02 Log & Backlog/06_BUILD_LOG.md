@@ -167,3 +167,14 @@ Newest first.
   places the number. The chain play-through ("Step 1 of 2") is gone.
 - Blocking numbers draw a solid blue bar along the whole row or column they block (a tint for a box).
 - New check: a rule-out hint never points at an answer cell. 34 checks pass.
+
+## 2026-10-21: Trick hints mark only the trick's own cells
+- Colin: the blue bars looked odd, and Pointing's pencil marks (167, 1678, 467 in the cleared cells) looked
+  like the wrong spots. He expected a 5 in the two highlighted cells.
+- Blocked lines are a light-blue shade again (now shown over the hint's own shading).
+- Pointing/Claiming write the number as a corner mark in the cells where it can go. Pairs/Hidden pairs write
+  the two numbers in the pair only. X-wing/Y-wing still write what's left in the cells they clear.
+- Hints now read corner marks the usual way ("this box's N is in one of these cells"), only when they're right
+  (wrong ones are ignored, not flagged), and a pair of matching two-number center marks. The next hint outlines
+  those marks and shades the line they block, and says so in its explanation.
+- Dropped "so the next hint can use them" from Show me. 34 checks pass.

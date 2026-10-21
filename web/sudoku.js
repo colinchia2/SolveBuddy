@@ -1,5 +1,5 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
-import { hint as findHint } from "/engine/sudoku/hint.ts";
+import { hint as findHint, writeMarks } from "/engine/sudoku/hint.ts";
 
 const PACKS = {
   easy: await (await fetch("/packs/sudoku9-easy-starter.json")).json(),
@@ -119,7 +119,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hint = { data: findHint(board(), s.solution, s.center), level: 1 };
+  s.hint = { data: findHint(board(), s.solution, s.center, s.corner), level: 1 };
   render();
 }
 function advanceHint() {
@@ -134,10 +134,10 @@ function advanceHint() {
     saveUndo();
     const d = h.data;
     // Show me, a rule-out: write it into pencil marks so it's on the board for the next hint.
-    if (d.pencil) {
-      for (const { cell, marks } of d.pencil) {
-        const k = key(...cell);
-        s.center[k] = marks;
+    if (!d.target) {
+      writeMarks(d, s.center, s.corner);
+      for (const { cell, marks } of d.pencil ?? []) {
+        const k = key(...cell); // corner marks that the new center marks rule out go away
         if (s.corner[k]) s.corner[k] = s.corner[k].filter((n) => marks.includes(n));
         if (!s.corner[k]?.length) delete s.corner[k];
       }

@@ -59,10 +59,14 @@ Top item = what's next.
   a hidden "earlier step". Prefer hints that end in a placed number; if it needs rule-outs first, Show me plays
   the short chain (up to 3) step by step. If no short chain exists, give one rule-out and write it into pencil
   marks so it's visible. Why: "an earlier step that I didn't see... then I don't know that." Corner marks are
-  not read by hints (they don't mean "this cell is one of these").
+  not read as "this cell is one of these" (see 10/21: they're read as "this box's N is in one of these").
 - 10/21 (Colin): **a trick and the number it leads to are two separate hints.** The trick hint writes its
   result into pencil marks and shows no answer cell; the next hint uses those marks to place the number.
   Why: one hint that jumped from the pair to a number in another box was hard to follow.
+- 10/21 (Colin): **a trick hint's pencil marks go only in the trick's own cells** (a 5 in the two cells where
+  5 can go; the pair's two numbers), never full lists in the cells it clears. Hints read corner marks as "this
+  box's N is in one of these" when they're right. Why: "be careful with pencil marks, that would be confusing."
+  X-wing / Y-wing still write full lists in cleared cells; revisit when Colin plays Tests 5–6.
 - 10/20: design-checker warnings about Inter, glass borders and nested cards are left as-is, because they
   come from the approved mockups.
 

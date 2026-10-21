@@ -12,7 +12,7 @@ function skipTo(givens: Grid, solution: Grid, trick: string) {
   const b = givens.map((r) => [...r]);
   for (let i = 0; i < 81; i++) {
     const h = hint(b, solution);
-    if (h.kind !== "step" || h.pencil && h.technique !== trick) return null;
+    if (h.kind !== "step" || !h.target && h.technique !== trick) return null;
     if (h.technique === trick) return playHints(b, solution).solved ? b : null;
     b[h.target![0]][h.target![1]] = h.value;
   }

@@ -1,16 +1,18 @@
 // The Hint button. Looks only at what's on the board right now (Colin, 10/20: a hint must never lean on
-// something you can't see): your numbers, plus your center pencil marks ("this cell is one of these").
+// something you can't see): your numbers, your center pencil marks ("this cell is one of these"), and your corner
+// marks read the usual way ("this box's N is in one of these cells"), used only when they're right.
 // 1. Mistakes first: a wrong number, or pencil marks that leave out the right number.
 // 2. A number you can place right now.
-// 3. Otherwise one rule-out (a trick), and Show me writes it into your pencil marks. The next hint reads those
-//    marks and places the number. Colin, 10/21: the trick and the number are two hints, never one jump.
+// 3. Otherwise one rule-out (a trick), and Show me writes it into your pencil marks: just the cells the trick is
+//    about (Colin, 10/21: a 5 in the two cells where 5 can go, not every number in the other cells). The next
+//    hint reads those marks and places the number. The trick and the number are two hints, never one jump.
 //    The rule-out picked is the first step of the shortest path (up to MAX_CHAIN) to a number.
 // Each hint has three levels the player clicks through: Nudge → Explain → Show me.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, nextStep } from "./techniques.ts";
 
 type Cell = [number, number];
-export type Marks = Record<string, number[]>; // "row,col" → center pencil marks
+export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
 export const MAX_CHAIN = 3;
 
 export type Hint = {
@@ -24,6 +26,7 @@ export type Hint = {
   spots?: Cell[]; // ringed from Explain on (e.g. where Pointing's number can still go)
   blockers?: Step["blockers"]; // numbers that block the other cells (blue)
   pencil?: { cell: Cell; marks: number[] }[]; // a rule-out: Show me writes these center pencil marks
+  corner?: { cells: Cell[]; n: number }; // a rule-out: Show me adds `n` as a corner mark in these cells
   nudge: string;
   explain: string;
   showMe: string;
@@ -38,22 +41,93 @@ const withStep = (out: RuledOut, step: Step) => {
   return next;
 };
 
-// Say where each ruled-out fact a step relies on came from: your pencil marks, or a step earlier in this hint.
-function withNotes(step: Step, fromMarks: RuledOut) {
-  const notes: string[] = [];
-  const byCell = new Map<string, number[]>(); // from your pencil marks, grouped by cell
-  const byNum = new Map<number, string[]>(); // from earlier in this hint, grouped by number
+// Where a ruled-out fact came from: a cell's center marks leaving it out, or a group of marks (a note, the
+// marked cells, and the line they block, shown like blocking numbers).
+type Group = { note: string; cells: Cell[]; line: Cell[] };
+type Sources = Map<string, Cell | Group>;
+
+// Add the step's sources to its explanation, e.g. "(Your pencil marks at row 8, column 2 leave out 5.)"
+function withNotes(step: Step, from: Sources) {
+  const byCell = new Map<string, number[]>();
+  const texts = new Set<string>();
   for (const [r, c, n] of step.uses ?? []) {
-    if (fromMarks.has(`${r},${c},${n}`)) byCell.set(`${r},${c}`, [...(byCell.get(`${r},${c}`) ?? []), n]);
-    else byNum.set(n, [...(byNum.get(n) ?? []), cellName(r, c)]);
+    const src = from.get(`${r},${c},${n}`);
+    if (src && !Array.isArray(src)) texts.add(src.note);
+    else if (src) byCell.set(`${src[0]},${src[1]}`, [...(byCell.get(`${src[0]},${src[1]}`) ?? []), n]);
   }
-  for (const [k, ns] of byCell) {
+  const notes = [...byCell].map(([k, ns]) => {
     const [r, c] = k.split(",").map(Number);
-    notes.push(`Your pencil marks at ${cellName(r, c)} leave out ${ns.join(" and ")}.`);
-  }
-  const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join("; ")} and ${xs.at(-1)}` : xs[0]);
-  for (const [n, cells] of byNum) notes.push(`${n} was ruled out of ${list(cells)} earlier in this hint.`);
+    return `Your pencil marks at ${cellName(r, c)} leave out ${ns.join(" and ")}.`;
+  });
+  notes.push(...texts);
   return notes.length ? `${step.why} (${notes.join(" ")})` : step.why;
+}
+
+// The step's blocking numbers, plus any groups of marks it relies on (outlined, with the line they block).
+function blockersWith(step: Step, from: Sources): Step["blockers"] {
+  const groups = new Set<Group>();
+  for (const [r, c, n] of step.uses ?? []) {
+    const src = from.get(`${r},${c},${n}`);
+    if (src && !Array.isArray(src)) groups.add(src);
+  }
+  return [...(step.blockers ?? []), ...[...groups].flatMap((g) => g.cells.map((cell) => ({ cell, line: g.line })))];
+}
+
+const boxOf = (r: number, c: number) => Math.floor(r / 3) * 3 + Math.floor(c / 3);
+const boxCells = (b: number) => NUMS.map((_, i) => [Math.floor(b / 3) * 3 + Math.floor(i / 3), (b % 3) * 3 + (i % 3)] as Cell);
+const UNITS = [
+  ...NUMS.map((_, i) => ({ label: `row ${i + 1}`, cells: NUMS.map((_, j) => [i, j] as Cell) })),
+  ...NUMS.map((_, i) => ({ label: `column ${i + 1}`, cells: NUMS.map((_, j) => [j, i] as Cell) })),
+  ...NUMS.map((_, i) => ({ label: `box ${i + 1}`, cells: boxCells(i) })),
+];
+
+// What groups of marks say, beyond each cell on its own:
+// - Two cells in a row, column or box whose center marks are the same two numbers: no other cell there has them.
+// - Corner marks for N in a box: the box's N is in one of those cells (used only if that's right), so N can't go
+//   in the box's other cells, and if they're all in one row or column, nowhere else in that line either.
+function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, out: RuledOut, from: Sources) {
+  const add = (r: number, c: number, n: number, g: Group) => {
+    if (board[r][c] !== 0 || out.has(`${r},${c},${n}`)) return;
+    out.add(`${r},${c},${n}`);
+    from.set(`${r},${c},${n}`, g);
+  };
+  const same = (p: Cell, q: Cell) => p[0] === q[0] && p[1] === q[1];
+  for (const u of UNITS) {
+    const two = u.cells.filter(([r, c]) => board[r][c] === 0 && marks[`${r},${c}`]?.length === 2);
+    for (let i = 0; i < two.length; i++) {
+      for (let j = i + 1; j < two.length; j++) {
+        const [p, q] = [two[i], two[j]];
+        const [a, b] = marks[`${p[0]},${p[1]}`];
+        const m = marks[`${q[0]},${q[1]}`];
+        if (m[0] !== a || m[1] !== b) continue;
+        const g = { note: `Your pencil marks ${a}${b} at ${cellName(...p)} and ${cellName(...q)} make a pair, so no other cell in ${u.label} can be ${a} or ${b}.`,
+          cells: [p, q], line: u.cells };
+        for (const x of u.cells) if (!same(x, p) && !same(x, q)) add(x[0], x[1], a, g), add(x[0], x[1], b, g);
+      }
+    }
+  }
+  for (let b = 0; b < 9; b++) {
+    const box = boxCells(b);
+    for (const n of NUMS) {
+      const at = box.filter(([r, c]) => board[r][c] === 0 && corners[`${r},${c}`]?.includes(n));
+      if (!at.length || !at.some(([r, c]) => solution[r][c] === n)) continue;
+      const sameRow = at.length > 1 && at.every((p) => p[0] === at[0][0]);
+      const sameCol = at.length > 1 && at.every((p) => p[1] === at[0][1]);
+      const line = sameRow ? `row ${at[0][0] + 1}` : sameCol ? `column ${at[0][1] + 1}` : "";
+      const g = {
+        note: line
+          ? `Your ${n}s marked in box ${b + 1} are all in ${line}. The box's ${n} is one of them, so ${n} can't go in the rest of box ${b + 1} or ${line}.`
+          : `Your ${n} marks in box ${b + 1} show where the box's ${n} goes, so ${n} can't go in the rest of box ${b + 1}.`,
+        cells: at,
+        line: line ? NUMS.map((_, i) => (sameRow ? [at[0][0], i] : [i, at[0][1]]) as Cell) : box, // shade just the row or column
+      };
+      for (const x of box) if (!at.some((p) => same(p, x))) add(x[0], x[1], n, g);
+      for (let i = 0; i < 9; i++) {
+        if (sameRow && boxOf(at[0][0], i) !== b) add(at[0][0], i, n, g);
+        if (sameCol && boxOf(i, at[0][1]) !== b) add(i, at[0][1], n, g);
+      }
+    }
+  }
 }
 
 // Shortest list of rule-outs after which a number can be placed. Breadth first, so every step is needed.
@@ -79,8 +153,8 @@ function findChain(grid: Grid, out: RuledOut) {
   return null;
 }
 
-// `board` = givens plus the player's numbers (0 = empty). `marks` = the player's center pencil marks.
-export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
+// `board` = givens plus the player's numbers (0 = empty). `marks` / `corners` = the player's center / corner marks.
+export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Marks = {}): Hint {
   const none = { remove: null, value: 0 };
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -95,6 +169,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
     }
   }
   const out: RuledOut = new Set();
+  const from: Sources = new Map();
   for (const [k, list] of Object.entries(marks)) {
     const [r, c] = k.split(",").map(Number);
     if (board[r][c] !== 0 || !list.length) continue;
@@ -106,15 +181,15 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
         showMe: "Cleared those pencil marks.",
       };
     }
-    for (const n of NUMS) if (!list.includes(n)) out.add(`${r},${c},${n}`);
+    for (const n of NUMS) if (!list.includes(n)) out.add(`${r},${c},${n}`), from.set(`${r},${c},${n}`, [r, c]);
   }
-  const fromMarks = new Set(out);
+  fromGroups(board, solution, marks, corners, out, from);
 
   const place = firstOf(board, out);
   if (place) {
     return {
       kind: "step", technique: place.technique, focus: place.focus, target: [place.row, place.col], value: place.value,
-      remove: null, blockers: place.blockers, nudge: place.nudge, explain: withNotes(place, fromMarks), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
+      remove: null, blockers: blockersWith(place, from), nudge: place.nudge, explain: withNotes(place, from), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
     };
   }
 
@@ -128,17 +203,32 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
   const after = withStep(out, step);
   const left = ([r, c]: Cell) => NUMS.filter((n) => fits(board, r, c, n) && !after.has(`${r},${c},${n}`));
   const values = step.values ?? [step.value];
-  // Pairs and Y-wing also mark their own cells, so the pair (or the three cells) is written on the board.
-  const own = step.technique === "Pairs" || step.technique === "Y-wing" ? step.spots! : [];
-  const pencil = [...own, ...step.remove.filter((p) => !own.some((q) => q[0] === p[0] && q[1] === p[1]))]
-    .map((cell) => ({ cell, marks: left(cell) }));
+  const base = { kind: "step" as const, technique: step.technique, focus: step.focus, target: null, value: step.value, values,
+    remove: step.remove, spots: step.spots, blockers: blockersWith(step, from), nudge: step.nudge, explain: withNotes(step, from) };
+  // Pointing and Claiming: mark the number in the cells where it can still go (all in one box).
+  if (step.technique === "Pointing" || step.technique === "Claiming") {
+    const a = step.value === 8 ? "an" : "a";
+    return { ...base, corner: { cells: step.spots!, n: step.value }, showMe: `Marked ${a} ${step.value} in the cells where it can go.` };
+  }
+  // Pairs and Hidden pairs: write the two numbers in the pair's two cells.
+  if (step.technique === "Pairs" || step.technique === "Hidden pairs") {
+    const pencil = step.spots!.map((cell) => ({ cell, marks: left(cell) }));
+    return { ...base, pencil, showMe: `Wrote ${pencil[0].marks.join(" ")} in the pair.` };
+  }
+  // X-wing, Y-wing: write what's left in the cells it clears.
   const k = step.remove.length;
-  return {
-    kind: "step", technique: step.technique, focus: step.focus, target: null, value: step.value, values, remove: step.remove,
-    spots: step.spots, blockers: step.blockers, pencil, nudge: step.nudge, explain: withNotes(step, fromMarks),
-    showMe: step.technique === "Hidden pairs" ? `Those two cells can only be ${pencil[0].marks.join(" or ")}. Pencil marks added.`
-      : `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k === 1 ? "1 cell" : `${k} cells`}. Pencil marks added, so the next hint can use them.`,
-  };
+  const pencil = step.remove.map((cell) => ({ cell, marks: left(cell) }));
+  return { ...base, pencil,
+    showMe: `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k === 1 ? "1 cell" : `${k} cells`}. Pencil marks added.` };
+}
+
+// Show me on a rule-out hint: write its marks into the player's center and corner marks (the page does the same).
+export function writeMarks(h: Hint, marks: Marks, corners: Marks) {
+  for (const p of h.pencil ?? []) marks[`${p.cell[0]},${p.cell[1]}`] = p.marks;
+  for (const [r, c] of h.corner?.cells ?? []) {
+    const k = `${r},${c}`;
+    if (!corners[k]?.includes(h.corner!.n)) corners[k] = [...(corners[k] ?? []), h.corner!.n].sort();
+  }
 }
 
 // Tap the bulb and "Show me" over and over, like a player who only follows hints (numbers + the pencil marks
@@ -146,18 +236,20 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
 export function playHints(givens: Grid, solution: Grid, limit = 300) {
   const b = givens.map((r) => [...r]);
   const marks: Marks = {};
+  const corners: Marks = {};
   const shown: Hint[] = [];
   for (let i = 0; i < limit; i++) {
-    const h = hint(b, solution, marks);
+    const h = hint(b, solution, marks, corners);
     if (h.kind !== "step") break;
     shown.push(h);
-    if (h.pencil) {
-      for (const p of h.pencil) marks[`${p.cell[0]},${p.cell[1]}`] = p.marks;
+    if (!h.target) {
+      writeMarks(h, marks, corners);
       continue;
     }
-    const [r, c] = h.target!;
+    const [r, c] = h.target;
     b[r][c] = h.value;
     delete marks[`${r},${c}`];
+    delete corners[`${r},${c}`];
   }
   return { shown, board: b, solved: b.every((row, r) => row.every((v, c) => v === solution[r][c])) };
 }
