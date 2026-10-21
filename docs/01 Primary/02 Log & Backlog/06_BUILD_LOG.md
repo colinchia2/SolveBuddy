@@ -178,3 +178,7 @@ Newest first.
   (wrong ones are ignored, not flagged), and a pair of matching two-number center marks. The next hint outlines
   those marks and shades the line they block, and says so in its explanation.
 - Dropped "so the next hint can use them" from Show me. 34 checks pass.
+
+## 2026-10-21: Hint colors flipped
+- Colin: the hint's own row/column/box is now light blue, and the lines that blocking numbers cast are light red
+  (blocking numbers get a red outline). The test server now runs in its own window so low memory doesn't stop it.

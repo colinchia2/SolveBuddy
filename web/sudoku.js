@@ -166,8 +166,8 @@ function render() {
   const target = shown && h.data.target ? key(...h.data.target) : null;
   const striped = new Set(shown && step.remove ? step.remove.map(([r, c]) => key(r, c)) : []);
   const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
-  // From Explain on: the numbers that block the other cells (blue), and the row, column or box each blocks through
-  // (light blue, shown over the hint's own shading so the whole line stays visible).
+  // From Explain on: the numbers that block the other cells, and the row, column or box each blocks through
+  // (light red, shown over the hint's own shading so the whole line stays visible).
   const blockers = shown && step.blockers ? step.blockers : [];
   const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
   const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
@@ -189,12 +189,13 @@ function render() {
       if (same) bg = "var(--same)";
       if (wrong) bg = "var(--conflict-cell)";
       if (isSel) bg = "var(--sel)";
-      if (focus.has(k)) bg = "var(--accent-soft)";
-      if (blockLines.has(k)) bg = "color-mix(in srgb, var(--same) 80%, var(--board))";
-      if (blockerCells.has(k)) bg = "var(--same)";
+      // Colin, 10/21: the hint's own row/column/box is blue; the lines blocking numbers cast are red.
+      if (focus.has(k)) bg = "color-mix(in srgb, var(--same) 80%, var(--board))";
+      if (blockLines.has(k)) bg = "var(--accent-soft)";
+      if (blockerCells.has(k)) bg = "color-mix(in srgb, var(--accent-mid) 70%, var(--board))";
       if (k === target) bg = "var(--accent-mid)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--sel-ring)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
+      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--accent-dark)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
       let inner = "";
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
