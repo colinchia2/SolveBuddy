@@ -113,7 +113,8 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
     const box = boxCells(b);
     for (const n of NUMS) {
       const at = box.filter(([r, c]) => board[r][c] === 0 && corners[`${r},${c}`]?.includes(n));
-      if (!at.length || !at.some(([r, c]) => solution[r][c] === n)) continue;
+      // One mark alone isn't "one of these" (X-wing marks one cell per box), so it says nothing about the box.
+      if (at.length < 2 || !at.some(([r, c]) => solution[r][c] === n)) continue;
       const sameRow = at.length > 1 && at.every((p) => p[0] === at[0][0]);
       const sameCol = at.length > 1 && at.every((p) => p[1] === at[0][1]);
       const line = sameRow ? `row ${at[0][0] + 1}` : sameCol ? `column ${at[0][1] + 1}` : "";
@@ -128,6 +129,31 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
       for (let i = 0; i < 9; i++) {
         if (sameRow && boxOf(at[0][0], i) !== b) add(at[0][0], i, n, g);
         if (sameCol && boxOf(i, at[0][1]) !== b) add(i, at[0][1], n, g);
+      }
+    }
+  }
+  // X-wing marks: two rows each with N corner-marked in just the same two columns (each row's N is one of its
+  // two, used only if that's right), so N can't go anywhere else in those columns. Same with rows and columns swapped.
+  for (const byRow of [true, false]) {
+    const at = (i: number, j: number): Cell => (byRow ? [i, j] : [j, i]);
+    const [kind, other] = byRow ? ["row", "column"] : ["column", "row"];
+    for (const n of NUMS) {
+      const two = NUMS.map((_, i) => ({ i, js: NUMS.map((_, j) => j).filter((j) => {
+        const [r, c] = at(i, j);
+        return board[r][c] === 0 && corners[`${r},${c}`]?.includes(n);
+      }) })).filter((x) => x.js.length === 2 && x.js.some((j) => solution[at(x.i, j)[0]][at(x.i, j)[1]] === n));
+      for (let a = 0; a < two.length; a++) {
+        for (let b = a + 1; b < two.length; b++) {
+          const [j1, j2] = two[a].js;
+          if (two[b].js.join() !== [j1, j2].join()) continue;
+          const cells = [at(two[a].i, j1), at(two[a].i, j2), at(two[b].i, j1), at(two[b].i, j2)];
+          const g = {
+            note: `Your ${n}s marked in ${kind}s ${two[a].i + 1} and ${two[b].i + 1} are in ${other}s ${j1 + 1} and ${j2 + 1}. Each ${kind}'s ${n} is one of them, so ${n} can't go anywhere else in ${other}s ${j1 + 1} and ${j2 + 1}.`,
+            cells,
+            line: [j1, j2].flatMap((j) => NUMS.map((_, i) => at(i, j))),
+          };
+          for (const j of [j1, j2]) for (let i = 0; i < 9; i++) if (i !== two[a].i && i !== two[b].i) add(...at(i, j), n, g);
+        }
       }
     }
   }
@@ -208,8 +234,9 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   const values = step.values ?? [step.value];
   const base = { kind: "step" as const, technique: step.technique, focus: step.focus, target: null, value: step.value, values,
     remove: step.remove, spots: step.spots, blockers: blockersWith(step, from), inferred: inferredOf(step), nudge: step.nudge, explain: withNotes(step, from) };
-  // Pointing and Claiming: mark the number in the cells where it can still go (all in one box).
-  if (step.technique === "Pointing" || step.technique === "Claiming") {
+  // Pointing, Claiming and X-wing: mark the number in the cells where it can still go (Colin, 10/21: X-wing's
+  // marks go in its four corners, not the cells it clears).
+  if (step.technique === "Pointing" || step.technique === "Claiming" || step.technique === "X-wing") {
     const a = step.value === 8 ? "an" : "a";
     return { ...base, corner: { cells: step.spots!, n: step.value }, showMe: `Marked ${a} ${step.value} in the cells where it can go.` };
   }
@@ -218,7 +245,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
     const pencil = step.spots!.map((cell) => ({ cell, marks: left(cell) }));
     return { ...base, pencil, showMe: `Wrote ${pencil[0].marks.join(" ")} in the pair.` };
   }
-  // X-wing, Y-wing: write what's left in the cells it clears.
+  // Y-wing: write what's left in the cells it clears.
   const k = step.remove.length;
   const pencil = step.remove.map((cell) => ({ cell, marks: left(cell) }));
   return { ...base, pencil,

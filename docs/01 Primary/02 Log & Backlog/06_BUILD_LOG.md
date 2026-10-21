@@ -195,3 +195,13 @@ Newest first.
   pencil mark or Erase then changes them all (a pencil mark comes off all of them if they all have it).
   Givens are skipped. One Undo per change.
 - Kept Pointing's marks in the corner, not the center: a lone center 5 would mean "this cell is a 5".
+
+## 2026-10-21: Pairs in two steps, X-wing marks its corners
+- **Pairs** (Colin: Tricks 3 still unclear): Explain says what the box still needs, then which line already has
+  the other numbers ("Box 8 still needs 2, 3, 4, 5 and 9. Column 6 already has 4, 5 and 9, so R8C6 and R9C6 can
+  only be 2 or 3."). Those numbers are outlined in red with their line.
+- **X-wing** (Tricks 5): Show me puts a corner mark in the four cells where the number can go, not full pencil
+  lists in the cells it clears. `fromGroups` reads X-wing corner marks back (used only if right), so the next hint
+  places the number. A single corner mark in a box no longer counts as "the box's N is here".
+- Colin: Tricks 1–4 good now. Y-wing (Tricks 6) still writes pencil lists in the cell it clears; see what he says.
+- **Checked:** 35 checks (new: X-wing marks its 4 corners, then a number follows). Browser: Tricks 3 and 5.

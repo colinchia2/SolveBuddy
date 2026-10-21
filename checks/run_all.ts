@@ -114,6 +114,12 @@ if (existsSync("packs/sudoku9-tricks.json")) {
     return countSolutions(p.givens) === 1 && play.solved && play.shown[0].technique === p.trick;
   });
   check(`trick tests: ${tests.length} puzzles, each opening on its trick and solved by hints`, tests.length === 6 && ok.every(Boolean));
+  // X-wing marks its number in its four corners only (Colin, 10/21), and the next hint places from those marks.
+  const xw = tests.find((p: { trick: string }) => p.trick === "X-wing");
+  const [h1, h2] = playHints(xw.givens, xw.solution).shown;
+  const same = (a: number[][] = [], b: number[][] = []) => a.map(String).sort().join() === b.map(String).sort().join();
+  check("X-wing hint: marks its number in its 4 corners, then a number follows", !h1.pencil && h1.corner?.n === h1.value
+    && same(h1.corner.cells, h1.spots) && h1.spots!.length === 4 && h2.target !== null);
 }
 if (existsSync("packs/sudoku9-expert.json")) {
   const ex = JSON.parse(readFileSync("packs/sudoku9-expert.json", "utf8")).puzzles[0];
