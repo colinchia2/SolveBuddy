@@ -9,7 +9,7 @@
 //    The rule-out picked is the first step of the shortest path (up to MAX_CHAIN) to a number.
 // Each hint has three levels the player clicks through: Nudge → Explain → Show me.
 import { type Grid, fits } from "./fullGrid.ts";
-import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, nextStep } from "./techniques.ts";
+import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, nextStep } from "./techniques.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -24,7 +24,8 @@ export type Hint = {
   remove: Cell[] | null; // a rule-out: `value` (or `values`) can't go in these cells (striped)
   values?: number[];
   spots?: Cell[]; // ringed from Explain on (e.g. where Pointing's number can still go)
-  blockers?: Step["blockers"]; // numbers that block the other cells (blue)
+  blockers?: Step["blockers"]; // numbers that block the other cells (red outline, red line)
+  inferred?: Cell[]; // cells ruled out by your marks rather than a number in plain sight (striped, Colin 10/21)
   pencil?: { cell: Cell; marks: number[] }[]; // a rule-out: Show me writes these center pencil marks
   corner?: { cells: Cell[]; n: number }; // a rule-out: Show me adds `n` as a corner mark in these cells
   nudge: string;
@@ -33,7 +34,6 @@ export type Hint = {
 };
 
 const NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const cellName = (r: number, c: number) => `row ${r + 1}, column ${c + 1}`;
 const firstOf = (grid: Grid, out: RuledOut) => nextStep(grid, out, PLACING);
 const withStep = (out: RuledOut, step: Step) => {
   const next = new Set(out);
@@ -62,6 +62,9 @@ function withNotes(step: Step, from: Sources) {
   notes.push(...texts);
   return notes.length ? `${step.why} (${notes.join(" ")})` : step.why;
 }
+
+// Cells the step relies on being ruled out by marks (not by a number you can see in their row, column or box).
+const inferredOf = (step: Step): Cell[] => [...new Map((step.uses ?? []).map(([r, c]) => [`${r},${c}`, [r, c] as Cell])).values()];
 
 // The step's blocking numbers, plus any groups of marks it relies on (outlined, with the line they block).
 function blockersWith(step: Step, from: Sources): Step["blockers"] {
@@ -162,7 +165,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
         return {
           kind: "mistake", technique: "Check this", focus: board[r].map((_, i) => [r, i] as Cell), target: [r, c], ...none,
           nudge: `Something's off in row ${r + 1}.`,
-          explain: `The ${board[r][c]} at row ${r + 1}, column ${c + 1} doesn't fit the answer.`,
+          explain: `The ${board[r][c]} at ${cellName(r, c)} doesn't fit the answer.`,
           showMe: "Cleared it. Try that cell again.",
         };
       }
@@ -189,7 +192,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   if (place) {
     return {
       kind: "step", technique: place.technique, focus: place.focus, target: [place.row, place.col], value: place.value,
-      remove: null, blockers: blockersWith(place, from), nudge: place.nudge, explain: withNotes(place, from), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
+      remove: null, blockers: blockersWith(place, from), inferred: inferredOf(place), nudge: place.nudge, explain: withNotes(place, from), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
     };
   }
 
@@ -204,7 +207,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   const left = ([r, c]: Cell) => NUMS.filter((n) => fits(board, r, c, n) && !after.has(`${r},${c},${n}`));
   const values = step.values ?? [step.value];
   const base = { kind: "step" as const, technique: step.technique, focus: step.focus, target: null, value: step.value, values,
-    remove: step.remove, spots: step.spots, blockers: blockersWith(step, from), nudge: step.nudge, explain: withNotes(step, from) };
+    remove: step.remove, spots: step.spots, blockers: blockersWith(step, from), inferred: inferredOf(step), nudge: step.nudge, explain: withNotes(step, from) };
   // Pointing and Claiming: mark the number in the cells where it can still go (all in one box).
   if (step.technique === "Pointing" || step.technique === "Claiming") {
     const a = step.value === 8 ? "an" : "a";

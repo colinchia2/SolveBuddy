@@ -10,7 +10,7 @@
   /* Sudoku-only: board, pencil marks, mode bar, keypad. */
   .board { align-self: center; margin-top: 6px; display: grid; grid-template-columns: repeat(9, 39px);
     border-top: 3px solid var(--ink); border-left: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
-    background: var(--board); box-shadow: 0 12px 32px rgba(30,30,30,0.12); }
+    background: var(--board); box-shadow: 0 12px 32px rgba(30,30,30,0.12); touch-action: none; user-select: none; }
   .cell { position: relative; width: 39px; height: 39px; margin: 0; padding: 0; border: none; display: grid; place-items: center;
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--board); transition: background 0.15s ease; }
   .cell.br { border-right: 3px solid var(--ink); }

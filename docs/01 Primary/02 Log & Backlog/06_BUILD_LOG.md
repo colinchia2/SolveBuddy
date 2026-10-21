@@ -184,3 +184,14 @@ Newest first.
   (blocking numbers get a red outline). The test server now runs in its own window so low memory doesn't stop it.
 - Then: cells where the number can go, and the answer cell, are outlined blue (the placed number is blue too).
   Rule: blue = can go / goes here, red = can't go.
+
+## 2026-10-21: Stripes vs red, R8C6 names, Pairs says why, drag-to-select
+- Colin's rule: a plain red shade = there's already that number in the row/column/box; red stripes = ruled out
+  by a trick or your marks (e.g. the cells your corner 7s rule out). Hints now stripe those cells.
+- Cells are named R8C6 in hint text (was "row 8, column 6", which read badly with commas).
+- Pairs now says why the two cells are down to two numbers ("every other number is already in their row,
+  column or box").
+- Sudoku drag-to-select (like Star Battle): press and drag over cells, or Ctrl/Shift-click to add; a number,
+  pencil mark or Erase then changes them all (a pencil mark comes off all of them if they all have it).
+  Givens are skipped. One Undo per change.
+- Kept Pointing's marks in the corner, not the center: a lone center 5 would mean "this cell is a 5".

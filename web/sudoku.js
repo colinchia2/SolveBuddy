@@ -45,7 +45,7 @@ function load(i, name = packName) {
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
-  s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, mode: s?.mode || "normal",
+  s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, picked: new Set(), mode: s?.mode || "normal",
     hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
   $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
@@ -70,20 +70,32 @@ function change(fn) {
   render();
 }
 
+// Selected cells you can change (drag selects several, Colin 10/21; givens are skipped).
+const pickedOpen = () => [...s.picked].filter((k) => { const [r, c] = k.split(",").map(Number); return !s.givens[r][c]; });
+function selectOnly(r, c) {
+  s.sel = [r, c];
+  s.picked = new Set([key(r, c)]);
+}
+
+// A number goes into every selected cell. A pencil mark is added to all of them, or taken off all of them if
+// they all have it already.
 function press(n) {
-  if (!s.sel) return;
-  const [r, c] = s.sel;
-  if (s.givens[r][c]) return;
-  const k = key(r, c);
+  const ks = pickedOpen();
+  if (!ks.length) return;
   change(() => {
     if (s.mode === "normal") {
-      s.entries[k] = n;
-      delete s.corner[k];
-      delete s.center[k];
-    } else {
-      const map = s.mode === "corner" ? s.corner : s.center;
+      for (const k of ks) {
+        s.entries[k] = n;
+        delete s.corner[k];
+        delete s.center[k];
+      }
+      return;
+    }
+    const map = s.mode === "corner" ? s.corner : s.center;
+    const off = ks.every((k) => map[k]?.includes(n));
+    for (const k of ks) {
       const marks = new Set(map[k] || []);
-      marks.has(n) ? marks.delete(n) : marks.add(n);
+      off ? marks.delete(n) : marks.add(n);
       if (marks.size) map[k] = [...marks].sort();
       else delete map[k];
       delete s.entries[k];
@@ -92,14 +104,14 @@ function press(n) {
 }
 
 function erase() {
-  if (!s.sel) return;
-  const [r, c] = s.sel;
-  if (s.givens[r][c]) return;
-  const k = key(r, c);
+  const ks = pickedOpen();
+  if (!ks.length) return;
   change(() => {
-    delete s.entries[k];
-    delete s.corner[k];
-    delete s.center[k];
+    for (const k of ks) {
+      delete s.entries[k];
+      delete s.corner[k];
+      delete s.center[k];
+    }
   });
 }
 
@@ -155,7 +167,7 @@ function placeHint(d) {
   else delete s.entries[k];
   delete s.corner[k];
   delete s.center[k];
-  s.sel = [r, c];
+  selectOnly(r, c);
 }
 
 function render() {
@@ -164,7 +176,8 @@ function render() {
   const shown = h && h.level >= 2;
   const focus = new Set(step ? step.focus.map(([r, c]) => key(r, c)) : []);
   const target = shown && h.data.target ? key(...h.data.target) : null;
-  const striped = new Set(shown && step.remove ? step.remove.map(([r, c]) => key(r, c)) : []);
+  // Striped = ruled out by a trick or your marks; a plain red shade = there's already that number in the line.
+  const striped = new Set(shown ? [...(step.remove ?? []), ...(step.inferred ?? [])].map(([r, c]) => key(r, c)) : []);
   const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
   // From Explain on: the numbers that block the other cells, and the row, column or box each blocks through
   // (light red, shown over the hint's own shading so the whole line stays visible).
@@ -180,8 +193,8 @@ function render() {
       const k = key(r, c);
       const g = s.givens[r][c];
       const v = valueAt(r, c);
-      const isSel = !h && r === sr && c === sc;
-      const peer = settings.hl && !h && s.sel && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3)));
+      const isSel = !h && s.picked.has(k);
+      const peer = settings.hl && !h && s.sel && s.picked.size === 1 && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3)));
       const same = settings.same && !h && selVal && v === selVal && !isSel;
       const wrong = settings.mistakes && !g && v && v !== s.solution[r][c];
       let bg = "var(--board)";
@@ -278,12 +291,35 @@ $("pad").onclick = (e) => {
   const b = e.target.closest("[data-n]");
   if (b) press(Number(b.dataset.n));
 };
-$("board").onclick = (e) => {
+// Tap a cell to select it. Press and drag to select every cell you pass (Ctrl or Shift adds to the selection),
+// then type a number, a pencil mark or Erase to change them all at once. Works for mouse and finger alike.
+let drag = null; // { last: [r, c] }
+const cellAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".cell");
+$("board").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cell");
   if (!b) return;
-  s.sel = [Number(b.dataset.r), Number(b.dataset.c)];
+  e.preventDefault();
+  const r = Number(b.dataset.r), c = Number(b.dataset.c);
+  if (e.ctrlKey || e.metaKey || e.shiftKey) s.picked.add(key(r, c)), (s.sel = [r, c]);
+  else selectOnly(r, c);
+  drag = { last: [r, c] };
   render();
-};
+});
+document.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const b = cellAt(e.clientX, e.clientY);
+  if (!b) return;
+  const r = Number(b.dataset.r), c = Number(b.dataset.c);
+  const [r0, c0] = drag.last;
+  if (r === r0 && c === c0) return;
+  // A fast swipe can skip cells between two moves, so pick every cell on the straight line in between.
+  const steps = Math.max(Math.abs(r - r0), Math.abs(c - c0));
+  for (let i = 1; i <= steps; i++) s.picked.add(key(Math.round(r0 + ((r - r0) * i) / steps), Math.round(c0 + ((c - c0) * i) / steps)));
+  drag.last = [r, c];
+  s.sel = [r, c];
+  render();
+});
+document.addEventListener("pointerup", () => (drag = null));
 document.querySelectorAll(".seg[data-mode]").forEach((b) => (b.onclick = () => { s.mode = b.dataset.mode; render(); }));
 $("eraseBtn").onclick = erase;
 $("undoBtn").onclick = () => {
@@ -314,7 +350,7 @@ document.addEventListener("keydown", (e) => {
   if (move) {
     e.preventDefault();
     const [r, c] = s.sel || [0, 0];
-    s.sel = [(r + move[0] + 9) % 9, (c + move[1] + 9) % 9];
+    selectOnly((r + move[0] + 9) % 9, (c + move[1] + 9) % 9);
     render();
   }
 });

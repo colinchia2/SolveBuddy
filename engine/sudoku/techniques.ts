@@ -84,7 +84,8 @@ function boxCells(b: number): [number, number][] {
   return cells;
 }
 
-const cellName = (r: number, c: number) => `row ${r + 1}, column ${c + 1}`;
+// A cell's short name, e.g. R8C6 (Colin, 10/21: "row 8, column 6" with commas read badly).
+export const cellName = (r: number, c: number) => `R${r + 1}C${c + 1}`;
 
 // 1. A box, row or column has just one empty cell left.
 function lastCell(grid: Grid): Step | null {
@@ -212,10 +213,12 @@ function pairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
           && (canGo(grid, out, r, c, a) || canGo(grid, out, r, c, b)));
         if (!remove.length) continue;
         const [p, q] = pair;
+        const uses = usedOut(grid, out, pair, ALL_NUMS);
         const st: Step = { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
-          focus: unit.cells, uses: usedOut(grid, out, pair, ALL_NUMS),
+          focus: unit.cells, uses,
           nudge: `Look for two cells in ${unit.label} that can only hold the same two numbers.`,
-          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.` };
+          // Say why the two cells are down to two numbers (Colin, 10/21: "you're just telling me that it is").
+          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}: every other number is already in their row, column or box${uses.length ? ", or ruled out" : ""}. So they take the ${a} and the ${b} between them, and no other cell in ${unit.label} can be ${a} or ${b}.` };
         if (!all) return st;
         all.push(st);
       }
