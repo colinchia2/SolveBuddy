@@ -16,7 +16,9 @@ const ALLOWED = ["web", "engine", "packs"];
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
-  const rel = normalize(path === "/" ? "web/sudoku.html" : path.slice(1));
+  // The pages use relative paths, so "/" must move to the page's real address.
+  if (path === "/") return void res.writeHead(302, { Location: "/web/sudoku.html" }).end();
+  const rel = normalize(path.slice(1));
   if (!ALLOWED.includes(rel.split(/[\\/]/)[0])) return void res.writeHead(404).end("Not found");
   try {
     let body: string | Buffer = await readFile(join(ROOT, rel));

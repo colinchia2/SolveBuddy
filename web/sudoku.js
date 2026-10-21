@@ -1,12 +1,12 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
-import { hint as findHint, writeMarks } from "/engine/sudoku/hint.ts";
+import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 
 const PACKS = {
-  easy: await (await fetch("/packs/sudoku9-easy-starter.json")).json(),
-  medium: await (await fetch("/packs/sudoku9-medium.json")).json(),
-  hard: await (await fetch("/packs/sudoku9-hard.json")).json(),
-  expert: await (await fetch("/packs/sudoku9-expert.json")).json(),
-  tricks: await (await fetch("/packs/sudoku9-tricks.json")).json(), // one test per harder trick
+  easy: await (await fetch("../packs/sudoku9-easy-starter.json")).json(),
+  medium: await (await fetch("../packs/sudoku9-medium.json")).json(),
+  hard: await (await fetch("../packs/sudoku9-hard.json")).json(),
+  expert: await (await fetch("../packs/sudoku9-expert.json")).json(),
+  tricks: await (await fetch("../packs/sudoku9-tricks.json")).json(), // one test per harder trick
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
