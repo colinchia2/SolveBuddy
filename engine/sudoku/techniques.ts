@@ -333,10 +333,16 @@ function yWing(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
         }
         if (!remove.length) continue;
         const [pv, p1, p2] = [pivot.p, w1.p, w2.p].map(([r, d]) => cellName(r, d));
+        // Say why each step follows and name the cells that lose c (Colin, 10/21: "went a little too far").
+        const shares = (p: [number, number], q: [number, number]) =>
+          p[0] === q[0] ? "a row" : p[1] === q[1] ? "a column" : "a box";
+        const lost = remove.length === 1
+          ? `${cellName(...remove[0])} shares ${shares(remove[0], w1.p)} with ${p1} and ${shares(remove[0], w2.p)} with ${p2}, so it can't be ${c}.`
+          : `${list(remove.map((q) => cellName(...q)))} each share a row, column or box with both, so none of them can be ${c}.`;
         const st: Step = { technique: "Y-wing", row: remove[0][0], col: remove[0][1], value: c, remove,
           spots: [pivot.p, w1.p, w2.p], focus: [pivot.p, w1.p, w2.p], uses: usedOut(grid, out, [pivot.p, w1.p, w2.p], ALL_NUMS),
           nudge: "Look for three cells that can each only be two numbers.",
-          why: `${cap(pv)} can only be ${a} or ${b}. If it's ${a}, then ${p1} (${a} or ${c}) must be ${c}. If it's ${b}, then ${p2} (${b} or ${c}) must be ${c}. Either way one of them is ${c}, so no cell that sees both can be ${c}.` };
+          why: `If ${pv} is ${a}, ${p1} can't be ${a} too (it shares ${shares(pivot.p, w1.p)}), so ${p1} is ${c}. If it's ${b}, ${p2} can't be ${b} too (it shares ${shares(pivot.p, w2.p)}), so ${p2} is ${c}. Either way, ${p1} or ${p2} is the ${c}. ${lost}` };
         if (!all) return st;
         all.push(st);
       }

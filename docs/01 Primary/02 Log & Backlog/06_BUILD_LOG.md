@@ -215,3 +215,13 @@ Newest first.
 - **Checked:** 35 checks; Test 5's next 3 hints printed from the engine.
 - Follow-up (Colin: "yes"): the board shows only the part of the X-wing marks that rules out that cell (column 6
   and its two marked 2s), not both columns. Mark groups can give a `near(r, c)` part. Checked in the browser.
+
+## 2026-10-21: Y-wing in two hints, colored cell names
+- Colin (Tricks 6): the Y-wing "went a little too far" and the words didn't match the board. All four fixes:
+  1. **Colored names:** from Explain on, cell names in the hint text are blue for the trick's cells and red for
+     ruled-out cells, matching the board (all hints, `paint` in `sudoku.js`).
+  2. **Two hints:** first "R4C7 can only be 1 or 3, R5C8 1 or 8, R3C7 3 or 8"; Show me writes those pencil
+     marks. Then the Y-wing, with the marks on the board (`hint.ts`, skipped if the marks are already there).
+  3. **Why each is 8:** "If R4C7 is 1, R5C8 can't be 1 too (it shares a box), so R5C8 is 8."
+  4. **Names the loser:** "R6C7 shares a box with R5C8 and a column with R3C7, so it can't be 8."
+- **Checked:** 36 checks (new: Y-wing writes pairs first, then rules out). Browser: both Y-wing hints.

@@ -260,6 +260,18 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   const after = withStep(out, step);
   const left = ([r, c]: Cell) => NUMS.filter((n) => fits(board, r, c, n) && !after.has(`${r},${c},${n}`));
   const values = step.values ?? [step.value];
+  // Y-wing in two hints (Colin, 10/21): first write the three cells' two numbers, so the Y-wing hint can point at them.
+  if (step.technique === "Y-wing") {
+    const pencil = step.spots!.map((cell) => ({ cell, marks: left(cell) }));
+    const written = pencil.every((p) => marks[`${p.cell[0]},${p.cell[1]}`]?.join() === p.marks.join());
+    if (!written) {
+      const [p0, p1, p2] = pencil.map((p) => `${cellName(...p.cell)} can only be ${p.marks.join(" or ")}`);
+      return { kind: "step", technique: step.technique, focus: step.focus, target: null, value: 0, remove: [], spots: step.spots,
+        blockers: blockersWith(step, from), inferred: [], pencil, nudge: step.nudge,
+        explain: `${p0}, ${p1}, and ${p2}. Each one's row, column and box already have every other number.`,
+        showMe: `Wrote ${pencil.map((p) => p.marks.join(" ")).join(", ")} in them.` };
+    }
+  }
   const base = { kind: "step" as const, technique: step.technique, focus: step.focus, target: null, value: step.value, values,
     remove: step.remove, spots: step.spots, blockers: blockersWith(step, from), inferred: inferredOf(step), nudge: step.nudge, explain: withNotes(step, from) };
   // Pointing, Claiming and X-wing: mark the number in the cells where it can still go (Colin, 10/21: X-wing's
@@ -276,8 +288,9 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   // Y-wing: write what's left in the cells it clears.
   const k = step.remove.length;
   const pencil = step.remove.map((cell) => ({ cell, marks: left(cell) }));
-  return { ...base, pencil,
-    showMe: `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k === 1 ? "1 cell" : `${k} cells`}. Pencil marks added.` };
+  return { ...base, pencil, nudge: `${cellName(...step.spots![0])} is ${left(step.spots![0]).join(" or ")}. Try each one.`,
+    showMe: k === 1 ? `${cellName(...step.remove[0])} can't be ${step.value}. Wrote ${pencil[0].marks.join(" ")} there.`
+      : `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k} cells. Pencil marks added.` };
 }
 
 // Show me on a rule-out hint: write its marks into the player's center and corner marks (the page does the same).

@@ -118,6 +118,11 @@ if (existsSync("packs/sudoku9-tricks.json")) {
   const xw = tests.find((p: { trick: string }) => p.trick === "X-wing");
   const [h1, h2] = playHints(xw.givens, xw.solution).shown;
   const same = (a: number[][] = [], b: number[][] = []) => a.map(String).sort().join() === b.map(String).sort().join();
+  // Y-wing in two hints (Colin, 10/21): first its three cells' two numbers, then the Y-wing reading those marks.
+  const yw = tests.find((p: { trick: string }) => p.trick === "Y-wing");
+  const [y1, y2] = playHints(yw.givens, yw.solution).shown;
+  check("Y-wing hint: writes its 3 cells' pairs first, then rules out", y1.technique === "Y-wing" && y1.remove?.length === 0
+    && y1.pencil?.length === 3 && y1.pencil.every((p) => p.marks.length === 2) && y2.technique === "Y-wing" && !!y2.remove?.length);
   check("X-wing hint: marks its number in its 4 corners, then a number follows", !h1.pencil && h1.corner?.n === h1.value
     && same(h1.corner.cells, h1.spots) && h1.spots!.length === 4 && h2.target !== null);
 }

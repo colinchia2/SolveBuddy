@@ -242,8 +242,13 @@ function render() {
       [d.showMe, d.explain],
     ][stuck ? 1 : h.level - 1];
     const next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
-    $("hintTitle").textContent = text[0];
-    $("hintBody").textContent = text[1];
+    // Cell names match the board from Explain on (Colin, 10/21): blue = the trick's cells, red = ruled out.
+    const blue = new Set([...(d.spots ?? []), ...(d.target ? [d.target] : [])].map(([r, c]) => `R${r + 1}C${c + 1}`));
+    const red = new Set((d.remove ?? []).map(([r, c]) => `R${r + 1}C${c + 1}`));
+    const paint = (t) => t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch])
+      .replace(/R\dC\d/g, (n) => (h.level < 2 ? n : blue.has(n) ? `<b class="cn blue">${n}</b>` : red.has(n) ? `<b class="cn red">${n}</b>` : n));
+    $("hintTitle").innerHTML = paint(text[0]);
+    $("hintBody").innerHTML = paint(text[1]);
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }
