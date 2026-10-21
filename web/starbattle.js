@@ -163,10 +163,11 @@ function applyHint(d) {
 // The pretend board for the current play-through frame: real marks plus faint pretend ones.
 function playFrame(h) {
   const d = h.data;
-  const ghost = new Map([[key(...d.cross[0]), STAR]]);
+  const from = d.clear || d.cross[0]; // a wrong star in a mistake hint, or the What if cell
+  const ghost = new Map([[key(...from), STAR]]);
   const crossOut = (cells) => cells.forEach((p) => !s.marks[key(...p)] && !ghost.has(key(...p)) && ghost.set(key(...p), CROSS));
   crossOut(d.pretendCross);
-  let latest = [d.cross[0]];
+  let latest = [from];
   let focus = [];
   for (const step of d.chain.slice(0, h.play)) {
     if (step.star) ghost.set(key(...step.star), STAR);
@@ -187,7 +188,7 @@ function render() {
   const frame = h && h.play != null ? playFrame(h) : null;
   // What if (Colin, 10/20): the Nudge rings the cell to imagine a star in, and doesn't light up the
   // line where the chain ends (that gave the ending away and didn't point at the cell).
-  const pretend = h?.data.chain && !frame && h.level < 3 ? h.data.cross[0] : null;
+  const pretend = h?.data.chain && h.data.kind === "step" && !frame && h.level < 3 ? h.data.cross[0] : null;
   const focus = new Set((frame ? frame.focus : pretend && h.level === 1 ? [] : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
   const striped = new Set(h && h.level === 2 ? h.data.cross.map(([r, c]) => key(r, c)) : []);
   const ringed = pretend || (h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null);
@@ -245,16 +246,22 @@ function render() {
     let text = [[d.nudge, ""], [d.nudge, d.explain], [d.showMe, d.explain]][stuck ? 1 : h.level - 1];
     let next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
     if (frame) {
-      const [r, c] = d.cross[0];
+      const mistake = d.kind === "mistake";
+      const [r, c] = d.clear || d.cross[0];
       const k = d.chain.length;
       const cap = (t) => t[0].toUpperCase() + t.slice(1);
-      if (h.play === 0) text = [`Pretend row ${r + 1}, column ${c + 1} has a star.`, "It rules out its row, column, region and neighbors. Faint marks are pretend. Tap Next to see what it forces."];
-      else if (!frame.dead) {
+      if (h.play === 0) {
+        text = [mistake ? `Start from your star at row ${r + 1}, column ${c + 1}.` : `Pretend row ${r + 1}, column ${c + 1} has a star.`,
+          `It rules out its row, column, region and neighbors. Faint marks are pretend. Tap Next to see what it forces.`];
+      } else if (!frame.dead) {
         const st = d.chain[h.play - 1];
         text = [`Forced move ${h.play} of ${k}`, st.star ? `${st.why} It rules out its neighbors too.` : st.why];
+      } else {
+        text = [`${cap(d.dead.label)} has nowhere left for its star.`, mistake
+          ? `So your star at row ${r + 1}, column ${c + 1} can't be right.`
+          : `So the pretend star can't be right: row ${r + 1}, column ${c + 1} gets an ×.`];
       }
-      else text = [`${cap(d.dead.label)} has nowhere left for its star.`, `So the pretend star can't be right: row ${r + 1}, column ${c + 1} gets an ×.`];
-      next = frame.dead ? "Cross it out" : "Next";
+      next = !frame.dead ? "Next" : mistake ? "Take it off" : "Cross it out";
     }
     $("hintTitle").textContent = text[0];
     $("hintBody").textContent = text[1];

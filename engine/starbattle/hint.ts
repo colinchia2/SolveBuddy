@@ -2,7 +2,7 @@
 // 1. Mistakes first: a star where the answer has none, or an × on the answer's star.
 // 2. Otherwise: the easiest trick that finds a next move.
 import { type Regions, type Stars } from "./layout.ts";
-import { type Board, type Step, EMPTY, CROSS, STAR, nextStep } from "./techniques.ts";
+import { type Board, type Step, EMPTY, CROSS, STAR, nextStep, chainFrom } from "./techniques.ts";
 
 type Cell = [number, number];
 
@@ -30,14 +30,16 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
       const wrongStar = board[r][c] === STAR && !isStar;
       const wrongCross = board[r][c] === CROSS && isStar;
       if (!wrongStar && !wrongCross) continue;
+      const why = wrongStar ? whyWrong(board, regions, solution, [r, c]) : null;
       return {
         kind: "mistake", technique: "Check this", focus: [...Array(n).keys()].map((i) => [r, i] as Cell),
         star: null, cross: [], clear: [r, c],
         nudge: `Something's off in row ${r + 1}.`,
         explain: wrongStar
-          ? `The star at row ${r + 1}, column ${c + 1} can't be right.`
+          ? `The star at row ${r + 1}, column ${c + 1} can't be right. ${why!.text}`
           : `The × at row ${r + 1}, column ${c + 1} is on a cell that needs a star.`,
         showMe: "Cleared it. Keep going from here.",
+        ...why?.found,
       };
     }
   }
@@ -51,6 +53,37 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
     nudge: step.nudge, explain: step.why,
     showMe: step.star ? "Star placed!" : `Crossed out ${step.cross.length === 1 ? "1 cell" : `${step.cross.length} cells`}.`,
     chain: step.chain, pretendCross: step.pretendCross, dead: step.dead,
+  };
+}
+
+// Why a wrong star is wrong (Colin, 10/20: "otherwise we are just saying it's wrong, not why").
+// It clashes with another star, or it's treated as a What if: follow the forced moves from it until a
+// row, column or region runs dry. Only the player's correct marks are used, so the reasoning is sound.
+function whyWrong(board: Board, regions: Regions, solution: Stars, [r, c]: Cell) {
+  const n = regions.length;
+  const base = board.map((row, a) => row.map((v, b) => {
+    if (a === r && b === c) return EMPTY;
+    const isStar = solution[a] === b;
+    return (v === STAR && !isStar) || (v === CROSS && isStar) ? EMPTY : v;
+  }));
+  for (let a = 0; a < n; a++) {
+    const b = base[a].indexOf(STAR);
+    if (b < 0) continue;
+    const clash = a === r ? "is in the same row as" : b === c ? "is in the same column as"
+      : regions[a][b] === regions[r][c] ? "is in the same region as"
+      : Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1 ? "touches" : "";
+    if (clash) return { text: `It ${clash} the star at row ${a + 1}, column ${b + 1}.`, found: null };
+  }
+  const found = chainFrom(base, regions, [r, c]);
+  if (!found || found.chain.length > 5) {
+    return { text: "It only breaks after a long chain of moves, so take it off and look elsewhere.", found: null };
+  }
+  const k = found.chain.length;
+  return {
+    text: k === 0
+      ? `It rules out the last open cells of ${found.dead.label}, so that would have nowhere left for its star.`
+      : `With a star there, after ${k} forced move${k === 1 ? "" : "s"} ${found.dead.label} would have nowhere left for its star.`,
+    found,
   };
 }
 

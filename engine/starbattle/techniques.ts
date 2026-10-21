@@ -197,42 +197,49 @@ function groups(b: Board, regions: Regions): Step | null {
 // 7. (Expert) What if: pretend a cell has a star and follow the forced moves (tricks 1–6).
 //    If that ends with a row, column or region that has nowhere left for its star, the cell can't have one.
 // Of all the cells that fail, the hint uses the one with the shortest chain: easiest to follow in your head.
-function whatIf(b: Board, regions: Regions): Step | null {
+// Put a star at `from` and follow the forced moves (tricks 1–6) until a row, column or region has nowhere
+// left for its star. Null if the moves run out first. Also explains a wrong star in a mistake hint.
+export function chainFrom(b: Board, regions: Regions, from: Cell) {
   const all = units(regions);
+  const trial = b.map((row) => [...row]);
+  // Each star (the pretend one too) crosses its own neighbors in the same move, so the chain only
+  // counts moves that teach something (Colin, 10/20: "rules out" filler steps were confusing).
+  const place = (p: Cell) => {
+    trial[p[0]][p[1]] = STAR;
+    const cross = open(trial, ruledOutBy(regions, p));
+    for (const [a, d] of cross) trial[a][d] = CROSS;
+    return cross;
+  };
+  const pretendCross = place(from);
+  const chain: NonNullable<Step["chain"]> = [];
+  for (;;) {
+    const dead = all.find((u) => !hasStar(trial, u.cells) && !open(trial, u.cells).length);
+    if (dead) return { chain, pretendCross, dead: { label: dead.label, cells: dead.cells } };
+    const step = nextStep(trial, regions, HARD_TECHNIQUES);
+    if (!step) return null;
+    if (step.star) {
+      chain.push({ star: step.star, cross: place(step.star), focus: step.focus, why: step.why });
+    } else {
+      applyStep(trial, step);
+      chain.push({ star: null, cross: step.cross, focus: step.focus, why: step.why });
+    }
+  }
+}
+
+function whatIf(b: Board, regions: Regions): Step | null {
   let best: (Step & { forced: number }) | null = null;
   for (let r = 0; r < b.length; r++) {
     for (let c = 0; c < b.length; c++) {
       if (b[r][c] !== EMPTY) continue;
-      const trial = b.map((row) => [...row]);
-      // Each star (the pretend one too) crosses its own neighbors in the same move, so the chain only
-      // counts moves that teach something (Colin, 10/20: "rules out" filler steps were confusing).
-      const place = (p: Cell) => {
-        trial[p[0]][p[1]] = STAR;
-        const cross = open(trial, ruledOutBy(regions, p));
-        for (const [a, d] of cross) trial[a][d] = CROSS;
-        return cross;
-      };
-      const pretendCross = place([r, c]);
-      const chain: NonNullable<Step["chain"]> = [];
-      let dead: Unit | undefined;
-      for (;;) {
-        dead = all.find((u) => !hasStar(trial, u.cells) && !open(trial, u.cells).length);
-        if (dead) break;
-        const step = nextStep(trial, regions, HARD_TECHNIQUES);
-        if (!step) break;
-        if (step.star) {
-          chain.push({ star: step.star, cross: place(step.star), focus: step.focus, why: step.why });
-        } else {
-          applyStep(trial, step);
-          chain.push({ star: null, cross: step.cross, focus: step.focus, why: step.why });
-        }
-      }
+      const found = chainFrom(b, regions, [r, c]);
+      if (!found || (best && best.forced <= found.chain.length)) continue;
+      const { chain, pretendCross, dead } = found;
       const forced = chain.length;
-      if (!dead || (best && best.forced <= forced)) continue;
-      best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced, chain, pretendCross,
-        dead: { label: dead.label, cells: dead.cells },
+      best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced, chain, pretendCross, dead,
         nudge: `Imagine a star at row ${r + 1}, column ${c + 1}. What happens?`,
-        why: `If row ${r + 1}, column ${c + 1} had a star, ${forced === 0 ? "straight away" : `after ${forced} forced move${forced === 1 ? "" : "s"}`} ${dead.label} would have nowhere left for its star. So that cell can't have one.` };
+        why: forced === 0
+          ? `A star at row ${r + 1}, column ${c + 1} would rule out the last open cells of ${dead.label}. So that cell can't have one.`
+          : `If row ${r + 1}, column ${c + 1} had a star, after ${forced} forced move${forced === 1 ? "" : "s"} ${dead.label} would have nowhere left for its star. So that cell can't have one.` };
     }
   }
   if (!best) return null;

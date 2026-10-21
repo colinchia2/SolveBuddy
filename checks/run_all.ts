@@ -183,6 +183,29 @@ if (existsSync(sbExpertFile)) {
   }
   check("SB Expert: hints alone solve it, every move correct", ok && ex.solution.every((c, r) => b[r][c] === SB_STAR));
   check(`SB Expert: every What if play-through (${chains}) ends with its line empty, 5 moves or fewer`, chains > 0 && chainsOk);
+
+  // A wrong star's hint says WHY (Colin, 10/20), and its play-through really empties the line it names.
+  let whyOk = true, played = 0;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (ex.solution[r] === c) continue;
+      const w = ex.regions.map(() => Array(8).fill(SB_EMPTY));
+      w[r][c] = SB_STAR;
+      const h = sbHint(w, ex.regions, ex.solution);
+      whyOk &&= h.kind === "mistake" && /can't be right\. \S/.test(h.explain);
+      if (!h.chain) continue;
+      played++;
+      const t = w.map((row) => [...row]);
+      for (const [a, b] of h.pretendCross!) if (t[a][b] === SB_EMPTY) t[a][b] = SB_CROSS;
+      for (const st of h.chain) {
+        if (st.star) t[st.star[0]][st.star[1]] = SB_STAR;
+        for (const [a, b] of st.cross) if (t[a][b] === SB_EMPTY) t[a][b] = SB_CROSS;
+      }
+      whyOk &&= h.chain.length <= 5 && h.dead!.cells.every(([a, b]) => t[a][b] === SB_CROSS);
+    }
+  }
+  console.log(`      (${played} of 56 wrong stars get a play-through)`);
+  check("SB wrong star: every hint says why, and every play-through is honest", whyOk);
 }
 
 if (failed) process.exit(1);
