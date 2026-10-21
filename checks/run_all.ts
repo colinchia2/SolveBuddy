@@ -45,12 +45,43 @@ const erased = Array.from({ length: 10 }, () => {
 check("10 erased puzzles each have exactly one answer", erased.every(Boolean));
 
 // Every move the tricks make must match the real answer, or a hint could be wrong.
-const graded = Array.from({ length: 20 }, () => {
+// The Medium pack: one answer, graded Medium, and "Show me" over and over solves it (ruled-out hints included).
+const mediumFile = "packs/sudoku9-medium.json";
+if (existsSync(mediumFile)) {
+  const m = JSON.parse(readFileSync(mediumFile, "utf8")).puzzles[0];
+  check("Medium pack: one answer, graded Medium", countSolutions(m.givens) === 1 && grade(m.givens).level === "Medium");
+  const b = m.givens.map((r: number[]) => [...r]);
+  const out = new Set<string>();
+  let ok = true, removes = 0;
+  for (let i = 0; i < 200 && ok; i++) {
+    const h = hint(b, m.solution, out);
+    if (h.kind !== "step") break;
+    if (h.remove) {
+      removes++;
+      ok = h.remove.every(([r, c]) => m.solution[r][c] !== h.value);
+      h.remove.forEach(([r, c]) => out.add(`${r},${c},${h.value}`));
+    } else {
+      const [r, c] = h.target!;
+      ok = h.value === m.solution[r][c];
+      b[r][c] = h.value;
+    }
+  }
+  check(`Medium: hints alone solve it, every move correct (${removes} ruled-out hints)`,
+    ok && removes > 0 && b.every((row: number[], r: number) => row.every((v, c) => v === m.solution[r][c])));
+}
+
+// Harder tricks rule a number out of cells instead: none of those cells may hold it in the answer.
+// Erased all the way down so the harder tricks actually get used.
+let pointingSeen = 0;
+const graded = Array.from({ length: 30 }, () => {
   const solution = makeFullGrid();
-  const g = grade(erase(solution, 30).puzzle);
-  return g.steps.every((s) => solution[s.row][s.col] === s.value);
+  const g = grade(erase(solution, 0).puzzle);
+  pointingSeen += g.steps.filter((s) => s.technique === "Pointing").length;
+  return g.steps.every((s) => s.remove
+    ? s.remove.every(([r, c]) => solution[r][c] !== s.value)
+    : solution[s.row][s.col] === s.value);
 });
-check("grader: every trick move in 20 puzzles matches the answer", graded.every(Boolean));
+check(`grader: every trick move in 30 puzzles matches the answer (Pointing used ${pointingSeen} times)`, graded.every(Boolean) && pointingSeen > 0);
 const oneHole = grids[1].map((r) => [...r]);
 oneHole[4][4] = 0;
 check("grader: one missing number = Easy", grade(oneHole).level === "Easy");

@@ -2,6 +2,19 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 1: Pointing (+ 1 Medium puzzle)
+- **Pointing** (`engine/sudoku/techniques.ts`): in a box, if every spot for a number is in one row/column, the
+  number is ruled out of the rest of that line. First trick that rules out instead of placing, so the engine
+  now carries "ruled out" facts (`RuledOut`), and the easy tricks respect them.
+- **Grades:** Easy → Medium (adds Pointing) → "Harder than Medium". Survey of 100 fully erased puzzles
+  (`scripts/sudoku_grade_survey.ts`): Easy 40, Medium 9, harder 51.
+- **Hints (Colin chose A):** a ruled-out hint stripes the cells and rings the box's spots; Show me removes that
+  number from your pencil marks there. If you don't use pencil marks, nothing else changes. The page remembers
+  what hints ruled out so the next hint moves on.
+- **1 Medium puzzle** (`scripts/sudoku_make_medium.ts` → `packs/sudoku9-medium.json`, "Medium: 1" on the page).
+- **Checked:** 28 checks, including every trick move on 30 fully erased puzzles (Pointing used 50+ times) and
+  "hints alone solve the Medium puzzle". Browser: stripes, rings, pencil mark 1 removed and 4 kept.
+
 ## 2026-10-20 — What if plays out on the board (Colin's idea)
 - Colin got "after 5 forced moves column 7 would have nowhere left" and couldn't see why. Now "Show me" on a
   What if hint plays it out: faint terracotta pretend star → Next → each forced move (ringed, region in full

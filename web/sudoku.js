@@ -1,7 +1,14 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint } from "/engine/sudoku/hint.ts";
 
-const pack = await (await fetch("/packs/sudoku9-easy-starter.json")).json();
+const PACKS = {
+  easy: await (await fetch("/packs/sudoku9-easy-starter.json")).json(),
+  medium: await (await fetch("/packs/sudoku9-medium.json")).json(),
+};
+const query = new URLSearchParams(location.search);
+let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+let pack = PACKS[packName];
+const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, rgba(255,255,255,0) 4px 10px)";
 const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
 // Corner marks fill the corners first, then top/bottom middle, then the sides (handoff §6).
@@ -11,7 +18,7 @@ const CORNER_POS = [
   "top:13px;left:3px", "top:13px;right:3px", "top:13px;left:0;right:0;text-align:center",
 ];
 
-let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(new URLSearchParams(location.search).get("p") || 1) - 1));
+let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 let s; // game state
 const undoStack = []; // board snapshots for Undo
 
@@ -29,15 +36,18 @@ function flipSetting(name) {
   render();
 }
 
-function load(i) {
+function load(i, name = packName) {
+  packName = name;
+  pack = PACKS[name];
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, mode: s?.mode || "normal",
-    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
-  $("sub").textContent = `Classic 9×9 · Easy · #${i + 1}`;
+    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false,
+    ruledOut: new Set() }; // numbers ruled out by earlier hints ("row,col,n"); always true, so Undo keeps them
+  $("sub").textContent = `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?p=${i + 1}`);
+  history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
   renderPicker();
   render();
 }
@@ -106,7 +116,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hint = { data: findHint(board(), s.solution), level: 1 };
+  s.hint = { data: findHint(board(), s.solution, s.ruledOut), level: 1 };
   render();
 }
 function advanceHint() {
@@ -118,8 +128,22 @@ function advanceHint() {
   }
   h.level++;
   if (h.level === 3) {
-    // Show me: do the move (place the number, or clear the mistake).
     saveUndo();
+    const d = h.data;
+    // Show me, harder tricks: remember the number is ruled out, and take it out of any pencil marks there.
+    if (d.remove) {
+      for (const [r, c] of d.remove) {
+        const k = key(r, c);
+        s.ruledOut.add(`${k},${d.value}`);
+        for (const map of [s.corner, s.center]) {
+          if (!map[k]) continue;
+          map[k] = map[k].filter((n) => n !== d.value);
+          if (!map[k].length) delete map[k];
+        }
+      }
+      return render();
+    }
+    // Show me: do the move (place the number, or clear the mistake).
     const [r, c] = h.data.target;
     const k = key(r, c);
     if (h.data.value) s.entries[k] = h.data.value;
@@ -135,6 +159,8 @@ function render() {
   const h = s.hint;
   const focus = new Set(h ? h.data.focus.map(([r, c]) => key(r, c)) : []);
   const target = h && h.level >= 2 && h.data.target ? key(...h.data.target) : null;
+  const striped = new Set(h && h.level >= 2 && h.data.remove ? h.data.remove.map(([r, c]) => key(r, c)) : []);
+  const spots = new Set(h && h.level >= 2 && h.data.spots ? h.data.spots.map(([r, c]) => key(r, c)) : []);
   const [sr, sc] = s.sel || [-1, -1];
   const selVal = s.sel ? valueAt(sr, sc) : 0;
 
@@ -155,7 +181,8 @@ function render() {
       if (isSel) bg = "var(--sel)";
       if (focus.has(k)) bg = "var(--accent-soft)";
       if (k === target) bg = "var(--accent-mid)";
-      const ring = k === target ? "inset 0 0 0 3px var(--accent)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
+      if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
+      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
       let inner = "";
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
@@ -206,14 +233,21 @@ function render() {
 
 function renderPicker() {
   const p = $("picker");
-  p.querySelectorAll("button").forEach((b) => b.remove());
-  pack.puzzles.forEach((_, i) => {
-    const b = document.createElement("button");
-    b.textContent = i + 1;
-    b.className = i === idx ? "on" : "";
-    b.onclick = () => load(i);
-    p.appendChild(b);
-  });
+  p.querySelectorAll("button, .lbl").forEach((b) => b.remove());
+  for (const [name, pk] of Object.entries(PACKS)) {
+    const lbl = document.createElement("span");
+    lbl.className = "lbl";
+    lbl.textContent = `${pk.difficulty}:`;
+    lbl.style.marginLeft = "6px";
+    p.appendChild(lbl);
+    pk.puzzles.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.textContent = i + 1;
+      b.className = name === packName && i === idx ? "on" : "";
+      b.onclick = () => load(i, name);
+      p.appendChild(b);
+    });
+  }
 }
 
 const fmt = (ms) => {

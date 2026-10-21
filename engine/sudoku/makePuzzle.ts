@@ -27,6 +27,20 @@ export function makeEasy(): Puzzle {
   }
 }
 
+// Medium: same idea, erasing further, but the puzzle must need Pointing (at least `minPointing` times).
+export const MEDIUM_CLUES = 26;
+export function makeMedium(minPointing = 2): Puzzle {
+  for (;;) {
+    const solution = makeFullGrid();
+    const { puzzle } = erase(solution, MEDIUM_CLUES, (p) => spread(p).min >= EASY_MIN_PER && grade(p).level !== "Harder than Medium");
+    const g = grade(puzzle);
+    if (g.level !== "Medium" || spread(puzzle).max > EASY_MAX_PER) continue;
+    if (g.steps.filter((s) => s.technique === "Pointing").length < minPointing) continue;
+    return { givens: puzzle, solution, clues: puzzle.flat().filter((n) => n !== 0).length,
+      techniquesUsed: [...new Set(g.steps.map((s) => s.technique))] };
+  }
+}
+
 // Fewest and most numbers showing in any row, column or box.
 export function spread(grid: Grid): { min: number; max: number } {
   const counts: number[] = [];
