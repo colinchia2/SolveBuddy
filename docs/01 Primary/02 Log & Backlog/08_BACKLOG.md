@@ -3,6 +3,12 @@
 Top item = what's next.
 
 ## Next
+- **App main screens (Colin approved the blue mockup 10/21, canvas row "Blue SolveBuddy"):** Home/Library, Packs,
+  Stats in blue. Plus, like TasteBuddy: (1) opening intro: logo centred → glides + shrinks to the top-left header
+  logo (TasteBuddy `src/components/SplashOverlay.js`; native splash already matches: logo on #F6F4F1);
+  (2) tap the top-left logo → wink/wiggle (TasteBuddy `WigglyLogo.js`); (3) the TRUE Apple Liquid Glass tab bar
+  (`createNativeBottomTabNavigator`, like TasteBuddy `GlassTabs.js`), tabs Library · Packs · Stats. All app code:
+  ships by update, no build.
 - Mock the blue SolveBuddy look (accent terracotta → blue; hint red stays), then build it after Colin picks.
 1. **Expert Star Battle** (Colin said yes to the idea 10/20; not started). Teach the engine harder tricks
    first, explaining each one to Colin in plain English before adding it. Then make 1 Expert 8×8 puzzle that
