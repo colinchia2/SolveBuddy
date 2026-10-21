@@ -113,7 +113,7 @@ function onlySpot(grid: Grid, out: RuledOut): Step | null {
       return { technique: `Only spot in ${unit.kind}`, row, col, value: n, focus: unit.cells,
         blockers: blockersFor(grid, others, n), uses: usedOut(grid, out, others, [n]),
         nudge: `Where can ${n} go in ${unit.label}?`,
-        why: `In ${unit.label}, every other empty cell already sees a ${n}, so ${n} must go at ${cellName(row, col)}.` };
+        why: `In ${unit.label}, every other empty cell already sees ${n === 8 ? "an" : "a"} ${n}, so ${n} must go at ${cellName(row, col)}.` };
     }
   }
   return null;

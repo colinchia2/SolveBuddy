@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-10-20 — Trick tests + 1 Expert Sudoku
+- Colin's idea: one test puzzle per harder trick, then a full Expert. `scripts/sudoku_make_trick_tests.ts` →
+  `packs/sudoku9-tricks.json` (Tricks 1–6: Pointing, Claiming, Pairs, Hidden pairs, X-wing, Y-wing) and
+  `packs/sudoku9-expert.json` (Expert 1, needs Y-wing). Each test is kept only if a player following the hints
+  is actually shown that trick (`playHints`, `tricksShown` in `hint.ts`). All 7 made in about 12 seconds.
+- `makeLevel(level, tricks)` replaces the Medium/Hard makers.
+- Hint text: a chain's Explain shows only the first step ("…leads to a number in 2 more steps: tap Show me");
+  repeated notes are merged; "an 8".
+- **Checked:** 34 checks (trick tests solved by hints and showing their trick; Expert graded Expert). Browser:
+  X-wing chain (X-wing → Y-wing → 8) and Y-wing hint.
+
 ## 2026-10-20 — Expert Sudoku, trick 6: Y-wing
 - **Y-wing** (`techniques.ts`, Expert): a two-number cell sees an a-or-c cell and a b-or-c cell; one of them must
   be c, so c is ruled out of cells that see both. The three cells are ringed in a hint.

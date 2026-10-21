@@ -4,7 +4,7 @@ import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
 import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
-import { hint } from "../engine/sudoku/hint.ts";
+import { hint, playHints, tricksShown } from "../engine/sudoku/hint.ts";
 import { existsSync, readFileSync } from "node:fs";
 import { placeStars, regionSizes, growRegions, repair } from "../engine/starbattle/layout.ts";
 import { solveWith as sbSolveWith } from "../engine/starbattle/grade.ts";
@@ -100,6 +100,23 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
     }
   }
   check(`board-only hints on 10 hard puzzles: no wrong move (${chains} chains, ${pencils} pencil-mark hints)`, bad === 0);
+}
+
+// Trick tests: each has one answer, and following the hints solves it and shows its trick. Expert: graded Expert.
+if (existsSync("packs/sudoku9-tricks.json")) {
+  const tests = JSON.parse(readFileSync("packs/sudoku9-tricks.json", "utf8")).puzzles;
+  const ok = tests.map((p: Saved & { trick: string }) => {
+    const play = playHints(p.givens, p.solution);
+    return countSolutions(p.givens) === 1 && play.solved && tricksShown(play.shown).has(p.trick);
+  });
+  check(`trick tests: ${tests.length} puzzles, each solved by hints and showing its trick`, tests.length === 6 && ok.every(Boolean));
+}
+if (existsSync("packs/sudoku9-expert.json")) {
+  const ex = JSON.parse(readFileSync("packs/sudoku9-expert.json", "utf8")).puzzles[0];
+  const play = playHints(ex.givens, ex.solution);
+  const seen = tricksShown(play.shown);
+  check("Expert pack: one answer, graded Expert, hints solve it with X-wing or Y-wing",
+    countSolutions(ex.givens) === 1 && grade(ex.givens).level === "Expert" && play.solved && (seen.has("X-wing") || seen.has("Y-wing")));
 }
 
 // A hint never leans on hidden memory: wrong pencil marks are pointed out first.

@@ -45,15 +45,18 @@ const withStep = (out: RuledOut, step: Step) => {
 // Say where each ruled-out fact a step relies on came from: your pencil marks, or a step earlier in this hint.
 function withNotes(step: Step, fromMarks: RuledOut) {
   const notes: string[] = [];
-  const byCell = new Map<string, number[]>();
+  const byCell = new Map<string, number[]>(); // from your pencil marks, grouped by cell
+  const byNum = new Map<number, string[]>(); // from earlier in this hint, grouped by number
   for (const [r, c, n] of step.uses ?? []) {
     if (fromMarks.has(`${r},${c},${n}`)) byCell.set(`${r},${c}`, [...(byCell.get(`${r},${c}`) ?? []), n]);
-    else notes.push(`${n} was ruled out of ${cellName(r, c)} in the step above.`);
+    else byNum.set(n, [...(byNum.get(n) ?? []), cellName(r, c)]);
   }
   for (const [k, ns] of byCell) {
     const [r, c] = k.split(",").map(Number);
-    notes.unshift(`Your pencil marks at ${cellName(r, c)} leave out ${ns.join(" and ")}.`);
+    notes.push(`Your pencil marks at ${cellName(r, c)} leave out ${ns.join(" and ")}.`);
   }
+  const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join("; ")} and ${xs.at(-1)}` : xs[0]);
+  for (const [n, cells] of byNum) notes.push(`${n} was ruled out of ${list(cells)} earlier in this hint.`);
   return notes.length ? `${step.why} (${notes.join(" ")})` : step.why;
 }
 
@@ -115,7 +118,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
   if (place) {
     return {
       kind: "step", technique: place.technique, focus: place.focus, target: [place.row, place.col], value: place.value,
-      remove: null, blockers: place.blockers, nudge: place.nudge, explain: withNotes(place, fromMarks), showMe: `It's a ${place.value}!`,
+      remove: null, blockers: place.blockers, nudge: place.nudge, explain: withNotes(place, fromMarks), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
     };
   }
 
@@ -131,8 +134,9 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
       remove: first.remove!, values: first.values ?? [first.value], spots: first.spots, blockers: first.blockers,
       chain, place: { focus: place.focus, blockers: place.blockers, why: withNotes(place, fromMarks) },
       nudge: first.nudge,
-      explain: [...chain.map((s, i) => `${i ? "Then: " : ""}${s.why}`), `So: ${withNotes(place, fromMarks)}`].join(" "),
-      showMe: `It's a ${place.value}!`,
+      // Explain stays short (the first step only); Show me walks the whole chain.
+      explain: `${chain[0].why} That leads to a number in ${chain.length === 1 ? "one more step" : `${chain.length} more steps`}: tap Show me to walk through it.`,
+      showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
     };
   }
 
@@ -153,3 +157,28 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}): Hint {
     showMe: `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k === 1 ? "1 cell" : `${k} cells`}. Pencil marks added so you can see it.`,
   };
 }
+
+// Tap the bulb and "Show me" over and over, like a player who only follows hints (numbers + the pencil marks
+// hints write). Returns every hint shown and whether it finished. Used by the puzzle maker and the checks.
+export function playHints(givens: Grid, solution: Grid, limit = 300) {
+  const b = givens.map((r) => [...r]);
+  const marks: Marks = {};
+  const shown: Hint[] = [];
+  for (let i = 0; i < limit; i++) {
+    const h = hint(b, solution, marks);
+    if (h.kind !== "step") break;
+    shown.push(h);
+    if (h.pencil) {
+      for (const p of h.pencil) marks[`${p.cell[0]},${p.cell[1]}`] = p.marks;
+      continue;
+    }
+    const [r, c] = h.target!;
+    b[r][c] = h.value;
+    delete marks[`${r},${c}`];
+  }
+  return { shown, board: b, solved: b.every((row, r) => row.every((v, c) => v === solution[r][c])) };
+}
+
+// Every trick name a list of hints showed (chains count each step).
+export const tricksShown = (shown: Hint[]) =>
+  new Set(shown.flatMap((h) => [h.technique, ...(h.chain ?? []).map((s) => s.technique)]));

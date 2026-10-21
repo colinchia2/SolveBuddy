@@ -5,6 +5,8 @@ const PACKS = {
   easy: await (await fetch("/packs/sudoku9-easy-starter.json")).json(),
   medium: await (await fetch("/packs/sudoku9-medium.json")).json(),
   hard: await (await fetch("/packs/sudoku9-hard.json")).json(),
+  expert: await (await fetch("/packs/sudoku9-expert.json")).json(),
+  tricks: await (await fetch("/packs/sudoku9-tricks.json")).json(), // one test per harder trick
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
@@ -45,7 +47,7 @@ function load(i, name = packName) {
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, mode: s?.mode || "normal",
     hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
-  $("sub").textContent = `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
+  $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
   renderPicker();
@@ -244,7 +246,7 @@ function render() {
     let next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
     if (h.play != null) {
       const k = d.chain.length;
-      text = step.last ? [`So it's a ${d.value}.`, step.why] : [`Step ${h.play + 1} of ${k + 1}`, step.why];
+      text = step.last ? [`So it's ${d.value === 8 ? "an" : "a"} ${d.value}.`, step.why] : [`Step ${h.play + 1} of ${k + 1}`, step.why];
       next = step.last ? "Place it" : "Next";
     }
     $("hintTitle").textContent = text[0];

@@ -5,6 +5,7 @@
 import { makeFullGrid, type Grid } from "./fullGrid.ts";
 import { erase } from "./erase.ts";
 import { grade } from "./grade.ts";
+import { playHints, tricksShown } from "./hint.ts";
 
 export const EASY_CLUES = 36; // numbers left showing; more = gentler start
 export const EASY_MIN_PER = 2; // every row, column and box keeps at least this many
@@ -27,23 +28,27 @@ export function makeEasy(): Puzzle {
   }
 }
 
-// Medium / Hard: same idea, erasing further, but the puzzle must be exactly that level and use its new trick
-// (Pointing for Medium, Pairs for Hard) at least `minUses` times.
+// Medium / Hard / Expert: same idea, erasing further, but the puzzle must be exactly that level, and a player
+// following hints must be shown `trick` at least once (so a trick test really teaches that trick).
 export const MEDIUM_CLUES = 26;
-const NEW_TRICK = { Medium: "Pointing", Hard: "Pairs" } as const;
-const UP_TO = { Medium: ["Easy", "Medium"], Hard: ["Easy", "Medium", "Hard"] };
-export function makeLevel(level: "Medium" | "Hard", minUses = 2): Puzzle {
-  for (;;) {
+const UP_TO: Record<string, string[]> = {
+  Medium: ["Easy", "Medium"], Hard: ["Easy", "Medium", "Hard"], Expert: ["Easy", "Medium", "Hard", "Expert"],
+};
+export function makeLevel(level: "Medium" | "Hard" | "Expert", tricks: string[], tries = Infinity): Puzzle | null {
+  for (let i = 0; i < tries; i++) {
     const solution = makeFullGrid();
     const { puzzle } = erase(solution, MEDIUM_CLUES, (p) => spread(p).min >= EASY_MIN_PER && UP_TO[level].includes(grade(p).level));
     const g = grade(puzzle);
     if (g.level !== level || spread(puzzle).max > EASY_MAX_PER) continue;
-    if (g.steps.filter((s) => s.technique === NEW_TRICK[level]).length < minUses) continue;
+    const play = playHints(puzzle, solution);
+    const seen = tricksShown(play.shown);
+    if (!play.solved || !tricks.some((t) => seen.has(t))) continue;
     return { givens: puzzle, solution, clues: puzzle.flat().filter((n) => n !== 0).length,
-      techniquesUsed: [...new Set(g.steps.map((s) => s.technique))] };
+      techniquesUsed: [...seen] };
   }
+  return null;
 }
-export const makeMedium = (minPointing = 2) => makeLevel("Medium", minPointing);
+export const makeMedium = () => makeLevel("Medium", ["Pointing"])!;
 
 // Fewest and most numbers showing in any row, column or box.
 export function spread(grid: Grid): { min: number; max: number } {
