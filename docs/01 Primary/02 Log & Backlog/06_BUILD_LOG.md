@@ -236,3 +236,20 @@ Newest first.
 - **Checked:** built site served locally (Sudoku hints + Star Battle); live site loads and hints work.
 - **Next:** phone app at `C:\dev\SolveBuddyApp` (WebView of the live site + offline copy, one production build,
   every native module and purpose string up front; never build without Colin's go).
+
+## 2026-10-21: Phone app shell ready for its one build (not built)
+- **Site:** the build now also makes `app/sudoku.html` and `app/starbattle.html`: one file each with style, code
+  and packs inside (esbuild; pages read `window.SB_PACKS` before fetching). Checked: served alone, both load and
+  hints work.
+- **App:** `C:\dev\SolveBuddyApp` (local git; Expo project @colinchia2/solvebuddy, bundle com.colinchia.solvebuddy,
+  SDK 56 like CheckBuddy). WebView opens the newest saved page (or the packed-in copy) with GitHub Pages as its
+  address, so progress stays put and it works offline. Downloads newer pages in the background → a git push
+  reaches the phone next launch, no build, no OTA. Haptics bridge, screen stays awake.
+- **Installed up front:** web view, Liquid Glass, blur, haptics, notifications, mic + speech, photos/camera,
+  image editing, media library, files, sharing, clipboard, keep-awake, audio, store review, splash, links,
+  gradients, SVG, gestures, animations, screens + navigation (native tab bar), storage. Left out: Google sign-in,
+  calendar, contacts, location (SolveBuddy has no accounts).
+- **Purpose strings:** camera, photos, save to photos, microphone, speech. Background audio turned OFF (Apple
+  rejects unused background modes). `scripts/check-build.mjs` checks all of it: 14/14 pass.
+- SDK 57 exists (expo-doctor warns of an SDK 56 memory issue); stayed on 56 because CheckBuddy built fine on it.
+- **Waiting on Colin:** icon colour (blue logo vs the app's terracotta), then his go for the build.
