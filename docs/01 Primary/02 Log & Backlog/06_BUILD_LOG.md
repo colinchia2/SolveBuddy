@@ -225,3 +225,14 @@ Newest first.
   3. **Why each is 8:** "If R4C7 is 1, R5C8 can't be 1 too (it shares a box), so R5C8 is 8."
   4. **Names the loser:** "R6C7 shares a box with R5C8 and a column with R3C7, so it can't be 8."
 - **Checked:** 36 checks (new: Y-wing writes pairs first, then rules out). Browser: both Y-wing hints.
+
+## 2026-10-21: On GitHub, live on GitHub Pages
+- Repo `colinchia2/SolveBuddy` (PUBLIC, Colin's choice: free Pages). No PythonAnywhere for SolveBuddy.
+- Live: https://colinchia2.github.io/SolveBuddy/ (opens Sudoku). Every push to main runs the checks, builds the
+  site (`scripts/build_site.ts` → `_site/`, engine .ts → .js) and publishes it (`.github/workflows/pages.yml`).
+  A push that fails the checks doesn't publish.
+- Pages now use relative paths so the same files work on localhost, Pages and (soon) inside the app. The local
+  server sends "/" to `/web/sudoku.html` (needs a server restart to take effect).
+- **Checked:** built site served locally (Sudoku hints + Star Battle); live site loads and hints work.
+- **Next:** phone app at `C:\dev\SolveBuddyApp` (WebView of the live site + offline copy, one production build,
+  every native module and purpose string up front; never build without Colin's go).
