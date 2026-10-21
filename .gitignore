@@ -3,3 +3,4 @@ FactPackGameMaps/
 
 # Built website (scripts/build_site.ts); GitHub builds its own
 _site/
+node_modules/

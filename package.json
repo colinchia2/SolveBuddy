@@ -4,5 +4,8 @@
   "type": "module",
   "scripts": {
     "checks": "node checks/run_all.ts"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

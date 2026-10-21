@@ -1,9 +1,11 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 
+// The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
+const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
 const PACKS = {
-  easy: await (await fetch("../packs/starbattle8-easy-starter.json")).json(),
-  expert: await (await fetch("../packs/starbattle8-expert.json")).json(),
+  easy: await loadPack("starbattle8-easy-starter.json"),
+  expert: await loadPack("starbattle8-expert.json"),
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";

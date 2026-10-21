@@ -1,12 +1,14 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 
+// The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
+const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
 const PACKS = {
-  easy: await (await fetch("../packs/sudoku9-easy-starter.json")).json(),
-  medium: await (await fetch("../packs/sudoku9-medium.json")).json(),
-  hard: await (await fetch("../packs/sudoku9-hard.json")).json(),
-  expert: await (await fetch("../packs/sudoku9-expert.json")).json(),
-  tricks: await (await fetch("../packs/sudoku9-tricks.json")).json(), // one test per harder trick
+  easy: await loadPack("sudoku9-easy-starter.json"),
+  medium: await loadPack("sudoku9-medium.json"),
+  hard: await loadPack("sudoku9-hard.json"),
+  expert: await loadPack("sudoku9-expert.json"),
+  tricks: await loadPack("sudoku9-tricks.json"), // one test per harder trick
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
