@@ -15,6 +15,8 @@ export type Step = {
   // The placed numbers that block the other cells, each with the row, column or box it blocks through
   // (shown from Explain on; Colin, 10/20).
   blockers?: { cell: [number, number]; line: [number, number][] }[];
+  // Ruled-out facts the step relied on ([row, col, number]), so a hint can say where they came from.
+  uses?: [number, number, number][];
   nudge: string; // where to look (the "Nudge" level of a hint)
   why: string; // plain-English reason (the "Explain" level of a hint)
 };
@@ -51,6 +53,11 @@ export type RuledOut = Set<string>;
 const outKey = (r: number, c: number, n: number) => `${r},${c},${n}`;
 const canGo = (grid: Grid, out: RuledOut, r: number, c: number, n: number) =>
   grid[r][c] === 0 && !out.has(outKey(r, c, n)) && fits(grid, r, c, n);
+
+// Which of these numbers in these cells fit the basic rules but are ruled out: facts a step relies on.
+const usedOut = (grid: Grid, out: RuledOut, cells: [number, number][], nums: number[]) =>
+  cells.flatMap(([r, c]) => nums.filter((n) => grid[r][c] === 0 && out.has(outKey(r, c, n)) && fits(grid, r, c, n)).map((n) => [r, c, n] as [number, number, number]));
+const ALL_NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 // Apply a step: place its number, or remember what it ruled out.
 export function applyStep(grid: Grid, out: RuledOut, step: Step) {
@@ -104,7 +111,7 @@ function onlySpot(grid: Grid, out: RuledOut): Step | null {
       const [row, col] = spots[0];
       const others = unit.cells.filter(([r, c]) => grid[r][c] === 0 && !(r === row && c === col));
       return { technique: `Only spot in ${unit.kind}`, row, col, value: n, focus: unit.cells,
-        blockers: blockersFor(grid, others, n),
+        blockers: blockersFor(grid, others, n), uses: usedOut(grid, out, others, [n]),
         nudge: `Where can ${n} go in ${unit.label}?`,
         why: `In ${unit.label}, every other empty cell already sees a ${n}, so ${n} must go at ${cellName(row, col)}.` };
     }
@@ -119,12 +126,12 @@ function onlyNumber(grid: Grid, out: RuledOut): Step | null {
       if (grid[row][col] !== 0) continue;
       const options = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => canGo(grid, out, row, col, n));
       if (options.length !== 1) continue;
-      const ruled = [1, 2, 3, 4, 5, 6, 7, 8, 9].some((n) => out.has(outKey(row, col, n)) && fits(grid, row, col, n));
-      return { technique: "Only number for cell", row, col, value: options[0], focus: peers(row, col),
+      const uses = usedOut(grid, out, [[row, col]], ALL_NUMS);
+      return { technique: "Only number for cell", row, col, value: options[0], focus: peers(row, col), uses,
         nudge: `Which numbers could go at ${cellName(row, col)}?`,
-        why: ruled
-          ? `Every number except ${options[0]} is already in this cell's row, column or box, or was ruled out by an earlier hint.`
-          : `Every number except ${options[0]} is already in this cell's row, column or box.` };
+        why: uses.length
+          ? `At ${cellName(row, col)}, every number except ${options[0]} is either already in its row, column or box, or ruled out.`
+          : `At ${cellName(row, col)}, every number except ${options[0]} is already in its row, column or box.` };
     }
   }
   return null;
@@ -133,7 +140,8 @@ function onlyNumber(grid: Grid, out: RuledOut): Step | null {
 // 4. (Medium) Pointing: in a box, every spot for a number sits in one row (or column). The box's number
 //    must be in that line, so the number can't go anywhere else in the line. Twin of Star Battle's
 //    "Confined region".
-function pointing(grid: Grid, out: RuledOut): Step | null {
+// With `all`, every step found is collected there instead of returning the first (used to search hint chains).
+function pointing(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   for (let b = 0; b < 9; b++) {
     const box = boxCells(b);
     for (let n = 1; n <= 9; n++) {
@@ -147,11 +155,13 @@ function pointing(grid: Grid, out: RuledOut): Step | null {
         const remove = line.cells.filter(([r, c]) => !box.some(([a, d]) => a === r && d === c) && canGo(grid, out, r, c, n));
         if (!remove.length) continue;
         const others = box.filter(([r, c]) => grid[r][c] === 0 && !spots.some(([a, d]) => a === r && d === c));
-        return { technique: "Pointing", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
-          blockers: blockersFor(grid, others, n),
+        const st: Step = { technique: "Pointing", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
+          blockers: blockersFor(grid, others, n), uses: usedOut(grid, out, others, [n]),
           focus: [...box, ...line.cells.filter((p) => !box.some(([a, d]) => a === p[0] && d === p[1]))],
           nudge: `Where can ${n} go in box ${b + 1}?`,
           why: `In box ${b + 1}, ${n} can only go in ${line.label}. So the box's ${n} is in that ${kind}, and ${n} can't go anywhere else in ${line.label}.` };
+        if (!all) return st;
+        all.push(st);
       }
     }
   }
@@ -160,7 +170,7 @@ function pointing(grid: Grid, out: RuledOut): Step | null {
 
 // 5. (Medium) Claiming: Pointing in reverse. In a row (or column), every spot for a number sits inside one box.
 //    The line's number must be in that box, so the number can't go anywhere else in the box.
-function claiming(grid: Grid, out: RuledOut): Step | null {
+function claiming(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   for (const line of UNITS.filter((u) => u.kind !== "box")) {
     for (let n = 1; n <= 9; n++) {
       if (line.cells.some(([r, c]) => grid[r][c] === n)) continue;
@@ -173,11 +183,13 @@ function claiming(grid: Grid, out: RuledOut): Step | null {
       const remove = box.filter(([r, c]) => !inLine(r, c) && canGo(grid, out, r, c, n));
       if (!remove.length) continue;
       const others = line.cells.filter(([r, c]) => grid[r][c] === 0 && !spots.some(([a, d]) => a === r && d === c));
-      return { technique: "Claiming", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
-        blockers: blockersFor(grid, others, n),
+      const st: Step = { technique: "Claiming", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
+        blockers: blockersFor(grid, others, n), uses: usedOut(grid, out, others, [n]),
         focus: [...line.cells, ...box.filter(([r, c]) => !inLine(r, c))],
         nudge: `Where can ${n} go in ${line.label}?`,
         why: `In ${line.label}, ${n} can only go inside box ${b + 1}. So the ${line.kind}'s ${n} is in that box, and ${n} can't go anywhere else in box ${b + 1}.` };
+      if (!all) return st;
+      all.push(st);
     }
   }
   return null;
@@ -185,7 +197,7 @@ function claiming(grid: Grid, out: RuledOut): Step | null {
 
 // 6. (Hard) Pairs: two empty cells in a row, column or box can each only hold the same two numbers. They take
 //    those two numbers between them, so no other cell in that unit can hold either one.
-function pairs(grid: Grid, out: RuledOut): Step | null {
+function pairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   for (const unit of UNITS) {
     const two = unit.cells
       .filter(([r, c]) => grid[r][c] === 0)
@@ -200,14 +212,12 @@ function pairs(grid: Grid, out: RuledOut): Step | null {
           && (canGo(grid, out, r, c, a) || canGo(grid, out, r, c, b)));
         if (!remove.length) continue;
         const [p, q] = pair;
-        // A pair can depend on an earlier hint (e.g. Pointing ruled a 5 out). Say so, or it looks wrong (Colin, 10/20).
-        const earlier = pair.flatMap(([r, c]) => [1, 2, 3, 4, 5, 6, 7, 8, 9]
-          .filter((n) => grid[r][c] === 0 && fits(grid, r, c, n) && out.has(outKey(r, c, n)))
-          .map((n) => ` (${n} was already ruled out of ${cellName(r, c)} by an earlier step.)`));
-        return { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
-          focus: unit.cells,
+        const st: Step = { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
+          focus: unit.cells, uses: usedOut(grid, out, pair, ALL_NUMS),
           nudge: `Look for two cells in ${unit.label} that can only hold the same two numbers.`,
-          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.${earlier.join("")}` };
+          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.` };
+        if (!all) return st;
+        all.push(st);
       }
     }
   }
@@ -215,6 +225,13 @@ function pairs(grid: Grid, out: RuledOut): Step | null {
 }
 
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
+export const PLACING: Technique[] = [lastCell, onlySpot, onlyNumber];
+// Every rule-out step available right now (for searching short hint chains).
+export function allRuleOuts(grid: Grid, out: RuledOut): Step[] {
+  const all: Step[] = [];
+  for (const t of [pointing, claiming, pairs]) t(grid, out, all);
+  return all;
+}
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
 export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing, claiming];
 export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs];

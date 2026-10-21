@@ -44,8 +44,7 @@ function load(i, name = packName) {
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, mode: s?.mode || "normal",
-    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false,
-    ruledOut: new Set() }; // numbers ruled out by earlier hints ("row,col,n"); always true, so Undo keeps them
+    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
   $("sub").textContent = `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
@@ -111,13 +110,14 @@ function checkSolved() {
 }
 
 // Hint: tap the bulb → Nudge; then Explain; then Show me (does the move); then Done.
+// Hints only see the board: your numbers and your center pencil marks (Colin, 10/20).
 function openHint() {
   if (s.solved) return;
   if (s.hint) {
     s.hint = null;
     return render();
   }
-  s.hint = { data: findHint(board(), s.solution, s.ruledOut), level: 1 };
+  s.hint = { data: findHint(board(), s.solution, s.center), level: 1 };
   render();
 }
 function advanceHint() {
@@ -131,40 +131,59 @@ function advanceHint() {
   if (h.level === 3) {
     saveUndo();
     const d = h.data;
-    // Show me, harder tricks: remember the number is ruled out, and take it out of any pencil marks there.
-    if (d.remove) {
-      for (const [r, c] of d.remove) {
-        const k = key(r, c);
-        const values = d.values || [d.value];
-        for (const v of values) s.ruledOut.add(`${k},${v}`);
-        for (const map of [s.corner, s.center]) {
-          if (!map[k]) continue;
-          map[k] = map[k].filter((n) => !values.includes(n));
-          if (!map[k].length) delete map[k];
-        }
+    // Show me, a chain: play each rule-out on the board first (Next), then place the number.
+    if (d.chain) {
+      undoStack.pop();
+      h.play = 0;
+      return render();
+    }
+    // Show me, a lone rule-out: write it into pencil marks so it's on the board for the next hint.
+    if (d.pencil) {
+      for (const { cell, marks } of d.pencil) {
+        const k = key(...cell);
+        s.center[k] = marks;
+        if (s.corner[k]) s.corner[k] = s.corner[k].filter((n) => marks.includes(n));
+        if (!s.corner[k]?.length) delete s.corner[k];
       }
       return render();
     }
-    // Show me: do the move (place the number, or clear the mistake).
-    const [r, c] = h.data.target;
-    const k = key(r, c);
-    if (h.data.value) s.entries[k] = h.data.value;
-    else delete s.entries[k];
-    delete s.corner[k];
-    delete s.center[k];
-    s.sel = [r, c];
+    placeHint(d);
   }
   render();
+}
+// Next during a chain play-through: one more step, then the number goes in.
+function advancePlay(h) {
+  if (h.play < h.data.chain.length) h.play++;
+  else {
+    h.play = null;
+    saveUndo();
+    placeHint(h.data);
+  }
+  render();
+}
+// Show me: do the move (place the number, or clear the mistake).
+function placeHint(d) {
+  const [r, c] = d.target;
+  const k = key(r, c);
+  if (d.value) s.entries[k] = d.value;
+  else delete s.entries[k];
+  delete s.corner[k];
+  delete s.center[k];
+  s.sel = [r, c];
 }
 
 function render() {
   const h = s.hint;
-  const focus = new Set(h ? h.data.focus.map(([r, c]) => key(r, c)) : []);
-  const target = h && h.level >= 2 && h.data.target ? key(...h.data.target) : null;
-  const striped = new Set(h && h.level >= 2 && h.data.remove ? h.data.remove.map(([r, c]) => key(r, c)) : []);
-  const spots = new Set(h && h.level >= 2 && h.data.spots ? h.data.spots.map(([r, c]) => key(r, c)) : []);
+  // What the board shows for the hint: its own cells, or the current step of a chain play-through.
+  const step = h?.play != null ? (h.play < h.data.chain.length ? h.data.chain[h.play]
+    : { ...h.data.place, last: true, spots: h.data.chain.flatMap((c) => c.spots ?? []) }) : h?.data; // last step keeps the chain's cells ringed
+  const shown = h && h.level >= 2;
+  const focus = new Set(step ? step.focus.map(([r, c]) => key(r, c)) : []);
+  const target = shown && h.data.target && (h.play == null || step.last) ? key(...h.data.target) : null;
+  const striped = new Set(shown && step.remove ? step.remove.map(([r, c]) => key(r, c)) : []);
+  const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
   // From Explain on: the numbers that block the other cells (blue), and the line each blocks through (light blue).
-  const blockers = h && h.level >= 2 && h.data.blockers ? h.data.blockers : [];
+  const blockers = shown && step.blockers ? step.blockers : [];
   const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
   const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
   const [sr, sc] = s.sel || [-1, -1];
@@ -217,15 +236,21 @@ function render() {
     $("hintChip").textContent = d.technique;
     $("hintChip").hidden = !d.technique || h.level === 1;
     [1, 2, 3].forEach((n) => $("d" + n).classList.toggle("on", h.level >= n));
-    const text = [
+    let text = [
       [d.nudge, ""],
       [d.nudge, d.explain],
       [d.showMe, d.explain],
     ][stuck ? 1 : h.level - 1];
+    let next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
+    if (h.play != null) {
+      const k = d.chain.length;
+      text = step.last ? [`So it's a ${d.value}.`, step.why] : [`Step ${h.play + 1} of ${k + 1}`, step.why];
+      next = step.last ? "Place it" : "Next";
+    }
     $("hintTitle").textContent = text[0];
     $("hintBody").textContent = text[1];
     $("hintBody").hidden = !text[1];
-    $("hintNextLabel").textContent = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
+    $("hintNextLabel").textContent = next;
   }
 
   $("rules").hidden = !s.rules;
@@ -288,7 +313,7 @@ $("undoBtn").onclick = () => {
 $("restartBtn").onclick = () => load(idx);
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
-$("hintNext").onclick = advanceHint;
+$("hintNext").onclick = () => (s.hint.play != null ? advancePlay(s.hint) : advanceHint());
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 $("nextPuzzle").onclick = () => load(idx + 1);

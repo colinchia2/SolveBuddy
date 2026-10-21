@@ -55,6 +55,11 @@ Top item = what's next.
 - 10/20 (Colin): Star Battle "Auto-cross around stars" is **off by default** (the Settings mockup had it on).
 - 10/20 (Colin): Star Battle **press-and-drag marks ×** on every empty cell you pass (starting on an × wipes
   instead). Same on mouse and finger. One drag = one Undo. Fast swipes fill the cells in between.
+- 10/20 (Colin): **a hint only uses what's on the board**: correct numbers and your center pencil marks. Never
+  a hidden "earlier step". Prefer hints that end in a placed number; if it needs rule-outs first, Show me plays
+  the short chain (up to 3) step by step. If no short chain exists, give one rule-out and write it into pencil
+  marks so it's visible. Why: "an earlier step that I didn't see... then I don't know that." Corner marks are
+  not read by hints (they don't mean "this cell is one of these").
 - 10/20: design-checker warnings about Inter, glass borders and nested cards are left as-is, because they
   come from the approved mockups.
 

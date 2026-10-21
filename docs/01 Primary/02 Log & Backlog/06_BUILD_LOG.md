@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-10-20 — Sudoku hints use only what's on the board
+- Colin caught a Pairs hint that relied on an earlier hint's rule-out he couldn't see. New rule (backlog,
+  Decided): hints read only correct numbers + center pencil marks; the page no longer remembers rule-outs.
+- `engine/sudoku/hint.ts`: mistakes (numbers, then pencil marks that leave out the answer) → a number now →
+  shortest chain of rule-outs to a number (breadth-first, up to 3; Show me plays "Step 1 of 2… So it's a 9")
+  → else one rule-out whose Show me writes center pencil marks. Hints say where a ruled-out fact came from
+  ("your pencil marks…" or "in the step above").
+- Tricks record what they relied on (`uses`) and can list every rule-out (`allRuleOuts`).
+- **Checked:** 32 checks, including Medium/Hard packs solved from the board only, 10 hard random puzzles with no
+  wrong move (chains and pencil-mark hints), and a wrong pencil mark flagged first. Hints take under 20 ms.
+  Browser: the 4-6 pair → 9 chain, pair kept ringed on the last step.
+
 ## 2026-10-20 — Expert Sudoku, trick 3: Claiming
 - **Claiming** (`techniques.ts`): Pointing in reverse. If every spot for a number in a row/column is inside one
   box, the number is ruled out of the rest of that box. Graded Medium, next to Pointing (same difficulty).

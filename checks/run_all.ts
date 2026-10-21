@@ -45,31 +45,71 @@ const erased = Array.from({ length: 10 }, () => {
 check("10 erased puzzles each have exactly one answer", erased.every(Boolean));
 
 // Every move the tricks make must match the real answer, or a hint could be wrong.
-// The Medium and Hard packs: one answer, the right grade, and "Show me" over and over solves them
-// (ruled-out hints included).
+// The Medium and Hard packs: one answer, the right grade, and "Show me" over and over solves them using only
+// what's on the board (numbers + pencil marks the hints write). Every rule-out must be true, every number right.
 for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/sudoku9-hard.json", "Hard"]]) {
   if (!existsSync(file)) continue;
   const m = JSON.parse(readFileSync(file, "utf8")).puzzles[0];
   check(`${level} pack: one answer, graded ${level}`, countSolutions(m.givens) === 1 && grade(m.givens).level === level);
   const b = m.givens.map((r: number[]) => [...r]);
-  const out = new Set<string>();
-  let ok = true, removes = 0;
+  const marks: Record<string, number[]> = {};
+  let ok = true, chains = 0, pencils = 0;
+  const sound = (cells: [number, number][], values: number[]) => cells.every(([r, c]) => !values.includes(m.solution[r][c]));
   for (let i = 0; i < 200 && ok; i++) {
-    const h = hint(b, m.solution, out);
-    if (h.kind !== "step") break;
-    if (h.remove) {
-      removes++;
-      const values = h.values ?? [h.value];
-      ok = h.remove.every(([r, c]) => !values.includes(m.solution[r][c]));
-      h.remove.forEach(([r, c]) => values.forEach((v) => out.add(`${r},${c},${v}`)));
-    } else {
+    const h = hint(b, m.solution, marks);
+    if (h.kind !== "step") { ok = h.kind !== "mistake"; break; }
+    if (h.pencil) {
+      pencils++;
+      ok = sound(h.remove!, h.values!) && h.pencil.every((p) => p.marks.includes(m.solution[p.cell[0]][p.cell[1]]));
+      h.pencil.forEach((p) => (marks[`${p.cell[0]},${p.cell[1]}`] = p.marks));
+      continue;
+    }
+    if (h.chain) chains++, (ok = h.chain.every((s) => sound(s.remove!, s.values!)));
+    const [r, c] = h.target!;
+    ok &&= h.value === m.solution[r][c];
+    b[r][c] = h.value;
+    delete marks[`${r},${c}`];
+  }
+  check(`${level}: hints alone solve it from the board only (${chains} chains, ${pencils} pencil-mark hints)`,
+    ok && b.every((row: number[], r: number) => row.every((v, c) => v === m.solution[r][c])));
+}
+
+// On hard random puzzles, keep tapping Show me (numbers + pencil marks only) until solved or stuck:
+// every number right, every rule-out true, every pencil mark keeps the answer.
+{
+  let bad = 0, pencils = 0, chains = 0;
+  for (let i = 0; i < 10; i++) {
+    const sol = makeFullGrid();
+    const b = erase(sol, 0).puzzle;
+    const marks: Record<string, number[]> = {};
+    const sound = (cells: [number, number][], vals: number[]) => cells.every(([r, c]) => !vals.includes(sol[r][c]));
+    for (let j = 0; j < 300; j++) {
+      const h = hint(b, sol, marks);
+      if (h.kind !== "step") { bad += h.kind === "mistake" ? 1 : 0; break; }
+      if (h.pencil) {
+        pencils++;
+        if (!sound(h.remove!, h.values!) || !h.pencil.every((p) => p.marks.includes(sol[p.cell[0]][p.cell[1]]))) bad++;
+        h.pencil.forEach((p) => (marks[`${p.cell[0]},${p.cell[1]}`] = p.marks));
+        continue;
+      }
+      if (h.chain) chains++, (bad += h.chain.every((s) => sound(s.remove!, s.values!)) ? 0 : 1);
       const [r, c] = h.target!;
-      ok = h.value === m.solution[r][c];
+      if (sol[r][c] !== h.value) bad++;
       b[r][c] = h.value;
+      delete marks[`${r},${c}`];
     }
   }
-  check(`${level}: hints alone solve it, every move correct (${removes} ruled-out hints)`,
-    ok && removes > 0 && b.every((row: number[], r: number) => row.every((v, c) => v === m.solution[r][c])));
+  check(`board-only hints on 10 hard puzzles: no wrong move (${chains} chains, ${pencils} pencil-mark hints)`, bad === 0);
+}
+
+// A hint never leans on hidden memory: wrong pencil marks are pointed out first.
+{
+  const m = JSON.parse(readFileSync("packs/sudoku9-hard.json", "utf8")).puzzles[0];
+  const r = m.givens.findIndex((row: number[]) => row.includes(0));
+  const c = m.givens[r].indexOf(0);
+  const wrong = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => n !== m.solution[r][c]).slice(0, 2);
+  const h = hint(m.givens, m.solution, { [`${r},${c}`]: wrong });
+  check("a pencil mark that leaves out the answer is flagged first", h.kind === "mistake" && h.target![0] === r && h.target![1] === c);
 }
 
 // Harder tricks rule a number out of cells instead: none of those cells may hold it in the answer.
