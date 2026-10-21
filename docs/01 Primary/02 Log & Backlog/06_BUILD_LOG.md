@@ -213,3 +213,5 @@ Newest first.
 - How: the step's text has a `{ruled}` slot; `withNotes` fills it with one reason per ruled-out number, from each
   mark group's new `why(r, c, n)` (pairs, box corner marks, X-wing corner marks, the cell's own pencil marks).
 - **Checked:** 35 checks; Test 5's next 3 hints printed from the engine.
+- Follow-up (Colin: "yes"): the board shows only the part of the X-wing marks that rules out that cell (column 6
+  and its two marked 2s), not both columns. Mark groups can give a `near(r, c)` part. Checked in the browser.

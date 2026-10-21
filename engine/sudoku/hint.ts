@@ -44,7 +44,8 @@ const withStep = (out: RuledOut, step: Step) => {
 // Where a ruled-out fact came from: a cell's center marks leaving it out, or a group of marks (a note, the
 // marked cells, and the line they block, shown like blocking numbers).
 // `why` says it for one cell and number, e.g. "column 6's 2 is at R2C6 or R7C6".
-type Group = { note: string; why: (r: number, c: number, n: number) => string; cells: Cell[]; line: Cell[] };
+type Group = { note: string; why: (r: number, c: number, n: number) => string; cells: Cell[]; line: Cell[];
+  near?: (r: number, c: number) => { cells: Cell[]; line: Cell[] } };
 type Sources = Map<string, Cell | Group>;
 
 // "R2C6 or R7C6"
@@ -80,13 +81,16 @@ function withNotes(step: Step, from: Sources) {
 const inferredOf = (step: Step): Cell[] => [...new Map((step.uses ?? []).map(([r, c]) => [`${r},${c}`, [r, c] as Cell])).values()];
 
 // The step's blocking numbers, plus any groups of marks it relies on (outlined, with the line they block).
+// A group with `near` shows only the part that rules out that cell (Colin, 10/21: just column 6, not 2 and 6).
 function blockersWith(step: Step, from: Sources): Step["blockers"] {
-  const groups = new Set<Group>();
+  const parts = new Map<string, { cells: Cell[]; line: Cell[] }>();
   for (const [r, c, n] of step.uses ?? []) {
     const src = from.get(`${r},${c},${n}`);
-    if (src && !Array.isArray(src)) groups.add(src);
+    if (!src || Array.isArray(src)) continue;
+    const part = src.near?.(r, c) ?? src;
+    parts.set(part.cells.map(String).join(" "), part);
   }
-  return [...(step.blockers ?? []), ...[...groups].flatMap((g) => g.cells.map((cell) => ({ cell, line: g.line })))];
+  return [...(step.blockers ?? []), ...[...parts.values()].flatMap((g) => g.cells.map((cell) => ({ cell, line: g.line })))];
 }
 
 const boxOf = (r: number, c: number) => Math.floor(r / 3) * 3 + Math.floor(c / 3);
@@ -168,6 +172,10 @@ function fromGroups(board: Grid, solution: Grid, marks: Marks, corners: Marks, o
             why: (r: number, c: number) => {
               const j = byRow ? c : r;
               return `your marked ${n}s say ${other} ${j + 1}'s ${n} is at ${either(cells.filter((p) => (byRow ? p[1] : p[0]) === j))}`;
+            },
+            near: (r: number, c: number) => {
+              const j = byRow ? c : r;
+              return { cells: cells.filter((p) => (byRow ? p[1] : p[0]) === j), line: NUMS.map((_, i) => at(i, j)) };
             },
             cells,
             line: [j1, j2].flatMap((j) => NUMS.map((_, i) => at(i, j))),
