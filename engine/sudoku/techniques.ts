@@ -200,10 +200,14 @@ function pairs(grid: Grid, out: RuledOut): Step | null {
           && (canGo(grid, out, r, c, a) || canGo(grid, out, r, c, b)));
         if (!remove.length) continue;
         const [p, q] = pair;
+        // A pair can depend on an earlier hint (e.g. Pointing ruled a 5 out). Say so, or it looks wrong (Colin, 10/20).
+        const earlier = pair.flatMap(([r, c]) => [1, 2, 3, 4, 5, 6, 7, 8, 9]
+          .filter((n) => grid[r][c] === 0 && fits(grid, r, c, n) && out.has(outKey(r, c, n)))
+          .map((n) => ` (${n} was already ruled out of ${cellName(r, c)} by an earlier step.)`));
         return { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
           focus: unit.cells,
           nudge: `Look for two cells in ${unit.label} that can only hold the same two numbers.`,
-          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.` };
+          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}. They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.${earlier.join("")}` };
       }
     }
   }
