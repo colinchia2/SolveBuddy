@@ -185,9 +185,12 @@ function playFrame(h) {
 function render() {
   const h = s.hint;
   const frame = h && h.play != null ? playFrame(h) : null;
-  const focus = new Set((frame ? frame.focus : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
+  // What if (Colin, 10/20): the Nudge rings the cell to imagine a star in, and doesn't light up the
+  // line where the chain ends (that gave the ending away and didn't point at the cell).
+  const pretend = h?.data.chain && !frame && h.level < 3 ? h.data.cross[0] : null;
+  const focus = new Set((frame ? frame.focus : pretend && h.level === 1 ? [] : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
   const striped = new Set(h && h.level === 2 ? h.data.cross.map(([r, c]) => key(r, c)) : []);
-  const ringed = h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null;
+  const ringed = pretend || (h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null);
   const ringKey = ringed ? key(...ringed) : null;
   const bad = conflicts();
   const auto = autoCrossed();
