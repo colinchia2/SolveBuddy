@@ -12,7 +12,7 @@ Top item = what's next.
    - **Colin's idea (10/20): show the "What if" chain step by step.** Don't just say "after 3 forced moves";
      play the forced moves out on the board one at a time so he can *see* why the row, column or region runs dry.
      Why: he tries What-if in his head all the time and loses track. Keep chains short (3–5) so it fits.
-     Built 10/20 (see build log). Waiting on Colin to try it.
+     Built 10/20 (see build log). Colin played the Expert puzzle through and liked it. DONE.
 2. **Expert Sudoku**, the same way: pairs, pointing, box/line, then harder (X-wing, etc.).
 
 ## New ideas from Colin (10/20), not started, one at a time

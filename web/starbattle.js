@@ -273,7 +273,7 @@ function render() {
   $("settings").hidden = !s.settingsOpen;
   document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
   $("timer").style.visibility = settings.timer ? "visible" : "hidden";
-  $("solved").hidden = !s.solved;
+  $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
   if (s.solved) {
     $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
     $("nextPuzzle").hidden = idx === pack.puzzles.length - 1;
@@ -369,6 +369,7 @@ $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
 document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));
 $("nextPuzzle").onclick = () => load(idx + 1);
+document.querySelectorAll("#solved [data-close]").forEach((b) => (b.onclick = () => { s.solvedClosed = true; render(); }));
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "z") $("undoBtn").onclick();
 });

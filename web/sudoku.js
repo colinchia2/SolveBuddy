@@ -197,7 +197,7 @@ function render() {
   $("settings").hidden = !s.settingsOpen;
   document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
   $("timer").style.visibility = settings.timer ? "visible" : "hidden";
-  $("solved").hidden = !s.solved;
+  $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
   if (s.solved) {
     $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
     $("nextPuzzle").hidden = idx === pack.puzzles.length - 1;
@@ -248,6 +248,7 @@ $("hintNext").onclick = advanceHint;
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 $("nextPuzzle").onclick = () => load(idx + 1);
+document.querySelectorAll("#solved [data-close]").forEach((b) => (b.onclick = () => { s.solvedClosed = true; render(); }));
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
 document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));

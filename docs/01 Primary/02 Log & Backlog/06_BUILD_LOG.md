@@ -9,6 +9,12 @@ Newest first.
 - Each star now rules out its neighbors in the same move, so filler "a star rules out…" steps are gone.
   Colin's board went from 5 moves to 2.
 - New check: every What if play-through in the Expert puzzle really empties its line, in 5 moves or fewer.
+- Colin played the Expert puzzle to the end ("this was really good"). Follow-ups from his play:
+  - What if Nudge rings the cell to imagine instead of lighting up the line where the chain ends.
+  - Wrong-star hints say WHY: a clash with another star, or a What if chain from the wrong star (Show me plays
+    it out, then "Take it off"). If it only breaks after a long chain, it says so honestly. Checked on all 56
+    wrong cells of the Expert puzzle.
+  - Solved sheet has a close × (on the last puzzle of a pack there was no way out).
 
 ## 2026-10-20 — Expert Star Battle (folder now `Python\Buddies\SolveBuddy`)
 - **New tricks** (`engine/starbattle/techniques.ts`), in ladder order: Would block (Medium), Groups: N regions in
