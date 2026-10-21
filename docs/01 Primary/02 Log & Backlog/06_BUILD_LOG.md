@@ -182,3 +182,5 @@ Newest first.
 ## 2026-10-21: Hint colors flipped
 - Colin: the hint's own row/column/box is now light blue, and the lines that blocking numbers cast are light red
   (blocking numbers get a red outline). The test server now runs in its own window so low memory doesn't stop it.
+- Then: cells where the number can go, and the answer cell, are outlined blue (the placed number is blue too).
+  Rule: blue = can go / goes here, red = can't go.

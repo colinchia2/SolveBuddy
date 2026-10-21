@@ -189,13 +189,14 @@ function render() {
       if (same) bg = "var(--same)";
       if (wrong) bg = "var(--conflict-cell)";
       if (isSel) bg = "var(--sel)";
-      // Colin, 10/21: the hint's own row/column/box is blue; the lines blocking numbers cast are red.
+      // Colin, 10/21: blue = the hint's area and where the number can go (outlined) or goes; red = can't go
+      // (the lines blocking numbers cast, striped cells).
       if (focus.has(k)) bg = "color-mix(in srgb, var(--same) 80%, var(--board))";
       if (blockLines.has(k)) bg = "var(--accent-soft)";
       if (blockerCells.has(k)) bg = "color-mix(in srgb, var(--accent-mid) 70%, var(--board))";
-      if (k === target) bg = "var(--accent-mid)";
+      if (k === target) bg = "var(--sel)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--accent-dark)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
+      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--sel-ring)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--accent-dark)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
       let inner = "";
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
