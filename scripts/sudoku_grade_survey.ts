@@ -5,7 +5,7 @@ import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
 
 const tally: Record<string, number> = {};
-let pointingUsed = 0, pairsUsed = 0, claimingUsed = 0, hiddenUsed = 0, xwingUsed = 0;
+let pointingUsed = 0, pairsUsed = 0, claimingUsed = 0, hiddenUsed = 0, xwingUsed = 0, ywingUsed = 0;
 for (let i = 0; i < 100; i++) {
   const g = grade(erase(makeFullGrid(), 0).puzzle);
   tally[g.level] = (tally[g.level] || 0) + 1;
@@ -14,6 +14,7 @@ for (let i = 0; i < 100; i++) {
   if (g.steps.some((s) => s.technique === "Claiming")) claimingUsed++;
   if (g.steps.some((s) => s.technique === "Hidden pairs")) hiddenUsed++;
   if (g.steps.some((s) => s.technique === "X-wing")) xwingUsed++;
+  if (g.steps.some((s) => s.technique === "Y-wing")) ywingUsed++;
 }
 console.log(tally);
-console.log(`Puzzles where Pointing was used: ${pointingUsed} · Claiming: ${claimingUsed} · Pairs: ${pairsUsed} · Hidden pairs: ${hiddenUsed} · X-wing: ${xwingUsed}`);
+console.log(`Puzzles where Pointing was used: ${pointingUsed} · Claiming: ${claimingUsed} · Pairs: ${pairsUsed} · Hidden pairs: ${hiddenUsed} · X-wing: ${xwingUsed} · Y-wing: ${ywingUsed}`);

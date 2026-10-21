@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 6: Y-wing
+- **Y-wing** (`techniques.ts`, Expert): a two-number cell sees an a-or-c cell and a b-or-c cell; one of them must
+  be c, so c is ruled out of cells that see both. The three cells are ringed in a hint.
+- **Survey** (100 fully erased): Easy 55, Medium 8, Hard 4, **Expert 2**, Too hard 31. Y-wing used in 8. First
+  Expert puzzles appear.
+- **Checked:** 32 checks pass (Y-wing in the "every move matches the answer" check).
+
 ## 2026-10-20 — Expert Sudoku, trick 5: X-wing (first Expert trick)
 - **X-wing** (`techniques.ts`): in two rows a number fits only the same two columns, so it's ruled out of the
   rest of those columns (and the same with rows/columns swapped). Grades now: Easy → Medium → Hard → Expert

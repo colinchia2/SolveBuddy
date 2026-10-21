@@ -293,18 +293,52 @@ function xWing(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   return null;
 }
 
+// 9. (Expert) Y-wing: a cell that can only be a or b sees one cell that's a-or-c and another that's b-or-c.
+//    Whichever the first cell is, one of the other two must be c, so a cell that sees both of them can't be c.
+function yWing(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
+  const opts = (r: number, c: number) => ALL_NUMS.filter((n) => canGo(grid, out, r, c, n));
+  const sees = (p: [number, number], q: [number, number]) => (p[0] !== q[0] || p[1] !== q[1])
+    && (p[0] === q[0] || p[1] === q[1] || (Math.floor(p[0] / 3) === Math.floor(q[0] / 3) && Math.floor(p[1] / 3) === Math.floor(q[1] / 3)));
+  const twos: { p: [number, number]; o: number[] }[] = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === 0 && opts(r, c).length === 2) twos.push({ p: [r, c], o: opts(r, c) });
+  for (const pivot of twos) {
+    const [a, b] = pivot.o;
+    const near = twos.filter((x) => sees(pivot.p, x.p));
+    for (const w1 of near.filter((x) => x.o.includes(a) && !x.o.includes(b))) {
+      const c = w1.o.find((n) => n !== a)!;
+      for (const w2 of near.filter((x) => x.o.includes(b) && x.o.includes(c) && !x.o.includes(a))) {
+        if (!sees(pivot.p, w2.p) || (w1.p[0] === w2.p[0] && w1.p[1] === w2.p[1])) continue;
+        const remove: [number, number][] = [];
+        for (let r = 0; r < 9; r++) for (let d = 0; d < 9; d++) {
+          const q: [number, number] = [r, d];
+          if (sees(q, w1.p) && sees(q, w2.p) && !(r === pivot.p[0] && d === pivot.p[1]) && canGo(grid, out, r, d, c)) remove.push(q);
+        }
+        if (!remove.length) continue;
+        const [pv, p1, p2] = [pivot.p, w1.p, w2.p].map(([r, d]) => cellName(r, d));
+        const st: Step = { technique: "Y-wing", row: remove[0][0], col: remove[0][1], value: c, remove,
+          spots: [pivot.p, w1.p, w2.p], focus: [pivot.p, w1.p, w2.p], uses: usedOut(grid, out, [pivot.p, w1.p, w2.p], ALL_NUMS),
+          nudge: "Look for three cells that can each only be two numbers.",
+          why: `${cap(pv)} can only be ${a} or ${b}. If it's ${a}, then ${p1} (${a} or ${c}) must be ${c}. If it's ${b}, then ${p2} (${b} or ${c}) must be ${c}. Either way one of them is ${c}, so no cell that sees both can be ${c}.` };
+        if (!all) return st;
+        all.push(st);
+      }
+    }
+  }
+  return null;
+}
+
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
 export const PLACING: Technique[] = [lastCell, onlySpot, onlyNumber];
 // Every rule-out step available right now (for searching short hint chains).
 export function allRuleOuts(grid: Grid, out: RuledOut): Step[] {
   const all: Step[] = [];
-  for (const t of [pointing, claiming, pairs, hiddenPairs, xWing]) t(grid, out, all);
+  for (const t of [pointing, claiming, pairs, hiddenPairs, xWing, yWing]) t(grid, out, all);
   return all;
 }
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
 export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing, claiming];
 export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs, hiddenPairs];
-export const EXPERT_TECHNIQUES: Technique[] = [...HARD_TECHNIQUES, xWing];
+export const EXPERT_TECHNIQUES: Technique[] = [...HARD_TECHNIQUES, xWing, yWing];
 export const ALL_TECHNIQUES = EXPERT_TECHNIQUES;
 
 // Next move using the easiest trick that works, or null if none of them do.
