@@ -11,8 +11,9 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   Hints only use what's on the board (numbers + center pencil marks). A trick hint writes pencil marks;
   the next hint places the number (10/21). Test page has Medium 1, Hard 1, Expert 1 and Tricks 1–6
   (one per trick, each starting right at its trick).
-- **Next step:** Colin redoes Tricks 1–4 with the two-hint version, then 5, 6 and Expert 1. Go through
-  anything confusing one test at a time.
+- **Done 10/21:** Colin is happy with Tricks 1–6 (Pairs in two steps, X-wing corner marks, Y-wing in two hints,
+  cell names colored blue/red in hint text).
+- **Next step:** Colin plays Expert 1 start to finish with hints. Fix anything confusing one hint at a time.
 - **New ideas parked (10/20):** screenshot import, Water Sort, two-star Star Battle, a block-dropping game.
   Flow Free is a no. See the backlog's "New ideas". Don't start them until Colin picks one.
 - **Open questions:** the backlog's list, one at a time, when Colin is ready.
