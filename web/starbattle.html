@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=390, user-scalable=no">
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app")</script>
 <title>SolveBuddy Star Battle</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
@@ -31,7 +32,7 @@
 </style>
 </head>
 <body>
-<div class="picker" id="picker"><a href="sudoku.html">Sudoku</a><a href="starbattle.html" class="on">Star Battle</a><span class="sep"></span></div>
+<div class="picker" id="picker"><a href="home.html">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html" class="on">Star Battle</a><span class="sep"></span></div>
 
 <div class="phone">
   <div class="glow" style="top:-90px; left:-80px; background:#DCE9F2; opacity:.7"></div>
@@ -39,11 +40,11 @@
 
   <div class="screen">
     <header>
-      <button class="sq glass" aria-label="Back to library" disabled><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
+      <button class="sq glass" id="backBtn" aria-label="Back to library"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
       <div class="title"><b>Star Battle</b><span id="sub"></span></div>
       <button class="sq glass" id="rulesBtn" aria-label="How to play"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg></button>
       <button class="sq glass" id="undoBtn" aria-label="Undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
-      <button class="sq glass" id="hintBtn" aria-label="Hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></button>
+      <button class="sq glass" id="hintBtn" aria-label="Hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6FD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></button>
     </header>
 
     <div class="info">
@@ -100,7 +101,7 @@
         </div>
       </div>
       <div class="group">
-        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>Star Battle</h3>
+        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2F6FD6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg>Star Battle</h3>
         <div class="card">
           <div class="opt"><span>Auto-cross around stars</span><button class="switch" role="switch" data-set="autoCross" aria-label="Auto-cross around stars"></button></div>
         </div>
@@ -113,7 +114,7 @@
   <div class="paused" id="paused" hidden>
     <div class="glow" style="top:-60px; left:-80px; background:#DCE9F2; opacity:.7"></div>
     <div class="glow" style="bottom:-60px; right:-80px; background:#BFE3D8; opacity:.6"></div>
-    <div class="paused-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="#C24E2A"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+    <div class="paused-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="#2F6FD6"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
     <h2>Paused</h2>
     <p id="pausedText"></p>
     <button class="dark" id="resumeBtn">Resume</button>

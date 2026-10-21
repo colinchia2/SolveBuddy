@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, user-scalable=no">
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app")</script>
+<title>SolveBuddy Packs</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="picker"><a href="home.html">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html">Star Battle</a></div>
+
+<div class="phone">
+  <div class="glow" style="top:-80px; left:-90px; background:#E8E4F3; opacity:.6"></div>
+  <div class="glow" style="top:420px; right:-120px; background:#DCE9F2; opacity:.6"></div>
+  <div class="glow" style="bottom:-40px; left:-40px; background:#BFE3D8; opacity:.6"></div>
+
+  <div class="page">
+    <header style="flex-direction: column; align-items: flex-start; gap: 4px">
+      <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5z M3 8v8l9 5 9-5V8 M12 13v8"/></svg>Puzzle packs</h1>
+      <p class="lead">Everything here works offline, hints too.</p>
+    </header>
+    <section class="sec">
+      <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2h10v20H7z M11 18h2"/></svg>On this phone · <span id="count"></span></h2>
+      <div class="sec" id="mine"></div>
+    </section>
+    <section class="sec">
+      <h2><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Coming soon</h2>
+      <div class="sec" id="soon"></div>
+    </section>
+  </div>
+</div>
+
+<script type="module" src="packs.js"></script>
+</body>
+</html>

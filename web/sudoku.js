@@ -1,5 +1,6 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
+import { goHome, logSolve } from "./bridge.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -122,6 +123,7 @@ function checkSolved() {
   if (b.every((row, r) => row.every((v, c) => v === s.solution[r][c]))) {
     s.solved = true;
     s.elapsed = Date.now() - s.started;
+    logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   }
 }
 
@@ -133,6 +135,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
+  s.hints = (s.hints ?? 0) + 1; // for Stats: solved with or without hints
   s.hint = { data: findHint(board(), s.solution, s.center, s.corner), level: 1 };
   render();
 }
@@ -329,6 +332,7 @@ document.addEventListener("pointermove", (e) => {
 document.addEventListener("pointerup", () => (drag = null));
 document.querySelectorAll(".seg[data-mode]").forEach((b) => (b.onclick = () => { s.mode = b.dataset.mode; render(); }));
 $("eraseBtn").onclick = erase;
+$("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
   Object.assign(s, JSON.parse(undoStack.pop()));

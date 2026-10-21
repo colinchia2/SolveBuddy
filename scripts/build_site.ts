@@ -32,23 +32,22 @@ for (const file of walk(join(ROOT, "engine")).filter((f) => f.endsWith(".ts"))) 
 
 cpSync(join(ROOT, "packs"), join(OUT, "packs"), { recursive: true });
 
-// The phone app's offline pages (app/sudoku.html, app/starbattle.html): one file each with its style, code and
+// The phone app's offline pages (app/home.html … app/starbattle.html): one file each with its style, code and
 // packs inside, so it needs no internet. The app saves the newest copy and opens it from the phone.
 const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f, JSON.parse(readFileSync(join(ROOT, "packs", f), "utf8"))]));
-const css = readFileSync(join(ROOT, "web", "common.css"), "utf8");
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
-for (const page of ["sudoku", "starbattle"]) {
+for (const page of ["home", "packs", "stats", "sudoku", "starbattle"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")
-    .replace('<link rel="stylesheet" href="common.css">', () => `<style>${noClose(css)}</style>`)
+    .replace(/<link rel="stylesheet" href="(\w+\.css)">/g, (_, f) => `<style>${noClose(readFileSync(join(ROOT, "web", f), "utf8"))}</style>`)
     .replace(`<script type="module" src="${page}.js"></script>`,
       () => `<script>window.SB_PACKS=${noClose(JSON.stringify(packs))}</script><script type="module">${noClose(code)}</script>`);
-  if (html.includes(`src="${page}.js"`) || html.includes('href="common.css"')) throw new Error(`app/${page}.html: couldn't inline`);
+  if (html.includes(`src="${page}.js"`) || /href="\w+\.css"/.test(html)) throw new Error(`app/${page}.html: couldn't inline`);
   writeFileSync(join(OUT, "app", `${page}.html`), html);
 }
 
-// The site's front door opens Sudoku.
-writeFileSync(join(OUT, "index.html"), '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=web/sudoku.html"><title>SolveBuddy</title>');
+// The site's front door opens Home.
+writeFileSync(join(OUT, "index.html"), '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=web/home.html"><title>SolveBuddy</title>');
 console.log(`Built ${relative(ROOT, OUT)}/`);

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, user-scalable=no">
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app")</script>
+<title>SolveBuddy Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="picker"><a href="home.html">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html">Star Battle</a></div>
+
+<div class="phone">
+  <div class="glow" style="top:-80px; left:-90px; background:#E8E4F3; opacity:.7"></div>
+  <div class="glow" style="top:420px; right:-120px; background:#DCE9F2; opacity:.7"></div>
+  <div class="glow" style="bottom:-40px; left:-40px; background:#BFE3D8; opacity:.6"></div>
+
+  <div class="page" style="gap: 14px">
+    <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg>Stats</h1>
+    <div class="kpis" id="kpis"></div>
+    <section class="card-glass">
+      <div class="card-head"><h2><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4z M4 10h16 M9 3v4 M15 3v4"/></svg><span id="month"></span></h2><span class="muted" style="font-size:12px">Puzzles per day</span></div>
+      <div class="cal" id="cal"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <section class="card-glass">
+      <div class="card-head"><h2><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"/></svg>By puzzle</h2></div>
+      <div class="sec" id="games"></div>
+    </section>
+    <section class="card-glass"><div class="line" id="clean"></div></section>
+  </div>
+</div>
+
+<script type="module" src="stats.js"></script>
+</body>
+</html>

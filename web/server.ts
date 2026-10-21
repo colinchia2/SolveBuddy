@@ -17,7 +17,7 @@ const ALLOWED = ["web", "engine", "packs"];
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
   // The pages use relative paths, so "/" must move to the page's real address.
-  if (path === "/") return void res.writeHead(302, { Location: "/web/sudoku.html" }).end();
+  if (path === "/") return void res.writeHead(302, { Location: "/web/home.html" }).end();
   const rel = normalize(path.slice(1));
   if (!ALLOWED.includes(rel.split(/[\\/]/)[0])) return void res.writeHead(404).end("Not found");
   try {

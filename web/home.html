@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, user-scalable=no">
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app")</script>
+<title>SolveBuddy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="picker"><a href="home.html" class="on">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html">Star Battle</a></div>
+
+<div class="phone">
+  <div class="glow" style="top:-80px; right:-90px; background:#DCE9F2; opacity:.55"></div>
+  <div class="glow" style="top:380px; left:-120px; background:#BFE3D8; opacity:.6"></div>
+  <div class="glow" style="bottom:-60px; right:-60px; background:#E8E4F3; opacity:.5"></div>
+
+  <div class="page">
+    <header class="brandbar">
+      <button class="logo-btn" id="logoBtn" aria-label="SolveBuddy"></button>
+      <span class="streak glass" id="streak" hidden></span>
+    </header>
+    <section class="home-main">
+      <h2 class="ask">What are we solving?</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+  </div>
+
+  <div class="pick-scrim" id="pick" hidden></div>
+</div>
+
+<script type="module" src="home.js"></script>
+</body>
+</html>

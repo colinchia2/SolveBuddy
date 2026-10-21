@@ -1,5 +1,6 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
+import { goHome, logSolve } from "./bridge.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -94,6 +95,7 @@ function checkSolved() {
   if (st.length === N && st.every(([r, c]) => s.solution[r] === c)) {
     s.solved = true;
     s.elapsed = Date.now() - s.started;
+    logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   }
 }
 
@@ -120,6 +122,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
+  s.hints = (s.hints ?? 0) + 1; // for Stats: solved with or without hints
   s.hinted.clear();
   // An automatic × sitting on an answer cell comes from a wrong star; leave it out so the hint
   // points at that star (which the player can fix) rather than the × (which they can't).
@@ -356,6 +359,7 @@ function paint(r, c) {
   s.hint = null;
   render();
 }
+$("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
   s.marks = JSON.parse(undoStack.pop());
