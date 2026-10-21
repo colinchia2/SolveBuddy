@@ -214,11 +214,22 @@ function pairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
         if (!remove.length) continue;
         const [p, q] = pair;
         const uses = usedOut(grid, out, pair, ALL_NUMS);
+        // Two steps (Colin, 10/21): what the unit still needs, then where the pair's other options are
+        // already taken (those numbers shown in red, with their line).
+        const needs = ALL_NUMS.filter((n) => !unit.cells.some(([r, c]) => grid[r][c] === n));
+        const gone = needs.filter((n) => n !== a && n !== b);
+        const blockers = gone.flatMap((n) => blockersFor(grid, pair, n));
+        const shared = uses.length ? undefined : UNITS.find((u) => u !== unit
+          && pair.every(([r, c]) => u.cells.some(([x, y]) => x === r && y === c))
+          && gone.every((n) => u.cells.some(([r, c]) => grid[r][c] === n)));
+        const both = `${cellName(...p)} and ${cellName(...q)}`;
+        const taken = shared
+          ? `${cap(shared.label)} already has ${list(gone)}, so ${both} can only be ${a} or ${b}.`
+          : `${both} already have ${list(gone)} in their row, column or box${uses.length ? ", or ruled out" : ""}, so they can only be ${a} or ${b}.`;
         const st: Step = { technique: "Pairs", row: remove[0][0], col: remove[0][1], value: a, values: [a, b], remove, spots: pair,
-          focus: unit.cells, uses,
+          focus: unit.cells, blockers, uses,
           nudge: `Look for two cells in ${unit.label} that can only hold the same two numbers.`,
-          // Say why the two cells are down to two numbers (Colin, 10/21: "you're just telling me that it is").
-          why: `In ${unit.label}, ${cellName(...p)} and ${cellName(...q)} can only be ${a} or ${b}: every other number is already in their row, column or box${uses.length ? ", or ruled out" : ""}. So they take the ${a} and the ${b} between them, and no other cell in ${unit.label} can be ${a} or ${b}.` };
+          why: `${cap(unit.label)} still needs ${list(needs)}. ${taken} They take the ${a} and the ${b} between them, so no other cell in ${unit.label} can be ${a} or ${b}.` };
         if (!all) return st;
         all.push(st);
       }
@@ -354,6 +365,8 @@ export function nextStep(grid: Grid, out: RuledOut = new Set(), techniques = ALL
 }
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+// 2, 3 and 9
+const list = (ns: number[]) => (ns.length < 2 ? `${ns.join("")}` : `${ns.slice(0, -1).join(", ")} and ${ns[ns.length - 1]}`);
 
 // Every cell that shares a row, column or box with this one.
 function peers(row: number, col: number): [number, number][] {
