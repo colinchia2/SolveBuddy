@@ -158,7 +158,32 @@ function pointing(grid: Grid, out: RuledOut): Step | null {
   return null;
 }
 
-// 5. (Hard) Pairs: two empty cells in a row, column or box can each only hold the same two numbers. They take
+// 5. (Medium) Claiming: Pointing in reverse. In a row (or column), every spot for a number sits inside one box.
+//    The line's number must be in that box, so the number can't go anywhere else in the box.
+function claiming(grid: Grid, out: RuledOut): Step | null {
+  for (const line of UNITS.filter((u) => u.kind !== "box")) {
+    for (let n = 1; n <= 9; n++) {
+      if (line.cells.some(([r, c]) => grid[r][c] === n)) continue;
+      const spots = line.cells.filter(([r, c]) => canGo(grid, out, r, c, n));
+      if (spots.length < 2) continue;
+      const b = Math.floor(spots[0][0] / 3) * 3 + Math.floor(spots[0][1] / 3);
+      if (!spots.every(([r, c]) => Math.floor(r / 3) * 3 + Math.floor(c / 3) === b)) continue;
+      const box = boxCells(b);
+      const inLine = (r: number, c: number) => line.cells.some(([a, d]) => a === r && d === c);
+      const remove = box.filter(([r, c]) => !inLine(r, c) && canGo(grid, out, r, c, n));
+      if (!remove.length) continue;
+      const others = line.cells.filter(([r, c]) => grid[r][c] === 0 && !spots.some(([a, d]) => a === r && d === c));
+      return { technique: "Claiming", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
+        blockers: blockersFor(grid, others, n),
+        focus: [...line.cells, ...box.filter(([r, c]) => !inLine(r, c))],
+        nudge: `Where can ${n} go in ${line.label}?`,
+        why: `In ${line.label}, ${n} can only go inside box ${b + 1}. So the ${line.kind}'s ${n} is in that box, and ${n} can't go anywhere else in box ${b + 1}.` };
+    }
+  }
+  return null;
+}
+
+// 6. (Hard) Pairs: two empty cells in a row, column or box can each only hold the same two numbers. They take
 //    those two numbers between them, so no other cell in that unit can hold either one.
 function pairs(grid: Grid, out: RuledOut): Step | null {
   for (const unit of UNITS) {
@@ -187,7 +212,7 @@ function pairs(grid: Grid, out: RuledOut): Step | null {
 
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
-export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing];
+export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing, claiming];
 export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs];
 export const ALL_TECHNIQUES = HARD_TECHNIQUES;
 

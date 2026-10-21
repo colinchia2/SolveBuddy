@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 3: Claiming
+- **Claiming** (`techniques.ts`): Pointing in reverse. If every spot for a number in a row/column is inside one
+  box, the number is ruled out of the rest of that box. Graded Medium, next to Pointing (same difficulty).
+- **Survey** (100 fully erased): Easy 43, Medium 13, Hard 3, harder 41. Still need more tricks for Expert.
+- **Checked:** 30 checks (Claiming is in the "every move matches the answer" check). Browser: line lit, spots
+  ringed, box cells striped, blocking 5s in blue.
+
 ## 2026-10-20 — Expert Sudoku, trick 2: Pairs (+ 1 Hard puzzle)
 - **Pairs** (`techniques.ts`): two empty cells in a row, column or box that can each only be the same two numbers
   take both, so those numbers are ruled out of the rest of the unit. Steps can now rule out several numbers
