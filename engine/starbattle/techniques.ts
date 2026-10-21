@@ -13,6 +13,10 @@ export type Step = {
   focus: Cell[]; // cells to highlight
   nudge: string; // "Nudge" level of a hint
   why: string; // "Explain" level of a hint
+  // What if only: the forced moves after the pretend star, in order, and the line that runs dry.
+  chain?: { star: Cell | null; cross: Cell[]; focus: Cell[]; why: string }[]; // a star's cross = what it rules out
+  pretendCross?: Cell[]; // what the pretend star rules out
+  dead?: { label: string; cells: Cell[] };
 };
 
 // Friendly names for regions A–H, matching the colors on screen.
@@ -200,19 +204,33 @@ function whatIf(b: Board, regions: Regions): Step | null {
     for (let c = 0; c < b.length; c++) {
       if (b[r][c] !== EMPTY) continue;
       const trial = b.map((row) => [...row]);
-      trial[r][c] = STAR;
-      let forced = 0;
+      // Each star (the pretend one too) crosses its own neighbors in the same move, so the chain only
+      // counts moves that teach something (Colin, 10/20: "rules out" filler steps were confusing).
+      const place = (p: Cell) => {
+        trial[p[0]][p[1]] = STAR;
+        const cross = open(trial, ruledOutBy(regions, p));
+        for (const [a, d] of cross) trial[a][d] = CROSS;
+        return cross;
+      };
+      const pretendCross = place([r, c]);
+      const chain: NonNullable<Step["chain"]> = [];
       let dead: Unit | undefined;
       for (;;) {
         dead = all.find((u) => !hasStar(trial, u.cells) && !open(trial, u.cells).length);
         if (dead) break;
         const step = nextStep(trial, regions, HARD_TECHNIQUES);
         if (!step) break;
-        applyStep(trial, step);
-        forced++;
+        if (step.star) {
+          chain.push({ star: step.star, cross: place(step.star), focus: step.focus, why: step.why });
+        } else {
+          applyStep(trial, step);
+          chain.push({ star: null, cross: step.cross, focus: step.focus, why: step.why });
+        }
       }
+      const forced = chain.length;
       if (!dead || (best && best.forced <= forced)) continue;
-      best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced,
+      best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced, chain, pretendCross,
+        dead: { label: dead.label, cells: dead.cells },
         nudge: `Imagine a star at row ${r + 1}, column ${c + 1}. What happens?`,
         why: `If row ${r + 1}, column ${c + 1} had a star, ${forced === 0 ? "straight away" : `after ${forced} forced move${forced === 1 ? "" : "s"}`} ${dead.label} would have nowhere left for its star. So that cell can't have one.` };
     }

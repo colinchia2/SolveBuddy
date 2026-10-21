@@ -24,6 +24,9 @@
   .cell .xm.auto { color: #B8ABA0; }
   .cell .xm.hinted { color: var(--accent-dark); }
   .cell .xm.wrong { color: var(--conflict-star); }
+  /* What if play-through: pretend marks are faint terracotta so they never look like real moves. */
+  .cell .xm.ghost { color: var(--accent); opacity: 0.6; }
+  .cell svg.ghost { opacity: 0.55; }
   .tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
 </style>
 </head>

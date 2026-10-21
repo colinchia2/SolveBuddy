@@ -125,8 +125,19 @@ function openHint() {
   s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
   render();
 }
+// What if hints (Colin, 10/20): "Show me" first plays the chain out on the board with faint pretend marks:
+// play 0 = the pretend star, 1..k = each forced move, k+1 = the line that ran dry. Then the real × goes in.
 function advanceHint() {
   const h = s.hint;
+  const chain = h.data.chain;
+  if (h.play != null) {
+    if (h.play <= chain.length) h.play++;
+    else {
+      h.play = null;
+      applyHint(h.data);
+    }
+    return render();
+  }
   if (h.data.kind === "stuck" || h.level === 3) {
     s.hint = null;
     checkSolved();
@@ -134,23 +145,49 @@ function advanceHint() {
   }
   h.level++;
   if (h.level === 3) {
-    undoStack.push(JSON.stringify(s.marks));
-    const d = h.data;
-    if (d.clear) delete s.marks[key(...d.clear)];
-    if (d.star) s.marks[key(...d.star)] = STAR;
-    for (const [r, c] of d.cross) {
-      s.marks[key(r, c)] = CROSS;
-      s.hinted.add(key(r, c));
-    }
+    if (chain) h.play = 0;
+    else applyHint(h.data);
   }
   render();
+}
+function applyHint(d) {
+  undoStack.push(JSON.stringify(s.marks));
+  if (d.clear) delete s.marks[key(...d.clear)];
+  if (d.star) s.marks[key(...d.star)] = STAR;
+  for (const [r, c] of d.cross) {
+    s.marks[key(r, c)] = CROSS;
+    s.hinted.add(key(r, c));
+  }
+}
+
+// The pretend board for the current play-through frame: real marks plus faint pretend ones.
+function playFrame(h) {
+  const d = h.data;
+  const ghost = new Map([[key(...d.cross[0]), STAR]]);
+  const crossOut = (cells) => cells.forEach((p) => !s.marks[key(...p)] && !ghost.has(key(...p)) && ghost.set(key(...p), CROSS));
+  crossOut(d.pretendCross);
+  let latest = [d.cross[0]];
+  let focus = [];
+  for (const step of d.chain.slice(0, h.play)) {
+    if (step.star) ghost.set(key(...step.star), STAR);
+    crossOut(step.cross);
+    latest = step.star ? [step.star] : step.cross;
+    focus = step.focus;
+  }
+  const dead = h.play > d.chain.length;
+  if (dead) {
+    latest = [];
+    focus = d.dead.cells;
+  }
+  return { ghost, latest: new Set(latest.map((p) => key(...p))), focus, dead };
 }
 
 function render() {
   const h = s.hint;
-  const focus = new Set(h ? h.data.focus.map(([r, c]) => key(r, c)) : []);
+  const frame = h && h.play != null ? playFrame(h) : null;
+  const focus = new Set((frame ? frame.focus : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
   const striped = new Set(h && h.level === 2 ? h.data.cross.map(([r, c]) => key(r, c)) : []);
-  const ringed = h && h.level >= 2 ? (h.data.star || h.data.clear) : null;
+  const ringed = h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null;
   const ringKey = ringed ? key(...ringed) : null;
   const bad = conflicts();
   const auto = autoCrossed();
@@ -166,8 +203,10 @@ function render() {
       // Lightened region colors; the hint's focus area shows in full color.
       let bg = focus.has(k) ? COLORS[reg] : `color-mix(in srgb, ${COLORS[reg]} 48%, #FFFDF9)`;
       if (bad.has(k) || (wrong && m === STAR)) bg = "#F4A6A0";
+      if (frame?.dead && focus.has(k)) bg = "#F4A6A0";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === ringKey ? "inset 0 0 0 3px var(--accent)" : "none";
+      const ring = k === ringKey || frame?.latest.has(k) ? "inset 0 0 0 3px var(--accent)" : "none";
+      const g = frame?.ghost.get(k);
       const br = c === N - 1 || s.regions[r][c + 1] !== reg ? "br" : "";
       const bb = r === N - 1 || s.regions[r + 1][c] !== reg ? "bb" : "";
       let inner = "";
@@ -176,6 +215,10 @@ function render() {
         inner = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="${fill}"/></svg>`;
       } else if (m === CROSS) {
         inner = `<span class="xm${wrong ? " wrong" : s.hinted.has(k) ? " hinted" : ""}">×</span>`;
+      } else if (g === STAR) {
+        inner = `<svg class="ghost" width="26" height="26" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
+      } else if (g === CROSS) {
+        inner = `<span class="xm ghost">×</span>`;
       } else if (auto.has(k)) {
         inner = `<span class="xm auto">×</span>`;
       }
@@ -196,11 +239,24 @@ function render() {
     $("hintChip").textContent = d.technique;
     $("hintChip").hidden = !d.technique || h.level === 1;
     [1, 2, 3].forEach((n) => $("d" + n).classList.toggle("on", h.level >= n));
-    const text = [[d.nudge, ""], [d.nudge, d.explain], [d.showMe, d.explain]][stuck ? 1 : h.level - 1];
+    let text = [[d.nudge, ""], [d.nudge, d.explain], [d.showMe, d.explain]][stuck ? 1 : h.level - 1];
+    let next = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
+    if (frame) {
+      const [r, c] = d.cross[0];
+      const k = d.chain.length;
+      const cap = (t) => t[0].toUpperCase() + t.slice(1);
+      if (h.play === 0) text = [`Pretend row ${r + 1}, column ${c + 1} has a star.`, "It rules out its row, column, region and neighbors. Faint marks are pretend. Tap Next to see what it forces."];
+      else if (!frame.dead) {
+        const st = d.chain[h.play - 1];
+        text = [`Forced move ${h.play} of ${k}`, st.star ? `${st.why} It rules out its neighbors too.` : st.why];
+      }
+      else text = [`${cap(d.dead.label)} has nowhere left for its star.`, `So the pretend star can't be right: row ${r + 1}, column ${c + 1} gets an ×.`];
+      next = frame.dead ? "Cross it out" : "Next";
+    }
     $("hintTitle").textContent = text[0];
     $("hintBody").textContent = text[1];
     $("hintBody").hidden = !text[1];
-    $("hintNextLabel").textContent = stuck ? "Close" : ["Explain", "Show me", "Done"][h.level - 1];
+    $("hintNextLabel").textContent = next;
   }
 
   $("rules").hidden = !s.rules;

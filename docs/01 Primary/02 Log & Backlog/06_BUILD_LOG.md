@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-10-20 — What if plays out on the board (Colin's idea)
+- Colin got "after 5 forced moves column 7 would have nowhere left" and couldn't see why. Now "Show me" on a
+  What if hint plays it out: faint terracotta pretend star → Next → each forced move (ringed, region in full
+  color, one-line why) → the empty line turns red → "Cross it out" puts in the real ×.
+- Each star now rules out its neighbors in the same move, so filler "a star rules out…" steps are gone.
+  Colin's board went from 5 moves to 2.
+- New check: every What if play-through in the Expert puzzle really empties its line, in 5 moves or fewer.
+
 ## 2026-10-20 — Expert Star Battle (folder now `Python\Buddies\SolveBuddy`)
 - **New tricks** (`engine/starbattle/techniques.ts`), in ladder order: Would block (Medium), Groups: N regions in
   N rows/columns and the mirror, N = 2–4 (Hard), What if: pretend a star, follow forced moves, and if a row,

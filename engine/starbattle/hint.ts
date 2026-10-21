@@ -2,7 +2,7 @@
 // 1. Mistakes first: a star where the answer has none, or an × on the answer's star.
 // 2. Otherwise: the easiest trick that finds a next move.
 import { type Regions, type Stars } from "./layout.ts";
-import { type Board, EMPTY, CROSS, STAR, nextStep } from "./techniques.ts";
+import { type Board, type Step, EMPTY, CROSS, STAR, nextStep } from "./techniques.ts";
 
 type Cell = [number, number];
 
@@ -16,6 +16,10 @@ export type Hint = {
   nudge: string;
   explain: string;
   showMe: string;
+  // What if only: "Show me" plays these forced moves out one at a time before crossing the cell.
+  chain?: Step["chain"];
+  pretendCross?: Cell[];
+  dead?: Step["dead"];
 };
 
 export function hint(board: Board, regions: Regions, solution: Stars): Hint {
@@ -46,6 +50,7 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
     kind: "step", technique: step.technique, focus: step.focus, star: step.star, cross: step.cross, clear: null,
     nudge: step.nudge, explain: step.why,
     showMe: step.star ? "Star placed!" : `Crossed out ${step.cross.length === 1 ? "1 cell" : `${step.cross.length} cells`}.`,
+    chain: step.chain, pretendCross: step.pretendCross, dead: step.dead,
   };
 }
 

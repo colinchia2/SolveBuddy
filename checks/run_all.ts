@@ -162,13 +162,27 @@ if (existsSync(sbExpertFile)) {
   check("SB Expert puzzle: one answer, graded Expert", sbCount(ex.regions) === 1 && sbGrade(ex.regions).level === "Expert");
   const b = ex.regions.map(() => Array(8).fill(SB_EMPTY));
   let ok = true;
+  let chainsOk = true, chains = 0;
   for (let i = 0; i < 300 && ok; i++) {
     const h = sbHint(b, ex.regions, ex.solution);
     if (h.kind !== "step") break;
+    // The What if play-through must be honest: pretend star + each forced move really empties the named line.
+    if (h.chain) {
+      chains++;
+      const t = b.map((row) => [...row]);
+      t[h.cross[0][0]][h.cross[0][1]] = SB_STAR;
+      for (const [r, c] of h.pretendCross!) if (t[r][c] === SB_EMPTY) t[r][c] = SB_CROSS;
+      for (const st of h.chain) {
+        if (st.star) t[st.star[0]][st.star[1]] = SB_STAR;
+        for (const [r, c] of st.cross) if (t[r][c] === SB_EMPTY) t[r][c] = SB_CROSS;
+      }
+      chainsOk &&= h.chain.length <= 5 && h.dead!.cells.every(([r, c]) => t[r][c] === SB_CROSS);
+    }
     if (h.star) ok = ex.solution[h.star[0]] === h.star[1], b[h.star[0]][h.star[1]] = SB_STAR;
     for (const [r, c] of h.cross) ok &&= ex.solution[r] !== c, b[r][c] = SB_CROSS;
   }
   check("SB Expert: hints alone solve it, every move correct", ok && ex.solution.every((c, r) => b[r][c] === SB_STAR));
+  check(`SB Expert: every What if play-through (${chains}) ends with its line empty, 5 moves or fewer`, chains > 0 && chainsOk);
 }
 
 if (failed) process.exit(1);
