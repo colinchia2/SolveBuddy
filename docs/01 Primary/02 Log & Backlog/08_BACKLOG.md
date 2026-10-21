@@ -3,6 +3,7 @@
 Top item = what's next.
 
 ## Next
+- Mock the blue SolveBuddy look (accent terracotta → blue; hint red stays), then build it after Colin picks.
 1. **Expert Star Battle** (Colin said yes to the idea 10/20; not started). Teach the engine harder tricks
    first, explaining each one to Colin in plain English before adding it. Then make 1 Expert 8×8 puzzle that
    needs them, and Colin plays it with hints to pressure-test the less obvious hints.
@@ -32,6 +33,8 @@ Top item = what's next.
 - **Said no: Flow Free.** His App Store version is already perfect and free, so there's no reason to rebuild it.
 
 ## Decided
+- **SolveBuddy is blue (Colin, 10/21).** App icon = the blue light-bulb face. The app's terracotta accent changes to blue
+  (web change, no build). Hints keep red for blocked cells, separate from the brand blue. Mock it first.
 - 10/20: v1 = **Star Battle + Sudoku** (Mini 6×6 and Classic 9×9). Both have finished screens, and they're
   the ones Colin gets stuck on most. Other games and Sudoku variants come later.
 - 10/20: puzzles are **made by the app**, with no importing for now (later the same day Colin asked for
