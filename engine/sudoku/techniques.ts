@@ -256,18 +256,56 @@ function hiddenPairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   return null;
 }
 
+// 8. (Expert) X-wing: in two rows, a number can only go in the same two columns. The two rows need two of that
+//    number, one in each column, so it can't go anywhere else in those two columns. Same with rows and columns swapped.
+function xWing(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
+  for (const kind of ["row", "column"] as const) {
+    const other = kind === "row" ? "column" : "row";
+    const line = (i: number) => UNITS.find((u) => u.label === `${kind} ${i + 1}`)!;
+    const cross = (j: number) => UNITS.find((u) => u.label === `${other} ${j + 1}`)!;
+    const at = (p: [number, number]) => (kind === "row" ? p[1] : p[0]); // the cell's position along the line
+    for (let n = 1; n <= 9; n++) {
+      const two = [0, 1, 2, 3, 4, 5, 6, 7, 8]
+        .map((i) => ({ i, spots: line(i).cells.filter(([r, c]) => canGo(grid, out, r, c, n)) }))
+        .filter((x) => x.spots.length === 2 && !line(x.i).cells.some(([r, c]) => grid[r][c] === n));
+      for (let a = 0; a < two.length; a++) {
+        for (let b = a + 1; b < two.length; b++) {
+          const [j1, j2] = two[a].spots.map(at);
+          if (two[b].spots.map(at).join() !== [j1, j2].join()) continue;
+          const corners = [...two[a].spots, ...two[b].spots];
+          const remove = [...cross(j1).cells, ...cross(j2).cells]
+            .filter((p) => !corners.some((q) => q[0] === p[0] && q[1] === p[1]) && canGo(grid, out, p[0], p[1], n));
+          if (!remove.length) continue;
+          const bases = [line(two[a].i), line(two[b].i)];
+          const others = bases.flatMap((u) => u.cells).filter(([r, c]) => grid[r][c] === 0 && !corners.some((q) => q[0] === r && q[1] === c));
+          const lines = `${kind}s ${two[a].i + 1} and ${two[b].i + 1}`;
+          const crosses = `${other}s ${j1 + 1} and ${j2 + 1}`;
+          const st: Step = { technique: "X-wing", row: remove[0][0], col: remove[0][1], value: n, remove, spots: corners,
+            focus: bases.flatMap((u) => u.cells), blockers: blockersFor(grid, others, n), uses: usedOut(grid, out, others, [n]),
+            nudge: `Where can ${n} go in ${lines}?`,
+            why: `In ${lines}, ${n} can only go in ${crosses}. The two ${kind}s need two ${n}s, one in each of those ${other}s, so ${n} can't go anywhere else in ${crosses}.` };
+          if (!all) return st;
+          all.push(st);
+        }
+      }
+    }
+  }
+  return null;
+}
+
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
 export const PLACING: Technique[] = [lastCell, onlySpot, onlyNumber];
 // Every rule-out step available right now (for searching short hint chains).
 export function allRuleOuts(grid: Grid, out: RuledOut): Step[] {
   const all: Step[] = [];
-  for (const t of [pointing, claiming, pairs, hiddenPairs]) t(grid, out, all);
+  for (const t of [pointing, claiming, pairs, hiddenPairs, xWing]) t(grid, out, all);
   return all;
 }
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
 export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing, claiming];
 export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs, hiddenPairs];
-export const ALL_TECHNIQUES = HARD_TECHNIQUES;
+export const EXPERT_TECHNIQUES: Technique[] = [...HARD_TECHNIQUES, xWing];
+export const ALL_TECHNIQUES = EXPERT_TECHNIQUES;
 
 // Next move using the easiest trick that works, or null if none of them do.
 export function nextStep(grid: Grid, out: RuledOut = new Set(), techniques = ALL_TECHNIQUES): Step | null {

@@ -114,7 +114,7 @@ for (const [file, level] of [["packs/sudoku9-medium.json", "Medium"], ["packs/su
 
 // Harder tricks rule a number out of cells instead: none of those cells may hold it in the answer.
 // Erased all the way down so the harder tricks actually get used.
-let pointingSeen = 0, pairsSeen = 0, claimingSeen = 0, hiddenSeen = 0;
+let pointingSeen = 0, pairsSeen = 0, claimingSeen = 0, hiddenSeen = 0, xwingSeen = 0;
 const graded = Array.from({ length: 30 }, () => {
   const solution = makeFullGrid();
   const g = grade(erase(solution, 0).puzzle);
@@ -122,11 +122,12 @@ const graded = Array.from({ length: 30 }, () => {
   pairsSeen += g.steps.filter((s) => s.technique === "Pairs").length;
   claimingSeen += g.steps.filter((s) => s.technique === "Claiming").length;
   hiddenSeen += g.steps.filter((s) => s.technique === "Hidden pairs").length;
+  xwingSeen += g.steps.filter((s) => s.technique === "X-wing").length;
   return g.steps.every((s) => s.remove
     ? s.remove.every(([r, c]) => !(s.values ?? [s.value]).includes(solution[r][c]))
     : solution[s.row][s.col] === s.value);
 });
-check(`grader: every trick move in 30 puzzles matches the answer (Pointing used ${pointingSeen} times, Claiming ${claimingSeen}, Pairs ${pairsSeen}, Hidden pairs ${hiddenSeen})`,
+check(`grader: every trick move in 30 puzzles matches the answer (Pointing used ${pointingSeen} times, Claiming ${claimingSeen}, Pairs ${pairsSeen}, Hidden pairs ${hiddenSeen}, X-wing ${xwingSeen})`,
   graded.every(Boolean) && pointingSeen > 0 && claimingSeen > 0 && pairsSeen > 0);
 const oneHole = grids[1].map((r) => [...r]);
 oneHole[4][4] = 0;

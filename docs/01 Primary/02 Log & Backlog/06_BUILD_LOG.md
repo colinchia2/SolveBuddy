@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 5: X-wing (first Expert trick)
+- **X-wing** (`techniques.ts`): in two rows a number fits only the same two columns, so it's ruled out of the
+  rest of those columns (and the same with rows/columns swapped). Grades now: Easy → Medium → Hard → Expert
+  (adds X-wing) → "Too hard" (never shipped).
+- **Survey** (100 fully erased): Easy 43, Medium 16, Hard 8, Expert 0, Too hard 33. X-wing appeared in 2 but
+  finished none: more Expert tricks needed (Y-wing next).
+- **Checked:** 32 checks pass (X-wing in the "every move matches the answer" check).
+
 ## 2026-10-20 — Expert Sudoku, trick 4: Hidden pairs
 - **Hidden pairs** (`techniques.ts`, graded Hard): two numbers that can only go in the same two cells of a unit
   fill those cells, so every other number is ruled out of them. Blockers for both numbers show in blue.
