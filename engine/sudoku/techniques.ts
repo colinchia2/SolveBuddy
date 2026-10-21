@@ -11,9 +11,39 @@ export type Step = {
   remove?: [number, number][];
   spots?: [number, number][]; // Pointing: the cells in the box where the number can still go (ringed in a hint)
   focus: [number, number][]; // cells to highlight (the row, column or box the trick looks at)
+  // The placed numbers that block the other cells, each with the row, column or box it blocks through
+  // (shown from Explain on; Colin, 10/20).
+  blockers?: { cell: [number, number]; line: [number, number][] }[];
   nudge: string; // where to look (the "Nudge" level of a hint)
   why: string; // plain-English reason (the "Explain" level of a hint)
 };
+
+// Which placed n's block these empty cells? Picks few: a number that already blocks a cell is reused.
+function blockersFor(grid: Grid, cells: [number, number][], n: number): NonNullable<Step["blockers"]> {
+  const placed: [number, number][] = [];
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === n) placed.push([r, c]);
+  const sameBox = (a: [number, number], b: [number, number]) =>
+    Math.floor(a[0] / 3) === Math.floor(b[0] / 3) && Math.floor(a[1] / 3) === Math.floor(b[1] / 3);
+  const covers = (p: [number, number], q: [number, number]) => p[0] === q[0] || p[1] === q[1] || sameBox(p, q);
+  const chosen: [number, number][] = [];
+  let left = cells.filter((q) => placed.some((p) => covers(p, q)));
+  while (left.length) {
+    const best = placed.reduce((a, b) => (left.filter((q) => covers(b, q)).length > left.filter((q) => covers(a, q)).length ? b : a));
+    chosen.push(best);
+    left = left.filter((q) => !covers(best, q));
+  }
+  // Each blocker shows the row, column or box it blocks through (more than one if it blocks several ways).
+  return chosen.map((p) => {
+    const line = new Map<string, [number, number]>();
+    for (const q of cells.filter((q) => covers(p, q))) {
+      const through = q[0] === p[0] ? UNITS.find((u) => u.label === `row ${p[0] + 1}`)!.cells
+        : q[1] === p[1] ? UNITS.find((u) => u.label === `column ${p[1] + 1}`)!.cells
+        : boxCells(Math.floor(p[0] / 3) * 3 + Math.floor(p[1] / 3));
+      for (const x of through) line.set(`${x[0]},${x[1]}`, x);
+    }
+    return { cell: p, line: [...line.values()] };
+  });
+}
 
 // Numbers already ruled out of cells by harder tricks, as "row,col,number" keys.
 export type RuledOut = Set<string>;
@@ -71,7 +101,9 @@ function onlySpot(grid: Grid, out: RuledOut): Step | null {
       const spots = unit.cells.filter(([r, c]) => canGo(grid, out, r, c, n));
       if (spots.length !== 1) continue;
       const [row, col] = spots[0];
+      const others = unit.cells.filter(([r, c]) => grid[r][c] === 0 && !(r === row && c === col));
       return { technique: `Only spot in ${unit.kind}`, row, col, value: n, focus: unit.cells,
+        blockers: blockersFor(grid, others, n),
         nudge: `Where can ${n} go in ${unit.label}?`,
         why: `In ${unit.label}, every other empty cell already sees a ${n}, so ${n} must go at ${cellName(row, col)}.` };
     }
@@ -113,7 +145,9 @@ function pointing(grid: Grid, out: RuledOut): Step | null {
         const line = UNITS.find((u) => u.kind === kind && u.label === `${kind} ${spots[0][i] + 1}`)!;
         const remove = line.cells.filter(([r, c]) => !box.some(([a, d]) => a === r && d === c) && canGo(grid, out, r, c, n));
         if (!remove.length) continue;
+        const others = box.filter(([r, c]) => grid[r][c] === 0 && !spots.some(([a, d]) => a === r && d === c));
         return { technique: "Pointing", row: remove[0][0], col: remove[0][1], value: n, remove, spots,
+          blockers: blockersFor(grid, others, n),
           focus: [...box, ...line.cells.filter((p) => !box.some(([a, d]) => a === p[0] && d === p[1]))],
           nudge: `Where can ${n} go in box ${b + 1}?`,
           why: `In box ${b + 1}, ${n} can only go in ${line.label}. So the box's ${n} is in that ${kind}, and ${n} can't go anywhere else in ${line.label}.` };

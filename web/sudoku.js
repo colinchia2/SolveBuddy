@@ -161,6 +161,10 @@ function render() {
   const target = h && h.level >= 2 && h.data.target ? key(...h.data.target) : null;
   const striped = new Set(h && h.level >= 2 && h.data.remove ? h.data.remove.map(([r, c]) => key(r, c)) : []);
   const spots = new Set(h && h.level >= 2 && h.data.spots ? h.data.spots.map(([r, c]) => key(r, c)) : []);
+  // From Explain on: the numbers that block the other cells (blue), and the line each blocks through (light blue).
+  const blockers = h && h.level >= 2 && h.data.blockers ? h.data.blockers : [];
+  const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
+  const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
   const [sr, sc] = s.sel || [-1, -1];
   const selVal = s.sel ? valueAt(sr, sc) : 0;
 
@@ -179,10 +183,12 @@ function render() {
       if (same) bg = "var(--same)";
       if (wrong) bg = "var(--conflict-cell)";
       if (isSel) bg = "var(--sel)";
+      if (blockLines.has(k)) bg = "color-mix(in srgb, var(--same) 55%, var(--board))";
       if (focus.has(k)) bg = "var(--accent-soft)";
+      if (blockerCells.has(k)) bg = "var(--same)";
       if (k === target) bg = "var(--accent-mid)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
+      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--accent)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--sel-ring)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
       let inner = "";
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
@@ -223,7 +229,9 @@ function render() {
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;
   document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
-  $("timer").style.visibility = settings.timer ? "visible" : "hidden";
+  $("timer").classList.toggle("notime", !settings.timer); // the pause button stays even with the clock hidden
+  $("paused").hidden = !s.pausedAt;
+  if (s.pausedAt) $("pausedText").textContent = `${$("sub").textContent} · ${fmt(s.pausedAt - s.started)}`;
   $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
   if (s.solved) {
     $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
@@ -289,7 +297,7 @@ document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSe
 
 // Keyboard, for playing on a computer: 1–9, arrows, Backspace, Ctrl+Z.
 document.addEventListener("keydown", (e) => {
-  if (s.rules || s.settingsOpen) return;
+  if (s.rules || s.settingsOpen || s.pausedAt) return;
   if ((e.ctrlKey || e.metaKey) && e.key === "z") return $("undoBtn").onclick();
   if (/^[1-9]$/.test(e.key)) return press(Number(e.key));
   if (e.key === "Backspace" || e.key === "Delete") return erase();
@@ -302,8 +310,24 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Pause (Colin, 10/20): tap the timer to stop the clock and cover the puzzle. Leaving the tab pauses too.
+function pause() {
+  if (s.solved || s.pausedAt) return;
+  s.pausedAt = Date.now();
+  render();
+}
+function resume() {
+  if (!s.pausedAt) return;
+  s.started += Date.now() - s.pausedAt;
+  s.pausedAt = null;
+  render();
+}
+$("timer").onclick = pause;
+$("resumeBtn").onclick = resume;
+document.addEventListener("visibilitychange", () => document.hidden && pause());
+
 setInterval(() => {
-  if (s && !s.solved) $("time").textContent = fmt(Date.now() - s.started);
+  if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
 }, 500);
 
 load(idx);

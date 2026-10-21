@@ -14,6 +14,12 @@ Newest first.
 - **1 Medium puzzle** (`scripts/sudoku_make_medium.ts` → `packs/sudoku9-medium.json`, "Medium: 1" on the page).
 - **Checked:** 28 checks, including every trick move on 30 fully erased puzzles (Pointing used 50+ times) and
   "hints alone solve the Medium puzzle". Browser: stripes, rings, pencil mark 1 removed and 4 kept.
+- **Colin's asks while testing:**
+  - Sudoku hints (Only spot, Pointing) show the numbers that block the other cells: the number outlined in blue,
+    and the row, column or box it blocks through shaded light blue (from Explain on).
+  - **Pause** on both games: tap the timer (it has a small pause icon). An opaque "Paused" cover hides the
+    puzzle so it can't be studied; Resume continues the clock. Switching tabs pauses too. No mockup existed,
+    so it follows the sheet style (new design, Colin to judge).
 
 ## 2026-10-20 — What if plays out on the board (Colin's idea)
 - Colin got "after 5 forced moves column 7 would have nowhere left" and couldn't see why. Now "Show me" on a

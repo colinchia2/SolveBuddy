@@ -272,7 +272,9 @@ function render() {
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;
   document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
-  $("timer").style.visibility = settings.timer ? "visible" : "hidden";
+  $("timer").classList.toggle("notime", !settings.timer); // the pause button stays even with the clock hidden
+  $("paused").hidden = !s.pausedAt;
+  if (s.pausedAt) $("pausedText").textContent = `${$("sub").textContent} · ${fmt(s.pausedAt - s.started)}`;
   $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
   if (s.solved) {
     $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
@@ -371,11 +373,27 @@ document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSe
 $("nextPuzzle").onclick = () => load(idx + 1);
 document.querySelectorAll("#solved [data-close]").forEach((b) => (b.onclick = () => { s.solvedClosed = true; render(); }));
 document.addEventListener("keydown", (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "z") $("undoBtn").onclick();
+  if ((e.ctrlKey || e.metaKey) && e.key === "z" && !s.pausedAt) $("undoBtn").onclick();
 });
 
+// Pause (Colin, 10/20): tap the timer to stop the clock and cover the puzzle. Leaving the tab pauses too.
+function pause() {
+  if (s.solved || s.pausedAt) return;
+  s.pausedAt = Date.now();
+  render();
+}
+function resume() {
+  if (!s.pausedAt) return;
+  s.started += Date.now() - s.pausedAt;
+  s.pausedAt = null;
+  render();
+}
+$("timer").onclick = pause;
+$("resumeBtn").onclick = resume;
+document.addEventListener("visibilitychange", () => document.hidden && pause());
+
 setInterval(() => {
-  if (s && !s.solved) $("time").textContent = fmt(Date.now() - s.started);
+  if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
 }, 500);
 
 load(idx);

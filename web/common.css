@@ -83,3 +83,16 @@ header { display: flex; align-items: center; gap: 6px; }
 .switch[aria-checked="true"] { background: var(--ink); }
 .switch[aria-checked="true"]::after { left: 23px; }
 [hidden] { display: none !important; }
+
+/* Pause (Colin, 10/20): tap the timer. The cover is opaque so the puzzle can't be studied while paused. */
+button.timer { border: 0; background: none; padding: 6px 8px; margin: -6px -8px; border-radius: 10px; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+button.timer:active { background: rgba(42,33,27,0.06); }
+.timer .pause-ico { margin-left: 2px; opacity: .55; }
+.timer.notime .clock, .timer.notime #time { display: none; }
+.paused { position: absolute; inset: 0; z-index: 30; background: var(--bg); overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 0 40px; text-align: center; }
+.paused[hidden] { display: none; }
+.paused .paused-ico { width: 76px; height: 76px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; position: relative; }
+.paused h2 { margin: 6px 0 0; font-size: 28px; position: relative; }
+.paused p { margin: 0 0 14px; color: #7A6B5F; font-variant-numeric: tabular-nums; position: relative; }
+.paused .dark { width: 100%; position: relative; }
