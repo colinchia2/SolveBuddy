@@ -253,3 +253,17 @@ Newest first.
   rejects unused background modes). `scripts/check-build.mjs` checks all of it: 14/14 pass.
 - SDK 57 exists (expo-doctor warns of an SDK 56 memory issue); stayed on 56 because CheckBuddy built fine on it.
 - **Waiting on Colin:** icon colour (blue logo vs the app's terracotta), then his go for the build.
+
+## 2026-10-21: Blue main screens + the app around them (ready to build)
+- **Web:** `home.html` (face top left, tap = wink + hop + buzz; streak chip; game tiles, 4 "Coming soon"; level
+  picker incl. Trick tests → plays the next unsolved puzzle), `packs.html` (7 packs on the phone with progress;
+  "Coming soon": Killer, Thermo, Two-star), `stats.html` (streaks, month calendar, by puzzle, % without hints).
+  Shared: `bridge.js` (app bridge, packs, solve log `solvebuddy.solves`), `screens.js/.css`. Game pages: blue brand
+  tokens (`--brand*`; hint red stays `--accent*`), back button works, hints counted, each solve logged.
+  App mode (`html.app`): full screen, 390-wide viewport on every iPhone, test strip hidden.
+- **App:** Apple's native tab bar (`createNativeBottomTabNavigator`) Library · Packs · Stats, games on a native
+  stack (swipe back), opening animation copied from TasteBuddy (`src/SplashOverlay.js`; Home reports its logo
+  spot), keep-awake only in games, `--tabbar` padding injected.
+- **Checked:** 36 checks; all 5 pages in phone-sized frames in app mode (layout, Play → open message, back →
+  close message, Home logo spot 16,26 size 40); app bundles (953 modules); pre-build check 16/16.
+  NOT checked: anything on a real iPhone (tab bar, animation, haptics). Fixes for those go by OTA, no build.
