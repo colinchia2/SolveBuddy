@@ -1,5 +1,5 @@
 // Step 3 of making a Sudoku: solve it like a person would, using the tricks in techniques.ts.
-// The grade is the easiest set of tricks that finishes it: Easy, then Medium (adds Pointing and Claiming), then Hard (adds Pairs).
+// The grade is the easiest set of tricks that finishes it: Easy, then Medium (adds Pointing and Claiming), then Hard (adds Pairs and Hidden pairs).
 import { type Grid } from "./fullGrid.ts";
 import { nextStep, applyStep, type Step, type RuledOut, EASY_TECHNIQUES, MEDIUM_TECHNIQUES, HARD_TECHNIQUES } from "./techniques.ts";
 

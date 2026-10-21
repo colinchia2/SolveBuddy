@@ -224,17 +224,49 @@ function pairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
   return null;
 }
 
+// 7. (Hard) Hidden pairs: the twin of Pairs. In a row, column or box, two numbers can each only go in the same
+//    two cells. Those two cells are those two numbers, so every other number is ruled out of them.
+function hiddenPairs(grid: Grid, out: RuledOut, all?: Step[]): Step | null {
+  for (const unit of UNITS) {
+    const spotsOf = (n: number) => unit.cells.filter(([r, c]) => canGo(grid, out, r, c, n));
+    const missing = ALL_NUMS.filter((n) => !unit.cells.some(([r, c]) => grid[r][c] === n));
+    const two = missing.map((n) => ({ n, spots: spotsOf(n) })).filter((x) => x.spots.length === 2);
+    for (let i = 0; i < two.length; i++) {
+      for (let j = i + 1; j < two.length; j++) {
+        const same = two[i].spots.every(([r, c], k) => two[j].spots[k][0] === r && two[j].spots[k][1] === c);
+        if (!same) continue;
+        const a = two[i].n, b = two[j].n;
+        const pair = two[i].spots;
+        const values = ALL_NUMS.filter((n) => n !== a && n !== b && pair.some(([r, c]) => canGo(grid, out, r, c, n)));
+        if (!values.length) continue;
+        const remove = pair.filter(([r, c]) => values.some((n) => canGo(grid, out, r, c, n)));
+        const others = unit.cells.filter(([r, c]) => grid[r][c] === 0 && !pair.some(([x, y]) => x === r && y === c));
+        const [p, q] = pair;
+        const st: Step = { technique: "Hidden pairs", row: remove[0][0], col: remove[0][1], value: values[0], values, remove,
+          spots: pair, focus: unit.cells,
+          blockers: [...blockersFor(grid, others, a), ...blockersFor(grid, others, b)],
+          uses: usedOut(grid, out, others, [a, b]),
+          nudge: `In ${unit.label}, look for two numbers that can only go in the same two cells.`,
+          why: `In ${unit.label}, ${a} and ${b} can only go in ${cellName(...p)} and ${cellName(...q)}. So those two cells are the ${a} and the ${b}, and nothing else can go in them.` };
+        if (!all) return st;
+        all.push(st);
+      }
+    }
+  }
+  return null;
+}
+
 type Technique = (grid: Grid, out: RuledOut) => Step | null;
 export const PLACING: Technique[] = [lastCell, onlySpot, onlyNumber];
 // Every rule-out step available right now (for searching short hint chains).
 export function allRuleOuts(grid: Grid, out: RuledOut): Step[] {
   const all: Step[] = [];
-  for (const t of [pointing, claiming, pairs]) t(grid, out, all);
+  for (const t of [pointing, claiming, pairs, hiddenPairs]) t(grid, out, all);
   return all;
 }
 export const EASY_TECHNIQUES: Technique[] = [lastCell, onlySpot, onlyNumber];
 export const MEDIUM_TECHNIQUES: Technique[] = [...EASY_TECHNIQUES, pointing, claiming];
-export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs];
+export const HARD_TECHNIQUES: Technique[] = [...MEDIUM_TECHNIQUES, pairs, hiddenPairs];
 export const ALL_TECHNIQUES = HARD_TECHNIQUES;
 
 // Next move using the easiest trick that works, or null if none of them do.

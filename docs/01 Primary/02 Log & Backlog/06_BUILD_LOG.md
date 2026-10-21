@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-10-20 — Expert Sudoku, trick 4: Hidden pairs
+- **Hidden pairs** (`techniques.ts`, graded Hard): two numbers that can only go in the same two cells of a unit
+  fill those cells, so every other number is ruled out of them. Blockers for both numbers show in blue.
+- **Survey** (100 fully erased): Easy 46, Medium 8, Hard 4, harder 42. Hidden pairs used in 12, but it rarely
+  finishes a puzzle on its own. The harder 42 need bigger tricks (triples, X-wing…).
+- **Checked:** 32 checks (Hidden pairs in the "every move matches the answer" check). Not seen in the browser
+  yet: no pack puzzle uses it; it reuses the Pairs visuals (rings, stripes, blue blockers).
+
 ## 2026-10-20 — Sudoku hints use only what's on the board
 - Colin caught a Pairs hint that relied on an earlier hint's rule-out he couldn't see. New rule (backlog,
   Decided): hints read only correct numbers + center pencil marks; the page no longer remembers rule-outs.
