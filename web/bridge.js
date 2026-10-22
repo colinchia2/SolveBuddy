@@ -34,5 +34,27 @@ export function solves() {
 export function logSolve(entry) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}
 }
+// A game left half-done, one per pack (Colin, 10/21: backing out by accident mustn't lose it).
+// "sudoku/easy" → { p, ms, hints, ...the game's own marks }.
+const SAVE_KEY = "solvebuddy.saved";
+const allSaved = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "{}"); } catch { return {}; } };
+export const savedGame = (game, pack) => allSaved()[`${game}/${pack}`] ?? null;
+export function saveGame(game, pack, data) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...allSaved(), [`${game}/${pack}`]: { ...data, at: Date.now() } })); } catch {}
+}
+export function clearSaved(game, pack) {
+  const all = allSaved();
+  delete all[`${game}/${pack}`];
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(all)); } catch {}
+}
+
+// The hint card sits over the bottom of the page and never covers the board (Colin, 10/21): it's capped at the room
+// below the board, and its text scrolls inside it on a short phone.
+export function fitHint(card, board) {
+  if (card.hidden) return;
+  const room = card.offsetParent.getBoundingClientRect().bottom - board.getBoundingClientRect().bottom - 16 - 12;
+  card.style.maxHeight = room >= 150 ? `${room}px` : "";
+}
+
 // Puzzle numbers (1-based) already solved in one pack.
 export const solvedIn = (game, pack) => new Set(solves().filter((e) => e.g === game && e.pack === pack).map((e) => e.p));

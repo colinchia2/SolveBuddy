@@ -3,22 +3,22 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=390, user-scalable=no">
-<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app")</script>
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app"); if (window.SOLVEBUDDY_APP?.nativeBack) document.documentElement.classList.add("nativeback")</script>
 <title>SolveBuddy Star Battle</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
 <style>
   /* Star Battle only: the 8×8 board from the StarBattle8 mockup, plus hint marks from the 6×6 hint mockup. */
   .screen { height: 844px; }
-  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-    padding-bottom: 70px; transition: transform 0.35s cubic-bezier(0.2,0.9,0.3,1); }
-  .stage.lifted { transform: translateY(-90px); }
+  /* The board sits near the top and never moves; the hint card comes up underneath it (Colin, 10/21). */
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 18px; }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
   .board { display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink);
     border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14);
-    touch-action: none; user-select: none; -webkit-user-select: none; } /* so a finger drag marks cells instead of scrolling */
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; } /* so a finger drag marks cells instead of scrolling */
   .cell { width: 44px; height: 44px; margin: 0; padding: 0; border: none; display: grid; place-items: center;
-    border-right: 1px solid rgba(42,33,27,0.16); border-bottom: 1px solid rgba(42,33,27,0.16); transition: background 0.15s ease; }
+    border-right: 1px solid rgba(42,33,27,0.16); border-bottom: 1px solid rgba(42,33,27,0.16); -webkit-tap-highlight-color: transparent; }
+  /* A tap just marks the cell, no flash (Colin, 10/21). */
   .cell.br { border-right: 3px solid var(--ink); }
   .cell.bb { border-bottom: 3px solid var(--ink); }
   .cell .xm { font-size: 22px; font-weight: 600; line-height: 1; color: #7A6B5F; }

@@ -1,6 +1,6 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a level → play the next
 // unsolved puzzle in that pack.
-import { GAMES, buzz, inApp, loadPack, openGame, post, solvedIn } from "./bridge.js";
+import { GAMES, buzz, inApp, loadPack, openGame, post, savedGame, solvedIn } from "./bridge.js";
 import { $, FACE, FLAME, LOOK, esc, gameIcon, streaks, tabs } from "./screens.js";
 
 const sizes = {}; // "sudoku/easy" → number of puzzles
@@ -20,7 +20,10 @@ const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4 };
 
 let picking = null; // { game, pack }
 
+// A half-done game in this pack comes first (Colin, 10/21), then the first one not solved yet.
 function nextPuzzle(g, k) {
+  const saved = savedGame(g, k);
+  if (saved) return saved.p;
   const done = solvedIn(g, k);
   const n = sizes[`${g}/${k}`];
   for (let p = 1; p <= n; p++) if (!done.has(p)) return p;
@@ -36,7 +39,8 @@ function render() {
     : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 56, 30)}<span><span class="name">${GAMES[t.id].name}</span><br><span class="count">${total(t.id)} puzzles</span></span></button>`).join("");
   document.querySelectorAll("[data-game]").forEach((b) => (b.onclick = () => {
     const g = b.dataset.game;
-    const first = GAMES[g].packs.find(([k]) => solvedIn(g, k).size < sizes[`${g}/${k}`]) ?? GAMES[g].packs[0];
+    const resume = GAMES[g].packs.filter(([k]) => savedGame(g, k)).sort(([a], [b]) => savedGame(g, b).at - savedGame(g, a).at)[0];
+    const first = resume ?? GAMES[g].packs.find(([k]) => solvedIn(g, k).size < sizes[`${g}/${k}`]) ?? GAMES[g].packs[0];
     picking = { game: g, pack: first[0] };
     renderPick();
   }));
@@ -56,9 +60,9 @@ function renderPick() {
     <div><span class="label">Choose a level</span><div class="levels">${GAMES[game].packs.map(([k, , name]) => {
       const n = sizes[`${game}/${k}`], done = solvedIn(game, k).size, bars = LEVEL_BARS[k];
       return `<button class="level" data-pack="${k}" aria-pressed="${k === pack}">${bars ? `<span class="bars" aria-hidden="true">${[8, 12, 16, 20].map((h, i) => `<i style="height:${h}px" class="${i < bars ? "on" : ""}"></i>`).join("")}</span>` : ""}
-        <span><b>${name}</b><small>${done ? `${done} of ${n} solved` : `${n} puzzle${n === 1 ? "" : "s"}`}</small></span></button>`;
+        <span><b>${name}</b><small>${savedGame(game, k) ? `#${savedGame(game, k).p} in progress` : done ? `${done} of ${n} solved` : `${n} puzzle${n === 1 ? "" : "s"}`}</small></span></button>`;
     }).join("")}</div></div>
-    <button class="play" id="play"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>Play ${label} #${nextPuzzle(game, pack)}</button>
+    <button class="play" id="play"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>${savedGame(game, pack) ? "Resume" : "Play"} ${label} #${nextPuzzle(game, pack)}</button>
   </section>`;
   $("pickClose").onclick = () => { picking = null; renderPick(); };
   $("pick").onclick = (e) => { if (e.target === $("pick")) { picking = null; renderPick(); } };

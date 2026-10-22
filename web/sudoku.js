@@ -1,6 +1,6 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { goHome, logSolve } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, saveGame, savedGame } from "./bridge.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -50,6 +50,13 @@ function load(i, name = packName) {
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, picked: new Set(), mode: s?.mode || "normal",
     hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
+  // Pick up where you left off (Colin, 10/21).
+  const saved = savedGame("sudoku", name);
+  if (saved?.p === i + 1) {
+    Object.assign(s, { entries: saved.entries ?? {}, corner: saved.corner ?? {}, center: saved.center ?? {} });
+    s.started = Date.now() - (saved.ms ?? 0);
+    s.hints = saved.hints ?? 0;
+  }
   $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
@@ -123,6 +130,7 @@ function checkSolved() {
   if (b.every((row, r) => row.every((v, c) => v === s.solution[r][c]))) {
     s.solved = true;
     s.elapsed = Date.now() - s.started;
+    clearSaved("sudoku", packName);
     logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   }
 }
@@ -257,6 +265,7 @@ function render() {
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }
+  fitHint($("hint"), $("board"));
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;
@@ -339,7 +348,7 @@ $("undoBtn").onclick = () => {
   s.hint = null;
   render();
 };
-$("restartBtn").onclick = () => load(idx);
+$("restartBtn").onclick = () => { clearSaved("sudoku", packName); load(idx); };
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
@@ -382,8 +391,16 @@ $("timer").onclick = pause;
 $("resumeBtn").onclick = resume;
 document.addEventListener("visibilitychange", () => document.hidden && pause());
 
+// Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
+function persist() {
+  if (!s || s.solved || ![s.entries, s.corner, s.center].some((m) => Object.keys(m).length)) return;
+  saveGame("sudoku", packName, { p: idx + 1, entries: s.entries, corner: s.corner, center: s.center,
+    ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+}
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
+  persist();
 }, 500);
+addEventListener("pagehide", persist);
 
 load(idx);

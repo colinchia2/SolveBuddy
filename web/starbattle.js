@@ -1,6 +1,6 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { goHome, logSolve } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, saveGame, savedGame } from "./bridge.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -44,6 +44,13 @@ function load(i, name = packName) {
   const p = pack.puzzles[i];
   s = { regions: p.regions, solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
+  // Pick up where you left off (Colin, 10/21).
+  const saved = savedGame("starbattle", name);
+  if (saved?.p === i + 1) {
+    s.marks = saved.marks ?? {};
+    s.started = Date.now() - (saved.ms ?? 0);
+    s.hints = saved.hints ?? 0;
+  }
   $("sub").textContent = `8×8 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
@@ -95,6 +102,7 @@ function checkSolved() {
   if (st.length === N && st.every(([r, c]) => s.solution[r] === c)) {
     s.solved = true;
     s.elapsed = Date.now() - s.started;
+    clearSaved("starbattle", packName);
     logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   }
 }
@@ -238,7 +246,6 @@ function render() {
   $("board").innerHTML = cells.join("");
   $("count").textContent = `${stars().length} / ${N} stars`;
   $("hintBtn").classList.toggle("pressed", !!h);
-  $("stage").classList.toggle("lifted", !!h);
 
   $("hint").hidden = !h;
   if (h) {
@@ -273,6 +280,7 @@ function render() {
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }
+  fitHint($("hint"), $("board"));
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;
@@ -367,7 +375,7 @@ $("undoBtn").onclick = () => {
   s.hinted.clear();
   render();
 };
-$("restartBtn").onclick = () => load(idx);
+$("restartBtn").onclick = () => { clearSaved("starbattle", packName); load(idx); };
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
@@ -398,8 +406,15 @@ $("timer").onclick = pause;
 $("resumeBtn").onclick = resume;
 document.addEventListener("visibilitychange", () => document.hidden && pause());
 
+// Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
+function persist() {
+  if (!s || s.solved || !Object.keys(s.marks).length) return;
+  saveGame("starbattle", packName, { p: idx + 1, marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+}
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
+  persist();
 }, 500);
+addEventListener("pagehide", persist);
 
 load(idx);
