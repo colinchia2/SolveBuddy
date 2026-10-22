@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-22 (night) — Killer and Thermo Sudoku (Easy)
+- `engine/sudoku/variants.ts`: cage sums + no repeats; thermos climb from the bulb. countSolutions/hint/playHints take
+  the rules. Hint order: (1) a cage/thermo trick that PLACES a number, (2) a classic number, (3) cage/thermo
+  narrowing as pencil marks, (4) classic rule-outs. Tricks: Last cell in cage, Cage sum, Cage digits, Thermo order.
+- Packs: `sudoku9-killer-easy.json` (5; 12 numbers showing, cages 2–5) and `sudoku9-thermo-easy.json` (5; 20 showing,
+  5–7 thermos). Each: one answer (and more than one without the extra rules), solved by hints alone, a variant
+  hint within the first 5. New Sudoku sets "Killer" and "Thermo". Classic Sudoku hints byte-identical
+  (`checks/sudoku_snapshot.sha256`).
+- Next: Colin plays them and calls out hints; then more puzzles and Medium/Hard (45 rule / innies-outies for Killer).
+
 ## 2026-10-22 (late) — Centring, last phone fixes, app backup
 - Every game centred between the info row and the bottom bar (Star Battle was 95px high); `checks/pages_smoke.mjs`
   fails if a board is >40px off at 844 or 750px tall. Hint cards float over the bottom (no more squeezing).

@@ -8,7 +8,8 @@ Top item = what's next.
    so likely a free Cloudflare Worker; ask Colin; ~1–3¢ a photo; the confirm screen already exists. Until then Colin sends
    screenshots in chat.
 2. **Real Expert Triple:** make 3-star "What if" fast enough (<150ms) that Expert 3-star puzzles fit the hint budget.
-3. **Sudoku variants** (Killer first, then Thermo, Arrow, a creator's own rules from a photo).
+3. **Sudoku variants:** Killer + Thermo Easy (5 each) shipped 10/22. Next: Colin's hint feedback, more puzzles,
+   Medium/Hard (45 rule, innies/outies), then Arrow and a creator's own rules from a photo.
 4. **After-puzzle review** ("here's what you could have done").
 5. **New games:** Binairo, Shikaku, Five Letters, Groups (hold until Colin picks).
 6. **Import several at once** (Colin 10/22: later; one or two at a time for now).
