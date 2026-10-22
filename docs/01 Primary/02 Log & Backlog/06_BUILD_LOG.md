@@ -2,6 +2,30 @@
 
 Newest first.
 
+## 2026-10-22 (evening) — Two new games, Import tab, phone feedback rounds
+- **Water Sort** (30 levels, Starter pack Easy/Medium/Hard): solver hints that say WHY (`engine/watersort/explain.ts`,
+  1–3 moves ahead, no move counts), tilt-and-pour animation where only the poured colour moves, tap to speed up.
+- **Block Drop** (endless): swipe/tap controls (no buttons), Save piece (once per piece, bottom right), Resume or New +
+  3-2-1, line-clear / 4-line / game-over effects, best score on the Home tile, stuck-input bug fixed.
+- **Colin's 14 fixes** (voice note): Star Battle pretend-mark bars (a `.ghost` class clash), View solved shows YOUR
+  board (`saveFinal`/`finalBoard`), Resume never wrong (the game hands Home its exact state on close + board picture
+  in the Resume sheet), sticky Home/Packs/Stats header (and "What are we solving?" stays with it), no selectable
+  text, tips moved into the ? sheets.
+- **Hints and wrong marks (Colin agreed the POV):** hints build only on correct marks; a wrong × is never flagged on
+  sight, only when the next step puts a star on it, with that step's reason. Wrong stars are still flagged first.
+- **Import tab (4th tab):** list by day added + filters; build by hand (Star Battle paint regions, Sudoku printed/yours,
+  Water Sort tubes); live answer check; wrong marks allowed with "Start anyway". Screenshot route for now: Colin
+  sends it, Claude reads thick borders by pixel thickness (`scripts/read_starbattle_screenshot.py`) and only adds a board with exactly one
+  answer. Mockup: canvas row "Import a puzzle (10/22)".
+- **Star Battle engine:** stars per puzzle (`withStars`/`perUnit(regions)`), any size 5–12, 1–3 stars,
+  `countAnswers.ts`; a stuck multi-star What if retries with fuller chains (budgeted 700ms); Hint pulses while thinking.
+  Single/Double packs grade and hint byte-identically (`checks/starbattle_snapshot.sha256`).
+- **Packs:** Easy Sudoku and Easy single Star Battle to 10; **Starter – Triple** (12×12, 3 stars) labelled **Hard**:
+  real Expert 3-star puzzles had hints over the time budget, so a phone could get different hints.
+- **Testing:** `checks/pages_smoke.mjs` runs the pages in hidden Chrome (Playwright, `channel: "chrome"`), replacing
+  Chrome-extension clicking (Colin: too slow).
+- **Checked:** run_all 46 PASS; pages smoke all PASS; each of Colin's 4 imports solved by hints; OTAs published.
+
 ## 2026-10-22 — More puzzles + Double Star Battle
 - **Sudoku:** Medium, Hard and Expert now 10 each (`scripts/fill_pack.ts`; old puzzles kept so saves still match).
   A hint must never show a trick from a harder level (one Medium showed a Y-wing; replaced).

@@ -2,6 +2,15 @@
 
 Top item = what's next.
 
+## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
+1. **In-app photo reading** for imports: small PythonAnywhere page holding a SolveBuddy Anthropic key (Colin makes the
+   key and adds it; Claude never sees it); ~1–3¢ a photo; the confirm screen already exists. Until then Colin sends
+   screenshots in chat.
+2. **Real Expert Triple:** make 3-star "What if" fast enough (<150ms) that Expert 3-star puzzles fit the hint budget.
+3. **Sudoku variants** (Killer first, then Thermo, Arrow, a creator's own rules from a photo).
+4. **After-puzzle review** ("here's what you could have done").
+5. **New games:** Binairo, Shikaku, Five Letters, Groups (hold until Colin picks).
+
 ## Colin's 10/22 evening voice note (phone testing), one at a time, improvements first
 Improvements:
 1. Star Battle hint: white bars behind the pretend × marks in a What if play-through (class clash with `.ghost`).

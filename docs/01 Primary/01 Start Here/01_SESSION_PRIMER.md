@@ -2,29 +2,36 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (2026-10-20)
-- **Done:** 5 Easy 9×9 Sudokus + 5 Easy 8×8 Star Battles, each with real hints, playable on a localhost
-  test page (Sudoku ↔ Star Battle switch above the phone). Colin has played them and likes them.
-- **Done too:** 1 Expert Star Battle (`packs/starbattle8-expert.json`). Colin played it through: What if hints
-  play out step by step on the board, and wrong-star hints say why. He liked it.
-- **Expert Sudoku (10/20):** 6 harder tricks built (Pointing, Claiming, Pairs, Hidden pairs, X-wing, Y-wing).
-  Hints only use what's on the board (numbers + center pencil marks). A trick hint writes pencil marks;
-  the next hint places the number (10/21). Test page has Medium 1, Hard 1, Expert 1 and Tricks 1–6
-  (one per trick, each starting right at its trick).
-- **Done 10/21:** Colin is happy with Tricks 1–6 (Pairs in two steps, X-wing corner marks, Y-wing in two hints,
-  cell names colored blue/red in hint text).
-- **Live 10/21:** https://colinchia2.github.io/SolveBuddy/ (public repo colinchia2/SolveBuddy; push = publish).
-- **Next step:** phone app in `C:\dev\SolveBuddyApp` (see build log 10/21, last entry). ONE production build only,
-  on Colin's go. Colin also plays Expert 1 and flags confusing hints.
-- **New ideas parked (10/20):** screenshot import, Water Sort, two-star Star Battle, a block-dropping game.
-  Flow Free is a no. See the backlog's "New ideas". Don't start them until Colin picks one.
-- **Open questions:** the backlog's list, one at a time, when Colin is ready.
+## Right now (save point 2026-10-22, evening)
+- **Live on Colin's phone** (app `C:\dev\SolveBuddyApp`, iOS build on runtime 513e3eaf…; pages from GitHub Pages):
+  4 tabs (Library · Packs · Stats · Import), 4 games: Star Battle (Single 8×8 Easy 10 + Expert 10, Double 10×10
+  Expert 10, Triple 12×12 Hard 10), Sudoku (Easy/Medium/Hard/Expert 10 each + 6 Trick tests), Water Sort
+  (30 levels), Block Drop (endless). Import tab: Star Battle any size 5–12 with 1–3 stars, Sudoku 9×9, Water Sort
+  4–18 tubes; build one by hand, or Colin sends a screenshot to Claude in chat and Claude adds it to
+  `packs/imports.json` (4 Star Battles added 10/22, read with `scripts/read_starbattle_screenshot.py`: thick-line reading +
+  "exactly one answer" check).
+- **This chat is closing.** From now on Colin uses ONE agent for all Buddy apps ("pick up Buddy Family work"):
+  `Buddies\00 Family\00_PRIMER.md`, section "How Colin works from now on".
+- **Next (backlog top):** in-app photo reading (needs a small PythonAnywhere page + a SolveBuddy Anthropic key Colin
+  makes; ~1–3¢ a photo); deeper 3-star "What if" so a real Expert Triple pack is possible; Sudoku variants;
+  after-puzzle review; new games (Binairo, Shikaku, Five Letters, Groups).
+- **Open questions:** none waiting. Colin tests the 10/22 evening update and flags anything.
 - **To pick up, read:**
-  1. This file (rules + how to start the test page below).
-  2. `../02 Log & Backlog/06_BUILD_LOG.md`: the newest entry.
-  3. `../02 Log & Backlog/08_BACKLOG.md`: Next, Decided, Parked.
-  4. `engine/starbattle/techniques.ts` and `grade.ts` (where the harder tricks go), then `checks/run_all.ts`.
-  5. When needed: `docs/02 Hand-off from Chat/SOLVEBUDDY_HANDOFF.md` §3 (hints), §5–6 (design).
+  1. This section, then "Key rules" and "How to ship" below.
+  2. `../02 Log & Backlog/06_BUILD_LOG.md`: the 10/22 entries.
+  3. `../02 Log & Backlog/08_BACKLOG.md`: "Next".
+  4. Code map: `web/` (pages; `bridge.js` = GAMES, saves, haptics, imports), `engine/<game>/` (rules, hints,
+     makers), `checks/run_all.ts` + `checks/pages_smoke.mjs` (hidden-browser page test).
+
+## How to ship (SolveBuddy)
+1. `node scripts/build_site.ts`, `node checks/run_all.ts` (all PASS), and with `node web/server.ts` running,
+   `node checks/pages_smoke.mjs` (hidden Chrome, no tabs; Colin asked not to drive his Chrome).
+2. `git push` = pages live on GitHub Pages; the phone gets them after open, ~15s, quit, reopen twice.
+3. Only if the app shell changed (or to refresh the packed starting copy): in `C:\dev\SolveBuddyApp`,
+   `node scripts/pull-pages.mjs`, bundle check (`npx expo export --platform ios`), fingerprint must still be
+   513e3eaf… (`npx expo-updates fingerprint:generate --platform ios`), then
+   `npx eas-cli update --channel production --environment production --message "…" --non-interactive`.
+   Never an EAS build without Colin's explicit go.
 
 ## Read in this order (general)
 1. `05_PROJECT_STATUS.md` (this folder): where things stand.

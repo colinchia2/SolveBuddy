@@ -1,5 +1,18 @@
 # SolveBuddy — project status
 
+**As of 2026-10-22 (evening):** a full phone app with 4 tabs and 4 games, shipping by git push + OTA.
+
+- App: `C:\dev\SolveBuddyApp` (Expo SDK 56, native iOS 26 tabs, Liquid Glass back button, opening animation,
+  haptics). Pages: `web/*` built into `_site/app/*.html` by `scripts/build_site.ts`, served by GitHub Pages.
+- Games: Star Battle (any size 5–12, 1–3 stars; packs Single / Double / Triple), Sudoku (4 levels + trick tests),
+  Water Sort (solver hints that say why), Block Drop (endless, Save piece, countdown, line-clear effects).
+- Import tab: build by hand with an exactly-one-answer check, or screenshots added by Claude to `packs/imports.json`.
+  In-app photo reading not built yet (needs a key + small server).
+- Checks: `checks/run_all.ts` (46 PASS) + `checks/pages_smoke.mjs` (hidden browser).
+- Family: follows `Buddies\00 Family\BUDDY_STANDARD.md` (logo, wink, opening, bar, sheets, haptics).
+
+---
+
 **As of 2026-10-20:** two games work end to end on a localhost test page. No app yet.
 
 - Design canvas: https://claude.ai/artifact/X4xg7mJWsbHr38WbVCppqi (8 screens). Copies:
