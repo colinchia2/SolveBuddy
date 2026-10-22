@@ -2,6 +2,23 @@
 
 Newest first.
 
+## 2026-10-22 — More puzzles + Double Star Battle
+- **Sudoku:** Medium, Hard and Expert now 10 each (`scripts/fill_pack.ts`; old puzzles kept so saves still match).
+  A hint must never show a trick from a harder level (one Medium showed a Y-wing; replaced).
+- **Star Battle Expert (8×8):** 10 puzzles (toughest of 6 tries each, as before).
+- **Double Star Battle** (Colin: "Starter – Double" pack): 10×10, 2 stars per row, column and region.
+  Engine counts stars needed (`perUnit`, `isAnswer` in `layout.ts`); every trick generalised, plus **Squeeze**
+  (try every way to fit a unit's stars). One-star grading and hints are byte-identical to before
+  (`checks/starbattle_one_star_snapshot.ts`). Generator `engine/starbattle/makeDouble.ts` (random regions → repair
+  to one answer), 10 Experts in `packs/starbattle10-double-expert.json`.
+- **Speed:** a Double "What if" chain follows the simpler tricks only (no groups), and the What if search stops
+  chains that can't be shortest: slowest hint went from 2.5s to under 0.2s on the PC.
+- **Game:** Star Battle has 2 packs: "Starter – Single" (Easy, Expert) and "Starter – Double" (Expert). Board,
+  stars, red clashes, rules text, counter, view-solved and Solved! card handle 10×10 / 2 stars. 10th region
+  colours: lime and grey. Packs tab shows each pack's real size.
+- **Checked:** all checks pass (+ Double: one answer each, Hint alone solves all 10). Browser: Double #3 solved
+  by Hint presses to the Solved! card; pack picker and pack page.
+
 ## 2026-10-20 — Trick tests + 1 Expert Sudoku
 - Colin's idea: one test puzzle per harder trick, then a full Expert. `scripts/sudoku_make_trick_tests.ts` →
   `packs/sudoku9-tricks.json` (Tricks 1–6: Pointing, Claiming, Pairs, Hidden pairs, X-wing, Y-wing) and

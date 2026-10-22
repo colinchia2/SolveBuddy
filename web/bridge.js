@@ -32,8 +32,10 @@ export const GAMES = {
     ["tricks", "sudoku9-tricks.json", "Trick tests"]],
     sets: [{ name: "Starter", levels: ["easy", "medium", "hard", "expert"] }, { name: "Trick tests", levels: ["tricks"], note: "One per trick" }] },
   starbattle: { name: "Star Battle", packs: [
-    ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"]],
-    sets: [{ name: "Starter", levels: ["easy", "expert"] }] },
+    ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"],
+    ["double", "starbattle10-double-expert.json", "Expert"]],
+    // Single = one star per row on 8×8; Double = two per row on 10×10 (Colin, 10/22).
+    sets: [{ name: "Starter – Single", levels: ["easy", "expert"] }, { name: "Starter – Double", levels: ["double"], note: "Expert" }] },
 };
 
 // Solve log: one entry per finished puzzle. Stored in this browser / on this phone only.

@@ -13,15 +13,16 @@
   /* The board sits near the top and never moves; the hint card comes up underneath it (Colin, 10/21). */
   .stage { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 18px; }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
-  .board { display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink);
+  .board { --n: 8; --cell: calc(352px / var(--n)); display: grid; grid-template-columns: repeat(var(--n), var(--cell)); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink);
     border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14);
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; } /* so a finger drag marks cells instead of scrolling */
-  .cell { width: 44px; height: 44px; margin: 0; padding: 0; border: none; display: grid; place-items: center;
+  .cell { width: var(--cell); height: var(--cell); margin: 0; padding: 0; border: none; display: grid; place-items: center;
     border-right: 1px solid rgba(42,33,27,0.16); border-bottom: 1px solid rgba(42,33,27,0.16); -webkit-tap-highlight-color: transparent; }
   /* A tap just marks the cell, no flash (Colin, 10/21). */
   .cell.br { border-right: 3px solid var(--ink); }
   .cell.bb { border-bottom: 3px solid var(--ink); }
   .cell .xm { font-size: 22px; font-weight: 600; line-height: 1; color: #7A6B5F; }
+  .board.double .xm { font-size: 18px; }
   .cell .xm.auto { color: #B8ABA0; }
   .cell .xm.hinted { color: var(--accent-dark); }
   .cell .xm.wrong { color: var(--conflict-star); }
@@ -83,7 +84,7 @@
   <div class="scrim" id="rules" hidden>
     <section class="sheet" role="dialog" aria-label="How to play Star Battle">
       <div class="sheet-top"><h2>How to play</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
-      <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="#C24E2A"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg></span><span>Place exactly <strong>one star</strong> in every row, every column and every colored region.</span></div>
+      <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="#C24E2A"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg></span><span>Place exactly <strong id="rulesStars">one star</strong> in every row, every column and every colored region.</span></div>
       <div class="row"><span class="ico" style="background:#D7EEEA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2"><path d="M4 4h16v16H4z M12 4v16 M4 12h16"/></svg></span><span>Stars can <strong>never touch</strong>, not even diagonally.</span></div>
       <div class="row"><span class="ico" style="background:#EDE5DC; font-weight:700; color:#4E433A">×</span><span>Tap once to mark × where a star can't go. Tap twice for a star.</span></div>
       <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint checks your board for mistakes first, then shows the simplest next step.</span></div>

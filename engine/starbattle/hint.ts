@@ -1,7 +1,7 @@
 // Star Battle Hint button. Looks at the board as it is right now:
 // 1. Mistakes first: a star where the answer has none, or an × on the answer's star.
 // 2. Otherwise: the easiest trick that finds a next move.
-import { type Regions, type Stars } from "./layout.ts";
+import { type Regions, type Stars, isAnswer, perUnit } from "./layout.ts";
 import { type Board, type Step, EMPTY, CROSS, STAR, nextStep, chainFrom } from "./techniques.ts";
 
 type Cell = [number, number];
@@ -26,7 +26,7 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
   const n = regions.length;
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
-      const isStar = solution[r] === c;
+      const isStar = isAnswer(solution, r, c);
       const wrongStar = board[r][c] === STAR && !isStar;
       const wrongCross = board[r][c] === CROSS && isStar;
       if (!wrongStar && !wrongCross) continue;
@@ -63,26 +63,40 @@ function whyWrong(board: Board, regions: Regions, solution: Stars, [r, c]: Cell)
   const n = regions.length;
   const base = board.map((row, a) => row.map((v, b) => {
     if (a === r && b === c) return EMPTY;
-    const isStar = solution[a] === b;
+    const isStar = isAnswer(solution, a, b);
     return (v === STAR && !isStar) || (v === CROSS && isStar) ? EMPTY : v;
   }));
-  for (let a = 0; a < n; a++) {
-    const b = base[a].indexOf(STAR);
-    if (b < 0) continue;
-    const clash = a === r ? "is in the same row as" : b === c ? "is in the same column as"
-      : regions[a][b] === regions[r][c] ? "is in the same region as"
-      : Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1 ? "touches" : "";
-    if (clash) return { text: `It ${clash} the star at row ${a + 1}, column ${b + 1}.`, found: null };
+  if (perUnit(n) === 1) {
+    for (let a = 0; a < n; a++) {
+      const b = base[a].indexOf(STAR);
+      if (b < 0) continue;
+      const clash = a === r ? "is in the same row as" : b === c ? "is in the same column as"
+        : regions[a][b] === regions[r][c] ? "is in the same region as"
+        : Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1 ? "touches" : "";
+      if (clash) return { text: `It ${clash} the star at row ${a + 1}, column ${b + 1}.`, found: null };
+    }
+  } else {
+    // Double: it touches a star, or makes a third star in a row, column or region.
+    const all: [number, number][] = [];
+    base.forEach((row, a) => row.forEach((v, b) => v === STAR && all.push([a, b])));
+    const near = all.find(([a, b]) => Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1);
+    if (near) return { text: `It touches the star at row ${near[0] + 1}, column ${near[1] + 1}.`, found: null };
+    const full = all.filter(([a]) => a === r).length >= 2 ? `row ${r + 1}`
+      : all.filter(([, b]) => b === c).length >= 2 ? `column ${c + 1}`
+      : all.filter(([a, b]) => regions[a][b] === regions[r][c]).length >= 2 ? "its region" : "";
+    if (full) return { text: `It would be a third star in ${full}.`, found: null };
   }
   const found = chainFrom(base, regions, [r, c]);
   if (!found || found.chain.length > 5) {
     return { text: "It only breaks after a long chain of moves, so take it off and look elsewhere.", found: null };
   }
   const k = found.chain.length;
+  const nowhere = perUnit(n) === 1 ? "nowhere left for its star" : "no room left for its stars";
   return {
     text: k === 0
-      ? `It rules out the last open cells of ${found.dead.label}, so that would have nowhere left for its star.`
-      : `With a star there, after ${k} forced move${k === 1 ? "" : "s"} ${found.dead.label} would have nowhere left for its star.`,
+      ? (perUnit(n) === 1 ? `It rules out the last open cells of ${found.dead.label}, so that would have ${nowhere}.`
+        : `With a star there, ${found.dead.label} would have ${nowhere}.`)
+      : `With a star there, after ${k} forced move${k === 1 ? "" : "s"} ${found.dead.label} would have ${nowhere}.`,
     found,
   };
 }

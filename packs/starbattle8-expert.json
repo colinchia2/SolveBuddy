@@ -37,6 +37,308 @@
     "Star rules out",
     "Last cell in column"
    ]
+  },
+  {
+   "id": "starbattle8-expert-2",
+   "regions": [
+    "AAAACBBB",
+    "AAAACCCB",
+    "AACCCCBB",
+    "AACEEEDD",
+    "AACEEDDD",
+    "EEEEFFFD",
+    "GEGFFHFH",
+    "GGGHHHHH"
+   ],
+   "solution": [
+    1,
+    7,
+    2,
+    6,
+    3,
+    5,
+    0,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "Confined region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "What if",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-3",
+   "regions": [
+    "DCCCAAAB",
+    "DDDCCABB",
+    "DDDCCBBB",
+    "DFFFCCBB",
+    "DDDFCBBE",
+    "HHFFFGEE",
+    "HFFHFGEG",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    4,
+    6,
+    3,
+    0,
+    7,
+    2,
+    5,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 columns",
+    "Last cell in region",
+    "Star rules out",
+    "What if",
+    "Column inside one region",
+    "Confined region",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-4",
+   "regions": [
+    "AAABBBCC",
+    "ABBBCCCC",
+    "ABBDDCCH",
+    "AABDDDCH",
+    "EABDDDDH",
+    "EGGDFFFH",
+    "EGGFFHFH",
+    "GGFFHHHH"
+   ],
+   "solution": [
+    1,
+    3,
+    6,
+    4,
+    0,
+    5,
+    2,
+    7
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 columns",
+    "What if",
+    "4 regions, 4 rows",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-5",
+   "regions": [
+    "AAACCCBB",
+    "FACCCCBB",
+    "FACEECDD",
+    "FFFECCCD",
+    "FHFEEEEE",
+    "FHFHGEGE",
+    "FHHHGGGE",
+    "FFFHHHGG"
+   ],
+   "solution": [
+    1,
+    6,
+    2,
+    7,
+    4,
+    0,
+    5,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "4 regions, 4 rows",
+    "2 regions, 2 columns",
+    "Confined region",
+    "What if",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-6",
+   "regions": [
+    "CCCCAAAA",
+    "DDDCCBAB",
+    "DDCCEBBB",
+    "DDDEEEEH",
+    "DDDEHHHH",
+    "DDGGGFFH",
+    "DGGGFFHH",
+    "GGFFFFHH"
+   ],
+   "solution": [
+    4,
+    7,
+    2,
+    0,
+    3,
+    5,
+    1,
+    6
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 regions, 2 rows",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "What if",
+    "Last cell in row",
+    "Row inside one region"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-7",
+   "regions": [
+    "CCCAABBB",
+    "CFCCABBD",
+    "FFCCABDD",
+    "HFFCEDDE",
+    "HFFFEEEE",
+    "HFFFFEEE",
+    "HHFEEEGG",
+    "HHHHEGGG"
+   ],
+   "solution": [
+    3,
+    5,
+    2,
+    6,
+    4,
+    1,
+    7,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "4 regions, 4 rows",
+    "3 regions, 3 columns",
+    "2 regions, 2 columns",
+    "Row inside one region",
+    "What if",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-8",
+   "regions": [
+    "AAAAADDD",
+    "ABCCAADD",
+    "BBCCFFDD",
+    "BGGFFFFD",
+    "BGEEFEFH",
+    "GGEEEEFH",
+    "GEEHHHHH",
+    "GEHHHHHH"
+   ],
+   "solution": [
+    4,
+    1,
+    3,
+    7,
+    2,
+    6,
+    0,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "What if",
+    "Confined region",
+    "Row inside one region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "2 regions, 2 rows",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-9",
+   "regions": [
+    "FFFAAABC",
+    "FFAABBBC",
+    "FFADEEBC",
+    "FDDDEEBB",
+    "FFEDEHHH",
+    "FFEEEEHH",
+    "GFGEGEEH",
+    "GGGGGGHH"
+   ],
+   "solution": [
+    3,
+    5,
+    7,
+    1,
+    4,
+    0,
+    2,
+    6
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "3 regions, 3 rows",
+    "What if",
+    "Row inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-expert-10",
+   "regions": [
+    "CAAABBBB",
+    "CCDAAEEB",
+    "CDDEEEEE",
+    "CCDDDDEE",
+    "GGDGGDEF",
+    "GGGGFFFF",
+    "GHGHHHHH",
+    "GHHHHHHH"
+   ],
+   "solution": [
+    1,
+    7,
+    0,
+    3,
+    6,
+    4,
+    2,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "What if",
+    "Confined region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
   }
  ]
 }

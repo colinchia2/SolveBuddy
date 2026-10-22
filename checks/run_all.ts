@@ -344,4 +344,11 @@ if (existsSync(sbExpertFile)) {
       .every(([k, v]) => !idleWinkAllowed({ ...ok, [k as string]: v })));
 }
 
+// Double Star Battle (10/22): every puzzle has one answer and Hint alone finishes it (details: starbattle_double.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Double Star Battle: one answer each, Hint alone solves all 10",
+    spawnSync(process.execPath, ["checks/starbattle_double.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);

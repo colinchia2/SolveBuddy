@@ -1,5 +1,7 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
+// Double packs (Colin, 10/22) play on a 10×10 board with 2 stars per row, column and region.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
+import { isAnswer } from "../engine/starbattle/layout.ts";
 import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
@@ -8,14 +10,17 @@ const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs
 const PACKS = {
   easy: await loadPack("starbattle8-easy-starter.json"),
   expert: await loadPack("starbattle8-expert.json"),
+  double: await loadPack("starbattle10-double-expert.json"),
 };
 const query = new URLSearchParams(location.search);
 let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
 let pack = PACKS[packName];
 const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
-const N = 8;
-const COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8" };
+let N = 8; // board size: 8, or 10 for Double
+let K = 1; // stars per row, column and region: 1, or 2 for Double
+const COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8",
+  I: "#E2EA98", J: "#D3D0C8" };
 const STAR_PATH = "M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z";
 const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, rgba(255,255,255,0) 4px 10px)";
 
@@ -44,6 +49,11 @@ function load(i, name = packName, first = false) {
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
+  N = p.regions.length;
+  K = pack.stars ?? 1;
+  $("board").style.setProperty("--n", N);
+  $("board").classList.toggle("double", K > 1);
+  $("rulesStars").textContent = K > 1 ? "two stars" : "one star";
   s = { regions: p.regions, solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
   // Pick up where you left off (Colin, 10/21).
@@ -53,12 +63,12 @@ function load(i, name = packName, first = false) {
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
   }
-  $("sub").textContent = `8×8 · ${pack.difficulty} · #${i + 1}`;
+  $("sub").textContent = `${N}×${N}${K > 1 ? " Double" : ""} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
   if (first && query.get("view")) {
-    for (let r = 0; r < N; r++) s.marks[key(r, s.solution[r])] = STAR;
+    for (let r = 0; r < N; r++) for (const c of [s.solution[r]].flat()) s.marks[key(r, c)] = STAR;
     const best = solves().filter((e) => e.g === "starbattle" && e.pack === name && e.p === i + 1).map((e) => e.ms);
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
@@ -115,7 +125,7 @@ function tap(r, c) {
 
 function checkSolved() {
   const st = stars();
-  if (s.solved || st.length !== N || !st.every(([r, c]) => s.solution[r] === c)) return;
+  if (s.solved || st.length !== N * K || !st.every(([r, c]) => isAnswer(s.solution, r, c))) return;
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
@@ -124,22 +134,25 @@ function checkSolved() {
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
   logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
-  celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+  celebrate({ title: `${K > 1 ? "Double " : ""}${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
 }
 
-// Stars that break a rule (same row, column or region, or touching) always show red, as in the mockup.
+// Stars that break a rule always show red, as in the mockup: touching, or too many in a row, column or
+// region (more than 1, or more than 2 on a Double board).
 function conflicts() {
   const bad = new Set();
   const st = stars();
   for (let i = 0; i < st.length; i++) {
     for (let j = i + 1; j < st.length; j++) {
       const [a, b] = st[i], [c, d] = st[j];
-      if (a === c || b === d || s.regions[a][b] === s.regions[c][d] || (Math.abs(a - c) <= 1 && Math.abs(b - d) <= 1)) {
-        bad.add(key(a, b));
-        bad.add(key(c, d));
-      }
+      if (Math.abs(a - c) <= 1 && Math.abs(b - d) <= 1) bad.add(key(a, b)).add(key(c, d));
     }
+  }
+  for (const unit of [([r]) => `r${r}`, ([, c]) => `c${c}`, ([r, c]) => s.regions[r][c]]) {
+    const count = {};
+    for (const p of st) count[unit(p)] = (count[unit(p)] ?? 0) + 1;
+    for (const p of st) if (count[unit(p)] > K) bad.add(key(...p));
   }
   return bad;
 }
@@ -155,7 +168,7 @@ function openHint() {
   s.hinted.clear();
   // An automatic × sitting on an answer cell comes from a wrong star; leave it out so the hint
   // points at that star (which the player can fix) rather than the × (which they can't).
-  const b = board().map((row, r) => row.map((v, c) => (v === CROSS && !s.marks[key(r, c)] && s.solution[r] === c ? EMPTY : v)));
+  const b = board().map((row, r) => row.map((v, c) => (v === CROSS && !s.marks[key(r, c)] && isAnswer(s.solution, r, c) ? EMPTY : v)));
   s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
   render();
 }
@@ -232,14 +245,15 @@ function render() {
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
 
+  const starPx = N > 8 ? 22 : 26;
   const cells = [];
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
       const k = key(r, c);
       const reg = s.regions[r][c];
       const m = s.marks[k] || EMPTY;
-      const isAnswer = s.solution[r] === c;
-      const wrong = settings.mistakes && ((m === STAR && !isAnswer) || (m === CROSS && isAnswer));
+      const answer = isAnswer(s.solution, r, c);
+      const wrong = settings.mistakes && ((m === STAR && !answer) || (m === CROSS && answer));
       // Lightened region colors; the hint's focus area shows in full color.
       let bg = focus.has(k) ? COLORS[reg] : `color-mix(in srgb, ${COLORS[reg]} 48%, #FFFDF9)`;
       if (bad.has(k) || (wrong && m === STAR)) bg = "#F4A6A0";
@@ -252,11 +266,11 @@ function render() {
       let inner = "";
       if (m === STAR) {
         const fill = bad.has(k) || wrong ? "var(--conflict-star)" : "var(--ink)";
-        inner = `<svg width="26" height="26" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="${fill}"/></svg>`;
+        inner = `<svg width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="${fill}"/></svg>`;
       } else if (m === CROSS) {
         inner = `<span class="xm${wrong ? " wrong" : s.hinted.has(k) ? " hinted" : ""}">×</span>`;
       } else if (g === STAR) {
-        inner = `<svg class="ghost" width="26" height="26" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
+        inner = `<svg class="ghost" width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
       } else if (g === CROSS) {
         inner = `<span class="xm ghost">×</span>`;
       } else if (auto.has(k)) {
@@ -268,7 +282,7 @@ function render() {
     }
   }
   $("board").innerHTML = cells.join("");
-  $("count").textContent = `${stars().length} / ${N} stars`;
+  $("count").textContent = `${stars().length} / ${N * K} stars`;
   $("hintBtn").classList.toggle("pressed", !!h);
 
   $("hint").hidden = !h;
@@ -288,12 +302,12 @@ function render() {
       const cap = (t) => t[0].toUpperCase() + t.slice(1);
       if (h.play === 0) {
         text = [mistake ? `Start from your star at row ${r + 1}, column ${c + 1}.` : `Pretend row ${r + 1}, column ${c + 1} has a star.`,
-          `It rules out its row, column, region and neighbors. Faint marks are pretend. Tap Next to see what it forces.`];
+          `It rules out ${K > 1 ? "its neighbors, and any row, column or region it fills" : "its row, column, region and neighbors"}. Faint marks are pretend. Tap Next to see what it forces.`];
       } else if (!frame.dead) {
         const st = d.chain[h.play - 1];
         text = [`Forced move ${h.play} of ${k}`, st.star ? `${st.why} It rules out its neighbors too.` : st.why];
       } else {
-        text = [`${cap(d.dead.label)} has nowhere left for its star.`, mistake
+        text = [`${cap(d.dead.label)} has ${K > 1 ? "no room left for its stars" : "nowhere left for its star"}.`, mistake
           ? `So your star at row ${r + 1}, column ${c + 1} can't be right.`
           : `So the pretend star can't be right: row ${r + 1}, column ${c + 1} gets an ×.`];
       }
@@ -320,7 +334,7 @@ function renderPicker() {
   for (const [name, pk] of Object.entries(PACKS)) {
     const lbl = document.createElement("span");
     lbl.className = "lbl";
-    lbl.textContent = `${pk.difficulty}:`;
+    lbl.textContent = `${pk.stars > 1 ? "Double " : ""}${pk.difficulty}:`;
     lbl.style.marginLeft = "6px";
     p.appendChild(lbl);
     pk.puzzles.forEach((_, i) => {

@@ -2,9 +2,18 @@
 // A puzzle is just its regions: one letter per cell, e.g. "AAABBBCC" for a row.
 
 export type Regions = string[]; // N rows of N letters; each letter is one region
-export type Stars = number[]; // stars[row] = the column of that row's star
+// stars[row] = the column of that row's star. Double Star Battle: stars[row] = the two columns, e.g. [1, 6].
+export type Stars = number[] | number[][];
 
-export const LETTERS = "ABCDEFGH";
+export const LETTERS = "ABCDEFGHIJ";
+
+// Stars per row, column and region: 1 on an 8×8 board, 2 on a 10×10 one (Double Star Battle, Colin 10/22).
+export const perUnit = (n: number) => (n >= 10 ? 2 : 1);
+// Is (r, c) one of the answer's stars?
+export const isAnswer = (stars: Stars, r: number, c: number) => {
+  const x = stars[r];
+  return Array.isArray(x) ? x.includes(c) : x === c;
+};
 
 // Step 1: one star per row and column, none touching (not even diagonally). Random order, back up when stuck.
 export function placeStars(n: number): Stars {

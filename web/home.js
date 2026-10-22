@@ -11,7 +11,7 @@ const size = (g, k) => data[`${g}/${k}`].puzzles.length;
 const total = (g) => GAMES[g].packs.reduce((n, [k]) => n + size(g, k), 0);
 
 const TILES = [
-  { id: "starbattle", rules: "One star in every row, column and region. Stars never touch." },
+  { id: "starbattle", rules: "One star in every row, column and region (two in Double). Stars never touch." },
   { id: "sudoku", rules: "Every row, column and box holds each number once." },
   { soon: "Binairo", bg: "#F8EBC9", ink: "#8C5F00", path: "M3 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0 M12 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0" },
   { soon: "Shikaku", bg: "#F8DDE5", ink: "#A8325A", path: "M3 3h8v11H3z M13 3h8v6h-8z M13 11h8v10h-8z M3 16h8v5H3z" },
@@ -149,7 +149,7 @@ function tapTile(g, k, p, state) {
   const setName = GAMES[g].sets.find((s) => s.levels.includes(k)).name;
   const title = setName === label(g, k) ? `${setName} #${p}` : `${setName} · ${label(g, k)} #${p}`;
   const note = state === "solved" ? `Your best time: ${fmt(t.ms)}`
-    : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of 8 stars`
+    : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of ${puzzle.regions.length * (data[`${g}/${k}`].stars ?? 1)} stars`
     : `${fmt(saved.ms ?? 0)} so far · ${puzzle.givens.flat().filter(Boolean).length + Object.keys(saved.entries ?? {}).length} of 81 filled`;
   $("tile").querySelector(".sheet").innerHTML = `
     <div class="tile-top">${gameIcon(LOOK[g], 64, 34)}
