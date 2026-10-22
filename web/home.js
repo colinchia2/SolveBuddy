@@ -1,7 +1,7 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a pack (skipped when the game
 // has one) → the pack's levels with numbered puzzles → tap one: new ones start, solved ones offer View or Restart,
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
-import { GAMES, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { GAMES, blockScores, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { $, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
@@ -13,9 +13,11 @@ const total = (g) => GAMES[g].packs.reduce((n, [k]) => n + size(g, k), 0);
 const TILES = [
   { id: "starbattle", rules: "One star in every row, column and region (two in Double). Stars never touch." },
   { id: "sudoku", rules: "Every row, column and box holds each number once." },
-  { soon: "Binairo", bg: "#F8EBC9", ink: "#8C5F00", path: "M3 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0 M12 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0" },
+  { id: "watersort", rules: "Tap a tube, then another, to pour its top colour across. You can only pour onto the same colour or into an empty tube, and only if there's room. Finish when every tube holds one colour." },
+  { id: "blocks", rules: "Blocks fall one at a time. Move and turn them so they fill whole rows: a full row clears and scores. It gets faster as you go. The game ends when the blocks reach the top." },
+  { soon: "Binairo", bg: "#FBE3D6", ink: "#C24E2A", path: "M3 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0 M12 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0" },
   { soon: "Shikaku", bg: "#F8DDE5", ink: "#A8325A", path: "M3 3h8v11H3z M13 3h8v6h-8z M13 11h8v10h-8z M3 16h8v5H3z" },
-  { soon: "Five Letters", bg: "#ECE2F7", ink: "#6A45B0", path: "M2 8h5.5v8H2z M9.25 8h5.5v8h-5.5z M16.5 8H22v8h-5.5z" },
+  { soon: "Five Letters", bg: "#DCEAFE", ink: "#1F57B5", path: "M2 8h5.5v8H2z M9.25 8h5.5v8h-5.5z M16.5 8H22v8h-5.5z" },
   { soon: "Groups", bg: "#DDEFD9", ink: "#2F6B4A", path: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z" },
 ];
 const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4 };
@@ -53,9 +55,11 @@ function render() {
   $("streak").innerHTML = `${FLAME}${current} day${current === 1 ? "" : "s"}`;
   $("tiles").innerHTML = TILES.map((t) => t.soon
     ? `<button class="tile" disabled aria-label="${esc(t.soon)}, coming soon">${gameIcon(t, 56, 30)}<span><span class="name">${esc(t.soon)}</span><br><span class="count">Coming soon</span></span></button>`
-    : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 56, 30)}<span><span class="name">${GAMES[t.id].name}</span><br><span class="count">${total(t.id)} puzzles</span></span></button>`).join("");
+    : t.id === "blocks" ? `<button class="tile" data-game="blocks" aria-label="Play Block Drop">${gameIcon(LOOK.blocks, 56, 30)}<span><span class="name">Block Drop</span><br><span class="count">${blockScores().best ? `Best ${blockScores().best.toLocaleString()}` : "Endless"}</span></span></button>`
+    : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 56, 30)}<span><span class="name">${GAMES[t.id].name}</span><br><span class="count">${total(t.id)} ${t.id === "watersort" ? "levels" : "puzzles"}</span></span></button>`).join("");
   document.querySelectorAll("[data-game]").forEach((b) => (b.onclick = () => {
     const g = b.dataset.game;
+    if (g === "blocks") { haptic("thud"); return openGame("blocks", ""); } // endless: straight into the game
     go(GAMES[g].sets.length === 1 ? { g, set: 0 } : { g });
   }));
   renderView(false);
@@ -149,6 +153,7 @@ function tapTile(g, k, p, state) {
   const setName = GAMES[g].sets.find((s) => s.levels.includes(k)).name;
   const title = setName === label(g, k) ? `${setName} #${p}` : `${setName} · ${label(g, k)} #${p}`;
   const note = state === "solved" ? `Your best time: ${fmt(t.ms)}`
+    : g === "watersort" ? `${fmt(saved.ms ?? 0)} so far · ${saved.moves ?? 0} moves`
     : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of ${puzzle.regions.length * (data[`${g}/${k}`].stars ?? 1)} stars`
     : `${fmt(saved.ms ?? 0)} so far · ${puzzle.givens.flat().filter(Boolean).length + Object.keys(saved.entries ?? {}).length} of 81 filled`;
   $("tile").querySelector(".sheet").innerHTML = `

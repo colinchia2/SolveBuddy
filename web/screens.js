@@ -51,6 +51,8 @@ export const idleWinkAllowed = (s) => s.focused && !s.hidden && !s.reduced && !s
 export const LOOK = {
   starbattle: { bg: "#FBE3D6", ink: "#C24E2A", path: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z", size: "8×8" },
   sudoku: { bg: "#D7EEEA", ink: "#1F6F73", path: "M4 4h16v16H4z M4 9.3h16 M4 14.7h16 M9.3 4v16 M14.7 4v16", size: "9×9" },
+  watersort: { bg: "#ECE2F7", ink: "#6A45B0", path: "M6 3v14a3 3 0 0 0 6 0V3 M5 3h8 M6 11h6 M15 8v9a2.5 2.5 0 0 0 5 0V8 M14.5 8h6", size: "Tubes" },
+  blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z", size: "Endless" },
 };
 export const gameIcon = (look, box, icon) => `<span class="gico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${look.bg}" aria-hidden="true">
 <svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${look.ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${look.path}"/></svg></span>`;

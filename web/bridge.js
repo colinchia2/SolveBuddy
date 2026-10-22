@@ -36,7 +36,16 @@ export const GAMES = {
     ["double", "starbattle10-double-expert.json", "Expert"]],
     // Single = one star per row on 8×8; Double = two per row on 10×10 (Colin, 10/22).
     sets: [{ name: "Starter – Single", levels: ["easy", "expert"] }, { name: "Starter – Double", levels: ["double"], note: "Expert" }] },
+  // Water Sort (Colin, 10/22): pour the colours until every tube holds one colour.
+  watersort: { name: "Water Sort", packs: [
+    ["easy", "watersort-easy.json", "Easy"], ["medium", "watersort-medium.json", "Medium"], ["hard", "watersort-hard.json", "Hard"]],
+    sets: [{ name: "Starter", levels: ["easy", "medium", "hard"] }] },
 };
+// Block Drop (Colin, 10/22) is endless, with no packs: its tile opens the game, and it keeps its own best scores.
+export const BLOCKS_KEY = "solvebuddy.blocks";
+export function blockScores() {
+  try { return JSON.parse(localStorage.getItem(BLOCKS_KEY) || "{}"); } catch { return {}; }
+}
 
 // Solve log: one entry per finished puzzle. Stored in this browser / on this phone only.
 const LOG_KEY = "solvebuddy.solves";

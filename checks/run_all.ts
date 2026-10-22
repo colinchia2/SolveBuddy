@@ -351,4 +351,17 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/starbattle_double.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Water Sort (10/22): 30 levels, each fair and finished by following Hint (details: watersort.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Water Sort: 30 fair levels, Hint alone solves each",
+    spawnSync(process.execPath, ["checks/watersort.ts"], { encoding: "utf8" }).status === 0);
+}
+
+// Block Drop (10/22): pieces, turns, line clears, scoring, game over (details: blocks.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Block Drop: game logic checks pass", spawnSync(process.execPath, ["checks/blocks.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);

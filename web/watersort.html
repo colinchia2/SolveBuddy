@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390, user-scalable=no">
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app"); if (window.SOLVEBUDDY_APP?.nativeBack) document.documentElement.classList.add("nativeback")</script>
+<title>SolveBuddy Water Sort</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="common.css">
+<style>
+  /* Water Sort only (Colin, 10/22): glass tubes of stacked colour, in one or two rows. */
+  .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 0 4px; }
+  .tubes { display: flex; flex-direction: column; align-items: center; gap: 28px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .tube-row { display: flex; gap: 12px; justify-content: center; }
+  .tube { position: relative; width: 48px; height: 168px; margin: 0; padding: 5px 5px 6px; border-radius: 12px 12px 26px 26px;
+    display: flex; flex-direction: column-reverse; gap: 0; overflow: hidden;
+    background: rgba(255,255,255,0.4); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+    border: 2px solid rgba(255,255,255,0.95); box-shadow: 0 10px 24px rgba(30,30,30,0.1), inset 0 1px 0 #fff, inset 6px 0 10px rgba(255,255,255,0.5);
+    transition: transform 0.18s cubic-bezier(0.3,1.3,0.5,1), box-shadow 0.18s ease; -webkit-tap-highlight-color: transparent; }
+  .tube::after { content: ""; position: absolute; top: 8px; bottom: 12px; left: 7px; width: 5px; border-radius: 3px; background: rgba(255,255,255,0.55); pointer-events: none; }
+  .tube.up { transform: translateY(-16px); box-shadow: 0 18px 30px rgba(30,30,30,0.16), inset 0 1px 0 #fff; }
+  .tube.ring { box-shadow: 0 0 0 3px var(--sel-ring), 0 10px 24px rgba(30,30,30,0.1); }
+  .tube.target { box-shadow: 0 0 0 3px var(--sel-ring), 0 10px 24px rgba(30,30,30,0.1); border-style: dashed; }
+  .tube.shake { animation: wsShake 0.32s ease; }
+  .tube.intro { animation: sbKey 0.45s var(--d) cubic-bezier(0.3,1.3,0.5,1) both; }
+  .tube.won { animation: wsWin 0.6s var(--d) cubic-bezier(0.3,1.4,0.5,1) both; }
+  .run { flex: none; width: 100%; border-radius: 7px; margin-top: 2px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.12), inset 0 2px 0 rgba(255,255,255,0.35); }
+  .run:first-child { border-radius: 7px 7px 20px 20px; margin-top: 0; }
+  .run.in { animation: wsFill 0.26s ease-out both; transform-origin: bottom; }
+  .tube-wrap { position: relative; padding-bottom: 18px; }
+  .tube-num { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font: 600 11px Inter, sans-serif; color: var(--muted); }
+  .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
+  .tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+  @keyframes wsShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+  @keyframes wsFill { from { transform: scaleY(0); opacity: 0.4; } to { transform: scaleY(1); opacity: 1; } }
+  @keyframes wsWin { 0% { transform: translateY(0); } 40% { transform: translateY(-14px) scale(1.06); } 100% { transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div class="picker" id="picker"><a href="home.html">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html">Star Battle</a><a href="watersort.html" class="on">Water Sort</a><span class="sep"></span></div>
+
+<div class="phone">
+  <div class="glow" style="top:-90px; left:-80px; background:#E4DAF5; opacity:.7"></div>
+  <div class="glow" style="top:560px; right:-110px; background:#DCE9F2; opacity:.7"></div>
+
+  <div class="screen">
+    <header>
+      <button class="sq glass" id="backBtn" aria-label="Back to library"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
+      <div class="title"><b>Water Sort</b><span id="sub"></span></div>
+      <button class="sq glass" id="rulesBtn" aria-label="How to play"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg></button>
+    </header>
+
+    <div class="info">
+      <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+      <span class="count"><svg width="15" height="15" viewBox="0 0 24 24" fill="#6A45B0"><path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/></svg><span id="count">0 moves</span></span>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="tubes" id="board"></div>
+      <p class="tip">Tap a tube, then tap where to pour</p>
+    </div>
+    <div class="dock">
+      <button class="tool glass" id="undoBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
+      <button class="tool glass hint-tool" id="hintBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg>Hint</button>
+      <button class="tool glass" id="settingsBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10 M18 7h2 M4 17h2 M10 17h10 M16 5v4 M8 15v4"/></svg>Settings</button>
+      <button class="tool glass" id="restartBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Restart</button>
+    </div>
+  </div>
+
+  <section class="hint" id="hint" hidden aria-label="Hint">
+    <div class="hint-top">
+      <div>
+        <svg width="26" height="26" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="#4D96FF"/><g fill="#FFFFFF" stroke="#5D4E37" stroke-width="3" stroke-linejoin="round"><path d="M33 22 A8 8 0 0 1 38 36.2 L37 41 H29 L28 36.2 A8 8 0 0 1 33 22 Z"/><path d="M67 22 A8 8 0 0 1 72 36.2 L71 41 H63 L62 36.2 A8 8 0 0 1 67 22 Z"/></g><path d="M29.5 45 H36.5 M30.5 49 H35.5 M63.5 45 H70.5 M64.5 49 H69.5" stroke="#5D4E37" stroke-width="3" stroke-linecap="round"/><path d="M25 57 Q50 85 75 57" stroke="#5D4E37" stroke-width="4" fill="none" stroke-linecap="round"/></svg>
+        <span style="font-weight:700" id="hintStep"></span>
+        <span class="chip" id="hintChip"></span>
+      </div>
+      <div>
+        <div style="display:flex; gap:4px"><span class="dot" id="d1"></span><span class="dot" id="d2"></span><span class="dot" id="d3"></span></div>
+        <button class="x" id="hintClose" aria-label="Close hint"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+      </div>
+    </div>
+    <p class="h1" id="hintTitle"></p>
+    <p class="h2" id="hintBody"></p>
+    <button class="dark" id="hintNext"><span id="hintNextLabel"></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>
+  </section>
+
+  <div class="scrim" id="rules" hidden>
+    <section class="sheet" role="dialog" aria-label="How to play Water Sort">
+      <div class="sheet-top"><h2>How to play</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
+      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="#6A45B0"><path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/></svg></span><span>Sort the colours so every tube holds <strong>just one colour</strong>.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></span><span>Tap a tube, then another, to <strong>pour its top colour</strong> across.</span></div>
+      <div class="row"><span class="ico" style="background:#EDE5DC"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4E433A" stroke-width="2" stroke-linecap="round"><path d="M7 3v14a3 3 0 0 0 6 0V3 M6 3h8"/></svg></span><span>You can only pour onto the <strong>same colour</strong> or into an empty tube, and only if there's room (4 per tube).</span></div>
+      <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint finds a way to finish from where you are, or tells you to undo.</span></div>
+      <button class="dark" data-close>Got it</button>
+    </section>
+  </div>
+
+  <div class="scrim" id="settings" hidden>
+    <section class="sheet" role="dialog" aria-label="Game settings">
+      <div class="sheet-top"><h2>Game settings</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
+      <div class="group">
+        <h3><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"/></svg>All puzzles</h3>
+        <div class="card">
+          <div class="opt"><span>Show timer</span><button class="switch" role="switch" data-set="timer" aria-label="Show timer"></button></div>
+        </div>
+      </div>
+      <button class="dark" data-close>Done</button>
+    </section>
+  </div>
+
+  <div class="paused" id="paused" hidden>
+    <div class="glow" style="top:-60px; left:-80px; background:#E4DAF5; opacity:.7"></div>
+    <div class="glow" style="bottom:-60px; right:-80px; background:#DCE9F2; opacity:.7"></div>
+    <div class="paused-ico"><svg width="34" height="34" viewBox="0 0 24 24" fill="#2F6FD6"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></div>
+    <h2>Paused</h2>
+    <p id="pausedText"></p>
+    <button class="dark" id="resumeBtn">Resume</button>
+  </div>
+</div>
+
+<script type="module" src="watersort.js"></script>
+</body>
+</html>

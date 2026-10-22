@@ -8,7 +8,7 @@ for (const [g, game] of Object.entries(GAMES))
     const f = await loadPack(file);
     // A game with more than one pack names it (Star Battle: "Starter – Double · Expert").
     const set = game.sets.length > 1 ? game.sets.find((s) => s.levels.includes(k)).name : "";
-    packs.push({ g, k, label: set && set !== label ? `${set} · ${label}` : label, size: `${f.size}×${f.size}`, n: f.puzzles.length });
+    packs.push({ g, k, label: set && set !== label ? `${set} · ${label}` : label, size: f.sizeLabel ?? `${f.size}×${f.size}`, n: f.puzzles.length });
   }
 
 // Ideas on the list (backlog), shown as "Soon" only. No dates promised.
