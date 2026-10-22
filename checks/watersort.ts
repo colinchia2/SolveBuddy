@@ -4,6 +4,11 @@
 import { readFileSync } from "node:fs";
 import { CAP, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
+import { explain } from "../engine/watersort/explain.ts";
+
+// Every hint says why (Colin, 10/22): a nudge and a reason, short, and never a move count.
+const why = (s: string[][], plan: [number, number][]) => explain(s, plan, (c) => `colour ${c}`);
+let explained = 0, ledOn = 0, badText = 0;
 
 let bad = 0;
 const seen = new Set<string>();
@@ -23,6 +28,10 @@ for (const key of ["easy", "medium", "hard"]) {
       const m = sol.kind === "solved" ? sol.path[0] : sol.kind === "unsure" ? tidiestMove(s) : null;
       slowest = Math.max(slowest, performance.now() - t0);
       if (!m) break;
+      const w = why(s, sol.kind === "solved" ? sol.path : [m]);
+      explained++;
+      if (/ (Then|Soon) /.test(w.body)) ledOn++;
+      if (!w.nudge || !w.body || /moves to go/.test(w.body) || w.body.length > 180) badText++;
       s = pour(s, ...m);
     }
     const ok = fair && fresh && isSolved(s);
@@ -30,5 +39,7 @@ for (const key of ["easy", "medium", "hard"]) {
     console.log(`${p.id}: ${ok ? "ok" : "FAIL"} · ${p.colors} colours · ${presses} hints · slowest ${Math.round(slowest)}ms`);
   }
 }
+console.log(`hint reasons: ${explained} hints, ${ledOn} say what comes next, ${badText} bad`);
+if (badText) bad++;
 console.log(bad ? `${bad} FAILED` : "all ok");
 process.exit(bad ? 1 : 0);

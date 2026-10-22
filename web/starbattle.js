@@ -2,7 +2,7 @@
 // Double packs (Colin, 10/22) play on a 10×10 board with 2 stars per row, column and region.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer } from "../engine/starbattle/layout.ts";
-import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, fitHint, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -68,7 +68,9 @@ function load(i, name = packName, first = false) {
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
   if (first && query.get("view")) {
-    for (let r = 0; r < N; r++) for (const c of [s.solution[r]].flat()) s.marks[key(r, c)] = STAR;
+    const mine = finalBoard("starbattle", name, i + 1); // your own finished board; older solves show the answer
+    if (mine) s.marks = { ...mine.marks };
+    else for (let r = 0; r < N; r++) for (const c of [s.solution[r]].flat()) s.marks[key(r, c)] = STAR;
     const best = solves().filter((e) => e.g === "starbattle" && e.pack === name && e.p === i + 1).map((e) => e.ms);
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
@@ -130,6 +132,7 @@ function checkSolved() {
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
   clearSaved("starbattle", packName, idx + 1);
+  saveFinal("starbattle", packName, idx + 1, { marks: { ...s.marks } });
   haptic("success");
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
@@ -270,9 +273,9 @@ function render() {
       } else if (m === CROSS) {
         inner = `<span class="xm${wrong ? " wrong" : s.hinted.has(k) ? " hinted" : ""}">×</span>`;
       } else if (g === STAR) {
-        inner = `<svg class="ghost" width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
+        inner = `<svg class="pretend" width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
       } else if (g === CROSS) {
-        inner = `<span class="xm ghost">×</span>`;
+        inner = `<span class="xm pretend">×</span>`;
       } else if (auto.has(k)) {
         inner = `<span class="xm auto">×</span>`;
       }

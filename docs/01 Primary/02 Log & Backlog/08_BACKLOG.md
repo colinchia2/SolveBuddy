@@ -2,6 +2,31 @@
 
 Top item = what's next.
 
+## Colin's 10/22 evening voice note (phone testing), one at a time, improvements first
+Improvements:
+1. Star Battle hint: white bars behind the pretend × marks in a What if play-through (class clash with `.ghost`).
+2. Star Battle "View solved puzzle": show YOUR finished board, with your × marks, not just the answer stars.
+3. Resume tiles: never show a wrong state; show the pack page only once solved / resume / new are confirmed.
+   The Resume sheet should say clearly what you're resuming.
+4. Home: the header (face + SolveBuddy) stays fixed while the games scroll under it (now it scrolls into the clock).
+5. All games: move the one-line tips ("Tap a tube, then…") into the ? sheet as a Controls section; keep the game clean.
+6. Water Sort pour: liquid should visibly leave the source tube's mouth (stream starts at the liquid, no gap).
+7. Water Sort hint card: always fully on screen above the game (Next reachable); the game can sit behind it.
+8. Water Sort hints: say WHY in a step or two ("this frees the red underneath, which lets…"), not just the move.
+9. No selectable text anywhere in any game (Block Drop showed Copy / Look Up).
+10. Block Drop: Save card bottom right of the side panel.
+11. Block Drop: controls stopped working after ~10 turns (had to quit the app). Bug.
+12. Block Drop: remove the 4 bottom buttons; controls go in the ? sheet (incl. hold to drop faster).
+13. Block Drop: opening asks Resume or New game, then a short 3-2-1 / "Go!" countdown.
+14. Block Drop: short fun line-clear animation (bigger for 4 lines) and a game-over animation.
+Bigger builds (after the improvements):
+15. Import a puzzle from a screenshot (Star Battle, Sudoku, Water Sort): a "does this look right?" check screen,
+    keep playing in SolveBuddy or get a hint from that exact spot. Maybe a 4th tab "Import". Open: where imports live;
+    reading a photo needs AI (internet) — the solver and hints stay offline.
+16. Sudoku variants (Killer, Thermo, a creator's own rules from a photo of the rules). Later.
+17. After-puzzle review ("here's what you could have done"). Later.
+18. Binairo, Shikaku, Five Letters, Groups: hold.
+
 ## Next
 - **App main screens (Colin approved the blue mockup 10/21, canvas row "Blue SolveBuddy"):** Home/Library, Packs,
   Stats in blue. Plus, like TasteBuddy: (1) opening intro: logo centred → glides + shrinks to the top-left header

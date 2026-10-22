@@ -1,7 +1,8 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a pack (skipped when the game
 // has one) → the pack's levels with numbered puzzles → tap one: new ones start, solved ones offer View or Restart,
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
-import { GAMES, blockScores, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { GAMES, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { boardPreview } from "./preview.js";
 import { $, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
@@ -40,7 +41,13 @@ let at = null;
 let picked = null; // the tile tapped in a pack: { g, k, p, state }
 
 // One puzzle's state: solved (and its best time), half-done (saved), or new.
+// justLeft = the puzzle you just came back from, as the game itself saw it (trusted for a few seconds).
+let justLeft = null;
+const leftHere = (g, k, p) => justLeft && Date.now() < justLeft.until && justLeft.g === g && justLeft.pack === k && justLeft.p === p ? justLeft : null;
+const savedHere = (g, k, p) => savedGame(g, k, p) ?? leftHere(g, k, p)?.saved ?? null;
 function tileState(g, k, p) {
+  const left = leftHere(g, k, p);
+  if (left) return { state: left.state, ms: left.ms };
   if (savedGame(g, k, p)) return { state: "progress" };
   const times = solves().filter((e) => e.g === g && e.pack === k && e.p === p).map((e) => e.ms);
   return times.length ? { state: "solved", ms: Math.min(...times) } : { state: "new" };
@@ -148,7 +155,7 @@ function tapTile(g, k, p, state) {
   if (state === "new") { haptic("thud"); return openGame(g, q); }
   haptic("tap");
   picked = { g, k, p, state };
-  const t = tileState(g, k, p), saved = savedGame(g, k, p);
+  const t = tileState(g, k, p), saved = savedHere(g, k, p) ?? {};
   const puzzle = data[`${g}/${k}`].puzzles[p - 1];
   const setName = GAMES[g].sets.find((s) => s.levels.includes(k)).name;
   const title = setName === label(g, k) ? `${setName} #${p}` : `${setName} · ${label(g, k)} #${p}`;
@@ -161,6 +168,7 @@ function tapTile(g, k, p, state) {
       <div class="tile-text"><h2>${esc(title)}</h2>
         <span class="chip ${state}">${state === "solved" ? "Solved" : "In progress"}</span><p>${note}</p></div>
       <button class="x" data-act="close" aria-label="Close">${ICON.x}</button></div>
+    ${boardPreview(g, puzzle, state === "solved" ? finalBoard(g, k, p) : saved)}
     <button class="tile-main" data-act="main">${state === "solved" ? `${ICON.eye}View solved puzzle` : `${ICON.play(18, "#fff")}Resume`}</button>
     <button class="ghost tile-restart" data-act="restart">${ICON.restart}Restart</button>`;
   $("tile").hidden = false;
@@ -182,7 +190,7 @@ $("tile").onclick = (e) => {
   if (!act || !picked) return;
   const { g, k, p, state } = picked;
   $("tile").hidden = true;
-  if (act === "restart") clearSaved(g, k, p);
+  if (act === "restart") { clearSaved(g, k, p); justLeft = null; }
   haptic("thud");
   openGame(g, `?pack=${k}&p=${p}${act === "main" && state === "solved" ? "&view=1" : ""}`);
 };
@@ -214,7 +222,8 @@ function fresh() {
   render();
 }
 let watching = 0;
-globalThis.sbRefresh = () => {
+globalThis.sbRefresh = (left) => {
+  if (left) justLeft = { ...left, until: Date.now() + 4000 };
   drawn = "";
   fresh();
   clearInterval(watching);

@@ -110,5 +110,20 @@ const withPiece = (t: number, extra: Partial<State> = {}): State =>
   check("save: after a piece sets, swapping brings the saved piece back at the top", holdPiece(s, rand) && s.piece!.t === first && s.hold === now && s.piece!.r === 0);
 }
 
+// The page's touch handling can never get stuck (Colin 10/22: after ~10 turns the controls stopped answering).
+// Read the page: a new touch replaces an unfinished one, every way a touch ends is handled, and no text is selectable.
+{
+  const { readFileSync } = await import("node:fs");
+  const js = readFileSync("web/blocks.js", "utf8"), html = readFileSync("web/blocks.html", "utf8");
+  const down = js.slice(js.indexOf('pad.addEventListener("pointerdown"'), js.indexOf('addEventListener("pointermove"'));
+  check("touch: a new touch never waits on an old one (no early return on an unfinished drag)", !/\|\|\s*drag\)\s*return/.test(down) && down.includes("endDrag()"));
+  check("touch: lift and cancel are heard on the whole window, plus lost capture and leaving the app",
+    ['addEventListener("pointerup"', 'addEventListener("pointercancel"', '"lostpointercapture"', 'addEventListener("blur"'].every((s) => js.includes(s))
+    && /pointerup", safe\(/.test(js));
+  check("no selectable text, no Copy / Look Up menu", /user-select: none/.test(html) && /-webkit-touch-callout: none/.test(html)
+    && js.includes('"selectstart"') && js.includes('"contextmenu"'));
+  check("no buttons under the well; Save sits last (bottom right)", !html.includes('class="dock"') && html.indexOf('id="best"') < html.indexOf('id="saveBtn"'));
+}
+
 console.log(failed ? `${failed} FAILED` : "all ok");
 process.exitCode = failed ? 1 : 0;

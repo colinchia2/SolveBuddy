@@ -10,8 +10,18 @@ export function openGame(game, query) {
 // Leaving a game saves it first: every game page saves on "pagehide", so send one before going.
 export function goHome() {
   dispatchEvent(new Event("pagehide"));
-  if (inApp) post({ type: "close" });
+  if (inApp) post({ type: "close", left: whereLeft() });
   else location.href = "home.html";
+}
+// The puzzle you're leaving and how you left it. Home shows this tile from it straight away, because the save itself
+// can reach Home's copy of storage a moment later (Colin 10/22: a tile must never show the wrong state).
+function whereLeft() {
+  const g = location.pathname.match(/(\w+)\.html$/)?.[1];
+  const q = new URLSearchParams(location.search), pack = q.get("pack"), p = Number(q.get("p"));
+  if (!g || !pack || !p) return null;
+  const saved = savedGame(g, pack, p);
+  const times = solves().filter((e) => e.g === g && e.pack === pack && e.p === p).map((e) => e.ms);
+  return { g, pack, p, saved, state: saved ? "progress" : times.length ? "solved" : "new", ms: times.length ? Math.min(...times) : 0 };
 }
 globalThis.sbLeave = goHome; // the app's glass back button calls this
 // Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle.
@@ -52,6 +62,18 @@ export function blockScores() {
 
 // Solve log: one entry per finished puzzle. Stored in this browser / on this phone only.
 const LOG_KEY = "solvebuddy.solves";
+// Your finished board for "View solved puzzle" (Colin 10/22: show the board as you left it, × marks too).
+// "starbattle/easy/3" → { marks }. The newest solve wins.
+const FINALS_KEY = "solvebuddy.finals";
+export function finalBoard(game, pack, p) {
+  try { return JSON.parse(localStorage.getItem(FINALS_KEY) || "{}")[`${game}/${pack}/${p}`] ?? null; } catch { return null; }
+}
+export function saveFinal(game, pack, p, data) {
+  try {
+    const all = JSON.parse(localStorage.getItem(FINALS_KEY) || "{}");
+    localStorage.setItem(FINALS_KEY, JSON.stringify({ ...all, [`${game}/${pack}/${p}`]: data }));
+  } catch {}
+}
 export function solves() {
   try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { return []; }
 }

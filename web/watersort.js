@@ -2,7 +2,8 @@
 // Solved! card), with glass tubes of colour. The solver in engine/watersort drives the Hint button.
 import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
-import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { explain } from "../engine/watersort/explain.ts";
+import { clearSaved, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -20,7 +21,8 @@ const COLORS = { A: "#E8574F", B: "#3E86E8", C: "#F4C542", D: "#4CB86A", E: "#9B
   G: "#EE7BB0", H: "#2BB3B1", I: "#9C6B4E", J: "#A8D45A", K: "#2F4A8A", L: "#9AA3AD" };
 const NAMES = { A: "red", B: "blue", C: "yellow", D: "green", E: "purple", F: "orange", G: "pink", H: "teal", I: "brown",
   J: "lime", K: "navy", L: "grey" };
-const UNIT = 38; // px per unit of colour
+// px per unit of colour: a little smaller with two rows of tubes, so the hint card never covers them.
+let UNIT = 38;
 
 const SETTINGS_KEY = "solvebuddy.settings";
 const settings = { timer: true };
@@ -123,16 +125,18 @@ function startPour(from, to, done) {
     $("hintBtn").classList.remove("pressed");
   }
   const lift = src.classList.contains("up") ? -16 : 0;
-  src.classList.remove("up", "ring", "shake");
+  src.classList.remove("up", "ring", "shake", "intro", "won"); // the opening hop holds its own transform
   dst.classList.remove("ring", "target");
   src.style.transition = "none";
   src.style.zIndex = 50;
   src.style.transform = `translateY(${lift}px)`;
   const br = board.getBoundingClientRect(), sr = src.getBoundingClientRect(), tr = dst.getBoundingClientRect();
   const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift;
-  const dir = tr.left + tr.width / 2 >= cx ? 1 : -1;
-  // Tilted, the tube's mouth sits just above the middle of the other tube's mouth.
+  // Tilted, the tube's mouth sits just above the middle of the other tube's mouth. It tilts so its body lies toward the
+  // middle of the screen, never off the edge (a tube at the side used to swing out of view).
   const mx = tr.left + tr.width / 2, my = tr.top - 20, rad = (TILT * Math.PI) / 180;
+  const pr = document.querySelector(".phone").getBoundingClientRect();
+  const dir = mx >= pr.left + pr.width / 2 ? 1 : -1;
   const drain = [...src.querySelectorAll(".u")].slice(-k).reverse(); // top unit first
   const liquid = dst.querySelector(".liquid");
   const fill = Array.from({ length: k }, () => {
@@ -150,7 +154,8 @@ function startPour(from, to, done) {
     stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${COLORS[c]}`;
     board.appendChild(stream);
   }
-  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
+  const liq = src.querySelector(".liquid"), rest = (s.tubes[from].length - k) * UNIT;
+  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, liq, rest, t: 0, speed: 1, last: null,
     D: quiet ? 260 : POUR_MS, tx: mx - Math.sin(rad) * dir * (sr.height / 2) - cx, ty: my + Math.cos(rad) * (sr.height / 2) - cy,
     deg: dir * TILT, base: liquid.getBoundingClientRect().bottom - br.top, my: my - br.top };
   if (quiet) haptic("thud");
@@ -180,6 +185,15 @@ function drawPour(A) {
   A.src.style.transform = `translate(${A.tx * move}px, ${A.lift + (A.ty - A.lift) * move}px) rotate(${A.deg * move}deg)`;
   A.drain.forEach((u, j) => (u.style.height = `${UNIT * (1 - clamp(A.k * q - j))}px`));
   A.fill.forEach((u, j) => (u.style.height = `${UNIT * clamp(A.k * q - j)}px`));
+  // Tilted past level, the liquid runs down to the mouth (Colin, 10/22: it sat at the closed end, with a gap before
+  // the stream). The column slides along the tube as it tilts, so the stream leaves right from the liquid, and what's
+  // left drains out of the mouth end; it slides back as the tube goes home.
+  if (!A.quiet) {
+    const h = A.rest + A.drain.reduce((sum, u, j) => sum + UNIT * (1 - clamp(A.k * q - j)), 0);
+    const r = 19 - 16 * move;
+    A.liq.style.transform = `translateY(${-(CAP * UNIT - h) * move}px)`;
+    A.liq.style.borderRadius = `3px 3px ${r}px ${r}px`;
+  }
   if (A.stream) {
     const surface = A.base - (A.had + A.k * q) * UNIT;
     const top = A.my + (surface - A.my) * clamp((t - 0.7) / 0.06);
@@ -244,11 +258,15 @@ function openHint() {
   }
   s.hints = (s.hints ?? 0) + 1;
   s.picked = null;
-  const sol = solve(s.tubes, 20000);
+  // Right after a "Show me", carry on with the same plan, so the next hint matches what the last one said would come next.
+  const kept = s.nextPlan?.key === JSON.stringify(s.tubes) && s.nextPlan.plan.length ? s.nextPlan.plan : null;
+  s.nextPlan = null;
+  const sol = kept ? { kind: "solved", path: kept } : solve(s.tubes, 20000);
   if (sol.kind === "stuck") s.hint = { stuck: true, level: 1 };
   else {
-    const move = sol.kind === "solved" ? sol.path[0] : tidiestMove(s.tubes);
-    s.hint = move ? { move, left: sol.kind === "solved" ? sol.path.length : null, level: 1 } : { stuck: true, level: 1 };
+    // The solver's plan from here; if it gave up, just the tidiest pour (and no look-ahead).
+    const plan = sol.kind === "solved" ? sol.path : [tidiestMove(s.tubes)].filter(Boolean);
+    s.hint = plan.length ? { move: plan[0], plan, why: explain(s.tubes, plan, (c) => NAMES[c]), level: 1 } : { stuck: true, level: 1 };
   }
   render();
 }
@@ -268,6 +286,7 @@ function advanceHint() {
     const [a, b] = h.move;
     startPour(a, b, () => {
       if (s.solved) return;
+      s.nextPlan = { key: JSON.stringify(s.tubes), plan: h.plan.slice(1) };
       h.level = 3;
       s.hint = h;
       render();
@@ -279,16 +298,10 @@ function advanceHint() {
 }
 function hintText(h) {
   if (h.stuck) return ["You're stuck", "There's no way to finish from here. Undo a few moves, or restart.", "Undo a move"];
-  const [a, b] = h.move;
-  const c = s.hint.level === 3 ? null : s.tubes[a][s.tubes[a].length - 1];
-  const to = s.tubes[b];
-  if (h.level === 1) return [`Look at tube ${a + 1}.`, "", "Explain"];
-  if (h.level === 2) {
-    const why = !to.length ? `Pour the ${NAMES[c]} from tube ${a + 1} into the empty tube ${b + 1}, to free up what's underneath.`
-      : `Pour the ${NAMES[c]} from tube ${a + 1} onto the ${NAMES[c]} in tube ${b + 1}.`;
-    return [`Pour tube ${a + 1} into tube ${b + 1}.`, why + (h.left ? ` About ${h.left} moves to go.` : ""), "Show me"];
-  }
-  return ["Poured!", h.left > 1 ? `About ${h.left - 1} moves to go.` : "", "Done"];
+  // Says why, a step or two ahead (engine/watersort/explain.ts), never the whole solution.
+  if (h.level === 1) return [`Look at tube ${h.move[0] + 1}.`, h.why.nudge, "Explain"];
+  if (h.level === 2) return [h.why.title, h.why.body, "Show me"];
+  return ["Poured!", h.why.after, "Done"];
 }
 
 // Tubes in one row, or two rows when there are more than 6.
@@ -296,6 +309,8 @@ function render() {
   const h = s.hint;
   const n = s.tubes.length;
   const perRow = n <= 6 ? n : Math.ceil(n / 2);
+  UNIT = n > 6 ? 34 : 38;
+  $("stage").classList.toggle("two", n > 6);
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
   const ringA = h && !h.stuck ? h.move[0] : null;
@@ -311,7 +326,7 @@ function render() {
         intro ? "intro" : "", won && t.length ? "won" : ""].filter(Boolean).join(" ");
       const d = intro ? (s.introWait + 0.1 + i * 0.05).toFixed(2) : (i * 0.11).toFixed(2);
       const what = t.length ? t.map((c) => NAMES[c]).join(", ") : "empty";
-      cells.push(`<div class="tube-wrap"><button class="tube ${cls}" style="--d:${d}s" data-i="${i}" aria-label="Tube ${i + 1}: ${what}${i === s.picked ? ", picked up" : ""}">${liquid}</button><span class="tube-num">${i + 1}</span></div>`);
+      cells.push(`<div class="tube-wrap"><button class="tube ${cls}" style="--d:${d}s;height:${CAP * UNIT + 16}px" data-i="${i}" aria-label="Tube ${i + 1}: ${what}${i === s.picked ? ", picked up" : ""}">${liquid}</button><span class="tube-num">${i + 1}</span></div>`);
     }
     rows.push(`<div class="tube-row">${cells.join("")}</div>`);
   }
@@ -330,7 +345,6 @@ function render() {
     $("hintBody").hidden = !body;
     $("hintNextLabel").textContent = next;
   }
-  fitHint($("hint"), $("board"));
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;

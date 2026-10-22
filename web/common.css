@@ -1,6 +1,9 @@
 /* Shared by every SolveBuddy play page. Tokens from the approved design (handoff §5). */
 /* No grey box when you touch something, anywhere in the app (Colin, 10/22: the logo, like Star Battle cells before). */
 html { -webkit-tap-highlight-color: transparent; }
+/* Nothing in the app is selectable text: a long press never brings up Copy / Look Up (Colin, 10/22). */
+html, body, body * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea { -webkit-user-select: text; user-select: text; }
 :root {
   --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52;
   /* Brand: SolveBuddy is blue (Colin, 10/21), the logo's colour. */

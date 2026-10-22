@@ -10,6 +10,10 @@
 <style>
   /* Water Sort only (Colin, 10/22): glass tubes of stacked colour, in one or two rows. */
   .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 0 4px; }
+  /* Two rows of tubes sit near the top, so the hint card below never covers them. */
+  .stage.two { justify-content: flex-start; padding-top: 20px; }
+  /* The hint card always shows in full, with its button, floating over the bottom of the screen (Colin, 10/22). */
+  #hint { max-height: none; overflow: visible; }
   .tubes { position: relative; display: flex; flex-direction: column; align-items: center; gap: 28px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
   .tube-row { display: flex; gap: 12px; justify-content: center; }
   .tube { position: relative; width: 48px; height: 168px; margin: 0; padding: 5px 5px 6px; border-radius: 12px 12px 26px 26px;
@@ -38,7 +42,8 @@
   .tube-wrap { position: relative; padding-bottom: 18px; }
   .tube-num { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font: 600 11px Inter, sans-serif; color: var(--muted); }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
-  .tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+  .rules-sub { margin: 4px 0 0; font: 700 14px Inter, sans-serif; color: var(--ink); }
+  .rules-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--body); }
   @keyframes wsShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
   @keyframes wsWin { 0% { transform: translateY(0); } 40% { transform: translateY(-14px) scale(1.06); } 100% { transform: translateY(0); } }
 </style>
@@ -64,7 +69,6 @@
 
     <div class="stage" id="stage">
       <div class="tubes" id="board"></div>
-      <p class="tip">Tap a tube, then tap where to pour</p>
     </div>
     <div class="dock">
       <button class="tool glass" id="undoBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
@@ -97,7 +101,14 @@
       <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="#6A45B0"><path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/></svg></span><span>Sort the colours so every tube holds <strong>just one colour</strong>.</span></div>
       <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></span><span>Tap a tube, then another, to <strong>pour its top colour</strong> across.</span></div>
       <div class="row"><span class="ico" style="background:#EDE5DC"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4E433A" stroke-width="2" stroke-linecap="round"><path d="M7 3v14a3 3 0 0 0 6 0V3 M6 3h8"/></svg></span><span>You can only pour onto the <strong>same colour</strong> or into an empty tube, and only if there's room (4 per tube).</span></div>
-      <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint finds a way to finish from where you are, or tells you to undo.</span></div>
+      <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint finds a way to finish from where you are, says why that pour helps, or tells you to undo.</span></div>
+      <h3 class="rules-sub">Controls</h3>
+      <ul class="rules-list">
+        <li><strong>Tap a tube</strong> to pick it up, then <strong>tap where to pour</strong>. Tap it again to put it down.</li>
+        <li><strong>Tap anywhere</strong> while it pours to speed it up.</li>
+        <li><strong>Undo</strong> takes back a pour; <strong>Restart</strong> starts the level over.</li>
+        <li><strong>Hint</strong>: Nudge, then Explain, then Show me pours it for you.</li>
+      </ul>
       <button class="dark" data-close>Got it</button>
     </section>
   </div>

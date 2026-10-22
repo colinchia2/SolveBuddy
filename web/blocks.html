@@ -8,42 +8,69 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">
 <style>
-  /* Block Drop only (Colin, 10/22): the well on the left, Next and the scores beside it, the same dock as the puzzles. */
+  /* Block Drop only (Colin, 10/22): the well on the left, Next and the scores beside it, Save at the bottom right.
+     No buttons under the well and no text to select: the controls are in the ? sheet (Colin, 10/22). */
+  * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .screen { height: 844px; touch-action: none; } /* the whole play area takes swipes, never scrolls */
-  .stage { display: flex; gap: 12px; justify-content: center; padding-top: 6px; }
-  .well { position: relative; display: grid; grid-template-columns: repeat(10, 26px); grid-auto-rows: 26px;
+  .stage { display: flex; gap: 10px; justify-content: center; margin: auto 0; } /* centred in the space the old buttons left */
+  .well { --c: 27px; position: relative; display: grid; grid-template-columns: repeat(10, var(--c)); grid-auto-rows: var(--c);
     border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--board);
     box-shadow: 0 12px 32px rgba(30,30,30,0.14);
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; } /* a finger drag moves the piece, never the page */
-  .b { width: 26px; height: 26px; box-shadow: inset -1px -1px 0 rgba(42,33,27,0.06); }
+  .b { width: var(--c); height: var(--c); box-shadow: inset -1px -1px 0 rgba(42,33,27,0.06); }
   /* A block: pastel fill, a darker edge and a soft top light, so pieces read clearly. */
   /* Blocks and the ghost get their colours inline from blocks.js (plain colours, so iPhone always repaints them). */
   .b.intro { animation: sbCell .3s var(--d) cubic-bezier(0.3,1.3,0.5,1) both; }
-  .flash { position: absolute; left: 0; right: 0; height: 26px; pointer-events: none; background: #fff;
+  .flash { position: absolute; left: 0; right: 0; height: var(--c); pointer-events: none; background: #fff;
     animation: bdFlash .32s ease-out both; }
+  /* Line clears (Colin, 10/22: fun but short, never in the way): sparks fly off the row, the points float up.
+     Four rows at once gets a banner and a pulse. All of it sits on top and lets touches through. */
+  .spark { position: absolute; width: 7px; height: 7px; border-radius: 2px; pointer-events: none;
+    animation: bdSpark .34s cubic-bezier(0.2,0.7,0.3,1) both; }
+  @keyframes bdSpark { from { opacity: 1; transform: translate(0,0) scale(1); } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4) rotate(120deg); } }
+  .pts { position: absolute; left: 0; right: 0; text-align: center; pointer-events: none; z-index: 3;
+    font: 800 20px 'Bricolage Grotesque', sans-serif; color: var(--brand-dark); text-shadow: 0 1px 0 #fff, 0 0 8px #fff;
+    animation: bdPts .6s ease-out both; }
+  .pts.big { font-size: 26px; }
+  @keyframes bdPts { 0% { opacity: 0; transform: translateY(6px) scale(0.8); } 25% { opacity: 1; transform: translateY(0) scale(1.08); } 100% { opacity: 0; transform: translateY(-26px) scale(1); } }
+  .banner { position: absolute; left: 50%; top: 38%; z-index: 4; pointer-events: none; white-space: nowrap;
+    padding: 10px 18px; border-radius: 16px; background: var(--brand); color: #fff; box-shadow: 0 10px 26px rgba(47,111,214,0.35);
+    font: 800 26px 'Bricolage Grotesque', sans-serif; animation: bdBanner .7s cubic-bezier(0.3,1.4,0.5,1) both; }
+  @keyframes bdBanner { 0% { opacity: 0; transform: translate(-50%,-50%) scale(0.4) rotate(-6deg); } 30% { opacity: 1; transform: translate(-50%,-50%) scale(1.1) rotate(2deg); }
+    75% { opacity: 1; transform: translate(-50%,-50%) scale(1); } 100% { opacity: 0; transform: translate(-50%,-60%) scale(0.95); } }
+  .well.pulse { animation: bdPulse .5s ease; }
+  @keyframes bdPulse { 30% { transform: scale(1.025); box-shadow: 0 0 0 6px rgba(77,150,255,0.35), 0 12px 32px rgba(30,30,30,0.14); } }
+  /* 3, 2, 1, Go! before pieces fall (Colin, 10/22: be ready first). */
+  .count { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; pointer-events: none; }
+  .count span { font: 800 64px 'Bricolage Grotesque', sans-serif; color: var(--ink); text-shadow: 0 2px 0 #fff, 0 0 18px #fff;
+    animation: bdCount var(--ms, .6s) ease-out both; }
+  .count span.go { color: var(--brand); font-size: 54px; }
+  @keyframes bdCount { 0% { opacity: 0; transform: scale(1.6); } 25% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(0.85); } }
   @keyframes bdFlash { 0% { opacity: 0.95; transform: scaleX(0.2); } 40% { opacity: 0.9; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1); } }
   .well.shake { animation: bdShake .25s ease; }
   @keyframes bdShake { 30% { transform: translateY(3px); } 60% { transform: translateY(-1px); } }
 
-  .side { width: 84px; display: flex; flex-direction: column; gap: 10px; }
+  .side { width: 72px; display: flex; flex-direction: column; gap: 10px; }
+  .side .panel.save { margin-top: auto; } /* bottom right, beside the bottom of the well (Colin, 10/22) */
   .panel { border-radius: 14px; padding: 8px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .panel small { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .panel b { font: 700 18px Inter, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); }
   .panel b.pop { animation: sbBump .35s ease; }
-  .next { display: grid; grid-template-columns: repeat(4, 15px); grid-auto-rows: 15px; gap: 1px; padding: 4px 0 2px; }
-  .next .b { width: 15px; height: 15px; box-shadow: none; }
+  .next { display: grid; grid-template-columns: repeat(4, 14px); grid-auto-rows: 14px; gap: 1px; padding: 4px 0 2px; }
+  .next .b { width: 14px; height: 14px; box-shadow: none; }
   /* Save piece: tap to swap; dimmed once used until the piece sets (one swap per piece). */
   .panel.save { border: 1px solid rgba(255,255,255,0.85); font: inherit; color: inherit; padding: 8px 6px 10px; margin: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .panel.save:active { transform: scale(0.96); }
   .panel.save.used { opacity: 0.45; }
-  .panel.save .hint { font-size: 10px; font-weight: 600; color: var(--muted); }
-  .panel.save:not(.empty) .hint { display: none; }
+  .panel.save .tap { font-size: 10px; font-weight: 600; color: var(--muted); }
+  .panel.save:not(.empty) .tap { display: none; } /* not .hint: that name is the puzzles' hint card in common.css */
   .panel.save.empty .next { display: none; }
   .panel.save.nope { animation: bdNope .3s ease; }
   @keyframes bdNope { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
-  .tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
-  .tool.drop-tool { color: var(--brand-dark); }
-  .tool:active { background: rgba(255,255,255,0.85); }
+  .sheet .label { margin: 4px 0 -4px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .start-facts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .start-facts span { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.7); border: 1px solid rgba(42,33,27,0.08);
+    font-size: 13px; font-weight: 600; color: var(--body); font-variant-numeric: tabular-nums; }
   .won-card .disc svg { display: block; }
 </style>
 </head>
@@ -63,38 +90,43 @@
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-      <p class="tip">Tap: turn · Swipe: move · Swipe up: drop</p>
     </div>
 
     <div class="stage">
       <div class="well" id="well" aria-label="Block Drop well"></div>
       <div class="side">
-        <button class="panel glass save empty" id="saveBtn" aria-label="Save this piece for later"><small>Save</small><div class="next" id="hold"></div><span class="hint">Tap to save</span></button>
         <div class="panel glass"><small>Next</small><div class="next" id="next"></div></div>
         <div class="panel glass"><small>Score</small><b id="score">0</b></div>
         <div class="panel glass"><small>Lines</small><b id="lines">0</b></div>
         <div class="panel glass"><small>Best</small><b id="best">0</b></div>
+        <button class="panel glass save empty" id="saveBtn" aria-label="Save this piece for later"><small>Save</small><div class="next" id="hold"></div><span class="tap">Tap to save</span></button>
       </div>
     </div>
 
-    <!-- Same bottom bar as the puzzles: four equal buttons. Left and Right repeat while held. -->
-    <div class="dock">
-      <button class="tool glass" id="leftBtn" aria-label="Move left"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Left</button>
-      <button class="tool glass" id="turnBtn" aria-label="Turn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg>Turn</button>
-      <button class="tool glass" id="rightBtn" aria-label="Move right"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>Right</button>
-      <button class="tool glass drop-tool" id="dropBtn" aria-label="Drop"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12 M6 10l6 6 6-6 M5 20h14"/></svg>Drop</button>
-    </div>
   </div>
 
   <div class="scrim" id="rules" hidden>
     <section class="sheet" role="dialog" aria-label="How to play Block Drop">
       <div class="sheet-top"><h2>How to play</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
       <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linejoin="round"><path d="M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z"/></svg></span><span>Blocks fall one at a time. Fill a <strong>whole row</strong> to clear it and score.</span></div>
-      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg></span><span><strong>Tap</strong> to turn. <strong>Swipe</strong> left or right to move, drag down to speed up, <strong>swipe up</strong> (or flick down) to drop.</span></div>
-      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6A45B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10H7z M4 4l3 3 M20 20l-3-3"/></svg></span><span><strong>Save</strong> a piece for later: tap Save to swap. Once per piece, until it lands.</span></div>
-      <div class="row"><span class="ico" style="background:#D7EEEA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2" stroke-linecap="round"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg></span><span>More rows at once score more. Every 10 rows is a new level, and blocks fall <strong>faster</strong>.</span></div>
-      <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2" stroke-linecap="round"><path d="M12 4v10 M12 18v.01"/></svg></span><span>The game ends when the blocks reach the top.</span></div>
+      <div class="row"><span class="ico" style="background:#D7EEEA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2" stroke-linecap="round"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg></span><span>Four rows at once scores the most. Every 10 rows is a new level, and blocks fall <strong>faster</strong>. The game ends when the blocks reach the top.</span></div>
+      <p class="label">Controls</p>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg></span><span><strong>Tap</strong> anywhere to turn the piece.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5 M16 7l5 5-5 5"/></svg></span><span><strong>Swipe</strong> left or right to move it.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13 M7 12l5 5 5-5"/></svg></span><span><strong>Hold</strong> your finger down, or drag down, to drop faster.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7 M7 12l5-5 5 5 M5 4h14"/></svg></span><span>Quick <strong>swipe up</strong> (or flick down) to drop it all the way.</span></div>
+      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6A45B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10H7z M4 4l3 3 M20 20l-3-3"/></svg></span><span>Tap <strong>Save</strong> to keep a piece for later and swap it back in. Once per piece, until it lands.</span></div>
       <button class="dark" data-close>Got it</button>
+    </section>
+  </div>
+
+  <!-- Opening with a saved game: carry on or start fresh (Colin, 10/22). -->
+  <div class="scrim" id="startSheet" hidden>
+    <section class="sheet" role="dialog" aria-label="Resume your game">
+      <h2>Pick up where you left off?</h2>
+      <div class="start-facts" id="startFacts"></div>
+      <button class="dark" id="startResume">Resume</button>
+      <button class="ghost" id="startNew">New game</button>
     </section>
   </div>
 
