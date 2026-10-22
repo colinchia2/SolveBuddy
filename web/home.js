@@ -88,7 +88,10 @@ document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("home"));
 globalThis.sbRefresh = render; // the app calls this when you come back from a game
 render();
 
-// The app's opening animation lands its logo exactly on this one, so tell it where it is.
+// The app's opening animation lands its logo exactly on this one, so tell it where it is. Ours shows once it lands
+// (the app calls sbLanded), or after a few seconds whatever happens.
+globalThis.sbLanded = () => document.documentElement.classList.remove("splash");
+setTimeout(globalThis.sbLanded, 4000);
 if (inApp) {
   const r = $("logoBtn").querySelector(".logo").getBoundingClientRect();
   post({ type: "ready", logo: { x: r.left, y: r.top, size: r.width } });
