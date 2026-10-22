@@ -19,7 +19,6 @@ const TILES = [
   { soon: "Groups", bg: "#DDEFD9", ink: "#2F6B4A", path: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z" },
 ];
 const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4 };
-const REGION = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8" };
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
   help: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,
@@ -151,7 +150,7 @@ function tapTile(g, k, p, state) {
     : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of 8 stars`
     : `${fmt(saved.ms ?? 0)} so far · ${puzzle.givens.flat().filter(Boolean).length + Object.keys(saved.entries ?? {}).length} of 81 filled`;
   $("tile").querySelector(".sheet").innerHTML = `
-    <div class="tile-top">${thumb(g, puzzle, state === "solved")}
+    <div class="tile-top">${gameIcon(LOOK[g], 64, 34)}
       <div class="tile-text"><h2>${esc(title)}</h2>
         <span class="chip ${state}">${state === "solved" ? "Solved" : "In progress"}</span><p>${note}</p></div>
       <button class="x" data-act="close" aria-label="Close">${ICON.x}</button></div>
@@ -160,14 +159,14 @@ function tapTile(g, k, p, state) {
   $("tile").hidden = false;
 }
 
-// The little picture of the puzzle in the pop-up: Star Battle's regions (and its stars once solved), Sudoku's clues.
-function thumb(g, puzzle, solved) {
-  if (g === "starbattle") {
-    return `<span class="thumb" style="grid-template-columns:repeat(8,1fr)" aria-hidden="true">${puzzle.regions.flatMap((row, r) => [...row].map((reg, c) =>
-      solved && puzzle.solution[r] === c ? `<i class="dot"></i>` : `<i style="background:color-mix(in srgb, ${REGION[reg]} 70%, #FFFDF9)"></i>`)).join("")}</span>`;
-  }
-  return `<span class="thumb nine" style="grid-template-columns:repeat(9,1fr)" aria-hidden="true">${puzzle.givens.flatMap((row, r) => row.map((v, c) =>
-    `<i class="${v || solved ? "on" : ""}${c % 3 === 2 && c < 8 ? " br" : ""}${r % 3 === 2 && r < 8 ? " bb" : ""}"></i>`)).join("")}</span>`;
+// While a pop-up is up, Apple's tab bar hides so the pop-up sits fully in front (Colin, 10/21); it comes back once the
+// pop-up has slid away.
+for (const el of [$("tile"), $("rules")]) {
+  let t;
+  new MutationObserver(() => {
+    clearTimeout(t);
+    t = setTimeout(() => post({ type: "tabbar", hidden: !$("tile").hidden || !$("rules").hidden }), 30);
+  }).observe(el, { attributes: true, attributeFilter: ["hidden"] });
 }
 
 $("tile").onclick = (e) => {

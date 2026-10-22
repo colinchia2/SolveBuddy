@@ -138,6 +138,15 @@ html.app .picker { display: none; }
 /* The page runs edge to edge, under the clock and notch, so its soft background has no line at the top (Colin, 10/21);
    --safetop (set by the app) keeps the content below the notch. */
 html.app .phone { width: 100%; height: 100vh; border-radius: 0; box-shadow: none; padding-top: var(--safetop, 0px); }
+/* The soft colour wash, app only (Colin, 10/21: hard lines where it stopped). The blurred glow blobs got cut off at
+   hard edges on the phone (in the header, and where a page ends), so the app paints the same wash as smooth
+   gradients over the whole page instead. */
+html.app .glow { display: none; }
+html.app .phone { background:
+  radial-gradient(110% 55% at 0% 0%, rgba(220,233,242,0.9), rgba(220,233,242,0) 70%),
+  radial-gradient(110% 55% at 100% 100%, rgba(191,227,216,0.6), rgba(191,227,216,0) 70%),
+  var(--bg); }
+html.app .sheet { padding-bottom: 40px; } /* clear of the home bar */
 /* Opening animation: Home's face stays hidden until the flying one lands on it, so there's never two. */
 html.splash .logo { visibility: hidden; }
 html.app .screen { padding-bottom: 30px; height: 100%; overflow-y: auto; scrollbar-width: none; } /* scrolls only on a very short phone */
