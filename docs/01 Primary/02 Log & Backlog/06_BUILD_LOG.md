@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-22 (night, last) — Expert Killer (5) and Expert Thermo (1)
+- New variant tricks (Expert only, `advanced: true`, so Easy hints stay byte-identical): the **45 rule** (innie/outie,
+  1- and 2-cell, single and 2–3 adjacent houses), Cage claims a number, Cage squeeze / Thermo squeeze.
+- `sudoku9-killer-expert.json`: 5 puzzles, 1–4 numbers showing, 45 rule used 4–7 times each.
+  `sudoku9-thermo-expert.json`: 1 puzzle (Colin asked for one), 9 showing, 10 thermos, needs Hidden pairs + Thermo squeeze.
+- Generators were slow (35 min, nothing) on a busy 8 GB PC: relaxed to 0–4 givens / 45 rule ≥1 (every puzzle uses
+  it 4+ times anyway), one generator at a time, 20s per attempt with rejection reasons logged.
+- Snapshots: classic Sudoku and Easy Killer/Thermo unchanged. run_all 47 PASS, pages smoke 0 FAIL.
+- Next: Colin plays them; more Thermo Expert (4 to go), Medium/Hard levels, emphasise cage outlines in 45-rule hints.
+
 ## 2026-10-22 (night) — Killer and Thermo Sudoku (Easy)
 - `engine/sudoku/variants.ts`: cage sums + no repeats; thermos climb from the bulb. countSolutions/hint/playHints take
   the rules. Hint order: (1) a cage/thermo trick that PLACES a number, (2) a classic number, (3) cage/thermo

@@ -64,7 +64,7 @@ function makeCages(sol: Grid): Cage[] | null {
   });
 }
 
-function makeThermos(sol: Grid, min = 5, max = 7): Cell[][] {
+function makeThermos(sol: Grid, min = 5, max = 7, minLen = 3, maxLen = 6): Cell[][] {
   const used = new Set<string>();
   const lines: Cell[][] = [];
   const count = min + Math.floor(Math.random() * (max - min + 1));
@@ -72,14 +72,14 @@ function makeThermos(sol: Grid, min = 5, max = 7): Cell[][] {
     const start: Cell = [Math.floor(Math.random() * 9), Math.floor(Math.random() * 9)];
     if (used.has(start.join()) || sol[start[0]][start[1]] > 5) continue;
     const line: Cell[] = [start];
-    const len = 3 + Math.floor(Math.random() * 4);
+    const len = minLen + Math.floor(Math.random() * (maxLen - minLen + 1));
     while (line.length < len) {
       const last = line[line.length - 1];
       const next = shuffled(near8(last)).find(([r, c]) => !used.has(`${r},${c}`) && !line.some((p) => p[0] === r && p[1] === c) && sol[r][c] > sol[last[0]][last[1]]);
       if (!next) break;
       line.push(next);
     }
-    if (line.length < 3) continue;
+    if (line.length < minLen) continue;
     line.forEach((p) => used.add(p.join()));
     lines.push(line);
   }
@@ -125,7 +125,7 @@ if (expert) {
     const deadline = Date.now() + 20000;
     const sol = makeFullGrid();
     const rules: Rules = variant === "killer" ? { variant, cages: makeCages(sol) ?? undefined, advanced: true }
-      : { variant, thermos: makeThermos(sol, 6, 9), advanced: true };
+      : { variant, thermos: makeThermos(sol, 10, 11, 4, 7), advanced: true }; // 6–9 short ones never got below ~13 numbers
     if (variant === "killer" && !rules.cages) { reject("cages"); continue; }
     let p: Grid;
     if (variant === "killer") {
@@ -160,6 +160,7 @@ if (expert) {
     const n45 = play.shown.filter((s) => s === "45 rule").length;
     if (variant === "killer" && n45 < 1) { reject("no 45 rule"); continue; }
     if (variant === "thermo" && !play.shown.some((s) => HARDER.includes(s))) { reject("no harder classic trick"); continue; }
+    if (variant === "thermo" && !play.shown.includes("Thermo squeeze")) { reject("no thermo squeeze"); continue; }
     if (countSolutions(p) < 2) { reject("rules not needed"); continue; }
     const n = puzzles.length + 1;
     const used = [...new Set(play.shown)];

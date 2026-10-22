@@ -5,7 +5,7 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 ## Right now (save point 2026-10-22, evening)
 - **Live on Colin's phone** (app `C:\dev\SolveBuddyApp`, iOS build on runtime 513e3eaf…; pages from GitHub Pages):
   4 tabs (Library · Packs · Stats · Import), 4 games: Star Battle (Single 8×8 Easy 10 + Expert 10, Double 10×10
-  Expert 10, Triple 12×12 Hard 10), Sudoku (Easy/Medium/Hard/Expert 10 each + 6 Trick tests), Water Sort
+  Expert 10, Triple 12×12 Hard 10), Sudoku (Easy/Medium/Hard/Expert 10 each + 6 Trick tests; Killer Easy 5 + Expert 5; Thermo Easy 5 + Expert 1), Water Sort
   (30 levels), Block Drop (endless). Import tab: Star Battle any size 5–12 with 1–3 stars, Sudoku 9×9, Water Sort
   4–18 tubes; build one by hand, or Colin sends a screenshot to Claude in chat and Claude adds it to
   `packs/imports.json` (4 Star Battles added 10/22, read with `scripts/read_starbattle_screenshot.py`: thick-line reading +

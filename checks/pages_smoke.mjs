@@ -86,7 +86,7 @@ for (const h of [844, 750]) {
 // Killer and Thermo Sudoku (10/22): the cages / thermometers draw, the first hint is a variant one, and Killer #1
 // and Thermo #1 are solved by Hint presses alone, to the Solved! card.
 // Expert (10/22): Killer Expert #1 too, where the 45 rule shows up.
-for (const v of ["killer", "thermo", "killer-expert"]) {
+for (const v of ["killer", "thermo", "killer-expert", "thermo-expert"]) {
   await page.goto(`${BASE}sudoku.html?pack=${v}&p=1`);
   await page.waitForTimeout(1500);
   const r = await page.evaluate(async (v) => {

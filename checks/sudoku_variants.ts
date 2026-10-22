@@ -38,16 +38,16 @@ check(`killer: the first hint is a cage trick (${hint(k1.givens, k1.solution, {}
 check("classic Sudoku packs grade and hint exactly as before", snapshotHash() === readFileSync("checks/sudoku_snapshot.sha256", "utf8").trim());
 check("Easy Killer and Thermo play by hints exactly as before", variantsHash() === readFileSync("checks/sudoku_variants_snapshot.sha256", "utf8").trim());
 
-// Expert Killer (10/22): the 45 rule. (Thermo Expert comes later.)
-for (const v of ["killer"]) {
+// Expert (10/22): Killer (5, the 45 rule) and Thermo (1 to start: a Thermo squeeze and a harder classic trick).
+for (const v of ["killer", "thermo"]) {
   const pack = JSON.parse(readFileSync(`packs/sudoku9-${v}-expert.json`, "utf8"));
-  check(`${v}: 5 Expert puzzles`, pack.puzzles.length === 5 && pack.difficulty === "Expert");
+  check(`${v}: ${v === "killer" ? 5 : 1} Expert puzzle${v === "killer" ? "s" : ""}`, pack.puzzles.length === (v === "killer" ? 5 : 1) && pack.difficulty === "Expert");
   for (const p of pack.puzzles) {
     const rules = rulesOf(p)!;
     const found: number[][][] = [];
     check(`${p.id}: one answer, the stored one; the ${v} rules are needed`, countSolutions(p.givens, 2, found, rules) === 1
       && JSON.stringify(found[0]) === JSON.stringify(p.solution) && countSolutions(p.givens) > 1 && variantClashes(p.solution, rules).size === 0);
-    check(`${p.id}: ${p.clues} numbers showing (at most 4)`, p.clues <= 4);
+    check(`${p.id}: ${p.clues} numbers showing (at most ${v === "killer" ? 4 : 10})`, p.clues <= (v === "killer" ? 4 : 10));
     let slowest = 0;
     const timed = (b: number[][], m: any, c: any) => { const t0 = performance.now(); const h = hint(b, p.solution, m, c, rules); slowest = Math.max(slowest, performance.now() - t0); return h; };
     const b = p.givens.map((r: number[]) => [...r]), marks: any = {}, corners: any = {}, shown: string[] = [];
