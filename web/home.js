@@ -1,7 +1,7 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a pack (skipped when the game
 // has one) → the pack's levels with numbered puzzles → tap one: new ones start, solved ones offer View or Restart,
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
-import { GAMES, buzz, clearSaved, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { GAMES, buzz, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { $, FACE, FLAME, LOOK, esc, fmt, gameIcon, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
@@ -39,7 +39,7 @@ let picked = null; // the tile tapped in a pack: { g, k, p, state }
 
 // One puzzle's state: solved (and its best time), half-done (saved), or new.
 function tileState(g, k, p) {
-  if (savedGame(g, k)?.p === p) return { state: "progress" };
+  if (savedGame(g, k, p)) return { state: "progress" };
   const times = solves().filter((e) => e.g === g && e.pack === k && e.p === p).map((e) => e.ms);
   return times.length ? { state: "solved", ms: Math.min(...times) } : { state: "new" };
 }
@@ -62,6 +62,7 @@ function render() {
 }
 
 function go(next) {
+  haptic("pick"); // a tick each time you move between screens
   at = next;
   renderView(true);
   scrollTo(0, 0);
@@ -140,9 +141,10 @@ const moreCard = (title) => `<button class="more-card" data-act="more"><span cla
 
 function tapTile(g, k, p, state) {
   const q = `?pack=${k}&p=${p}`;
-  if (state === "new") return openGame(g, q);
+  if (state === "new") { haptic("thud"); return openGame(g, q); }
+  haptic("tap");
   picked = { g, k, p, state };
-  const t = tileState(g, k, p), saved = savedGame(g, k);
+  const t = tileState(g, k, p), saved = savedGame(g, k, p);
   const puzzle = data[`${g}/${k}`].puzzles[p - 1];
   const setName = GAMES[g].sets.find((s) => s.levels.includes(k)).name;
   const title = setName === label(g, k) ? `${setName} #${p}` : `${setName} · ${label(g, k)} #${p}`;
@@ -175,7 +177,8 @@ $("tile").onclick = (e) => {
   if (!act || !picked) return;
   const { g, k, p, state } = picked;
   $("tile").hidden = true;
-  if (act === "restart") clearSaved(g, k);
+  if (act === "restart") clearSaved(g, k, p);
+  haptic("thud");
   openGame(g, `?pack=${k}&p=${p}${act === "main" && state === "solved" ? "&view=1" : ""}`);
 };
 

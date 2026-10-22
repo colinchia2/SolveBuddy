@@ -11,7 +11,12 @@ export function goHome() {
   if (inApp) post({ type: "close" });
   else location.href = "home.html";
 }
-export const buzz = (ms = 10) => navigator.vibrate?.(ms);
+// Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle.
+export function haptic(kind = "tap") {
+  if (inApp) post({ type: "haptic", kind });
+  else navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : 10);
+}
+export const buzz = (ms = 10) => haptic(ms >= 30 ? "thud" : "tap");
 
 // The phone app's offline pages carry the packs inside them (SB_PACKS); otherwise fetch them.
 export const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -39,17 +44,23 @@ export function solves() {
 export function logSolve(entry) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}
 }
-// A game left half-done, one per pack (Colin, 10/21: backing out by accident mustn't lose it).
-// "sudoku/easy" → { p, ms, hints, ...the game's own marks }.
+// Every game left half-done, each puzzle its own (Colin, 10/21: starting another must never lose the first).
+// "sudoku/easy/3" → { p, ms, hints, ...the game's own marks }. Older saves were one per pack ("sudoku/easy"); they
+// move to their puzzle's key on read.
 const SAVE_KEY = "solvebuddy.saved";
-const allSaved = () => { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "{}"); } catch { return {}; } };
-export const savedGame = (game, pack) => allSaved()[`${game}/${pack}`] ?? null;
-export function saveGame(game, pack, data) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...allSaved(), [`${game}/${pack}`]: { ...data, at: Date.now() } })); } catch {}
+function allSaved() {
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}"); } catch {}
+  for (const [k, v] of Object.entries(all)) if (k.split("/").length === 2 && v?.p) { all[`${k}/${v.p}`] ??= v; delete all[k]; }
+  return all;
 }
-export function clearSaved(game, pack) {
+export const savedGame = (game, pack, p) => allSaved()[`${game}/${pack}/${p}`] ?? null;
+export function saveGame(game, pack, data) {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...allSaved(), [`${game}/${pack}/${data.p}`]: { ...data, at: Date.now() } })); } catch {}
+}
+export function clearSaved(game, pack, p) {
   const all = allSaved();
-  delete all[`${game}/${pack}`];
+  delete all[`${game}/${pack}/${p}`];
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(all)); } catch {}
 }
 

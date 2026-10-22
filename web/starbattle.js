@@ -1,6 +1,6 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -47,8 +47,8 @@ function load(i, name = packName, first = false) {
   s = { regions: p.regions, solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
   // Pick up where you left off (Colin, 10/21).
-  const saved = savedGame("starbattle", name);
-  if (saved?.p === i + 1) {
+  const saved = savedGame("starbattle", name, i + 1);
+  if (saved) {
     s.marks = saved.marks ?? {};
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
@@ -63,7 +63,7 @@ function load(i, name = packName, first = false) {
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
     $("time").textContent = fmt(s.elapsed);
-    solvedBar(s.elapsed, () => { clearSaved("starbattle", packName); load(idx); });
+    solvedBar(s.elapsed, () => { clearSaved("starbattle", packName, idx + 1); load(idx); });
   }
   // The board builds as a colour wave from the top-left corner, then a shooting star lands in the counter.
   s.introAt = Date.now();
@@ -105,6 +105,7 @@ function change(fn) {
 
 function tap(r, c) {
   const k = key(r, c);
+  haptic((s.marks[k] || EMPTY) === CROSS ? "thud" : "tap"); // a firmer one when it becomes a star
   change(() => {
     const next = ((s.marks[k] || EMPTY) + 1) % 3; // empty → × → star → empty
     if (next) s.marks[k] = next;
@@ -118,7 +119,9 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
-  clearSaved("starbattle", packName);
+  clearSaved("starbattle", packName, idx + 1);
+  haptic("success");
+  for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
   logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
@@ -386,6 +389,7 @@ function paint(r, c) {
 $("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
+  haptic("tap");
   s.marks = JSON.parse(undoStack.pop());
   s.hint = null;
   s.hinted.clear();
@@ -394,13 +398,13 @@ $("undoBtn").onclick = () => {
 const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, auto-cross",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("starbattle", packName); load(idx); },
+  onRestart: () => { clearSaved("starbattle", packName, idx + 1); load(idx); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
-$("hintBtn").onclick = openHint;
+$("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
-$("hintNext").onclick = advanceHint;
+$("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));

@@ -1,6 +1,6 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -53,8 +53,8 @@ function load(i, name = packName, first = false) {
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, picked: new Set(), mode: s?.mode || "normal",
     hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
   // Pick up where you left off (Colin, 10/21).
-  const saved = savedGame("sudoku", name);
-  if (saved?.p === i + 1) {
+  const saved = savedGame("sudoku", name, i + 1);
+  if (saved) {
     Object.assign(s, { entries: saved.entries ?? {}, corner: saved.corner ?? {}, center: saved.center ?? {} });
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
@@ -69,7 +69,7 @@ function load(i, name = packName, first = false) {
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
     $("time").textContent = fmt(s.elapsed);
-    solvedBar(s.elapsed, () => { clearSaved("sudoku", packName); load(idx); });
+    solvedBar(s.elapsed, () => { clearSaved("sudoku", packName, idx + 1); load(idx); });
   }
   // The clues drop in box by box, then the number pad rises key by key.
   s.introAt = Date.now();
@@ -111,6 +111,7 @@ function selectOnly(r, c) {
 function press(n) {
   const ks = pickedOpen();
   if (!ks.length) return;
+  haptic("tap");
   change(() => {
     if (s.mode === "normal") {
       for (const k of ks) {
@@ -150,7 +151,9 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // a blue flash sweeps the board corner to corner, then the Solved! card rises
-  clearSaved("sudoku", packName);
+  clearSaved("sudoku", packName, idx + 1);
+  haptic("success");
+  [250, 500, 750].forEach((ms) => setTimeout(() => haptic("tap"), ms)); // ticks with the blue sweep
   const facts = solveFacts("sudoku", packName, s.elapsed, s.hints ?? 0);
   logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
   const p = pack.puzzles[idx];
@@ -366,6 +369,7 @@ $("eraseBtn").onclick = erase;
 $("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
+  haptic("tap");
   Object.assign(s, JSON.parse(undoStack.pop()));
   s.hint = null;
   render();
@@ -373,13 +377,13 @@ $("undoBtn").onclick = () => {
 const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, highlights",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("sudoku", packName); load(idx); },
+  onRestart: () => { clearSaved("sudoku", packName, idx + 1); load(idx); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
-$("hintBtn").onclick = openHint;
+$("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
-$("hintNext").onclick = advanceHint;
+$("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
