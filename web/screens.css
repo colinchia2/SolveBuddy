@@ -36,6 +36,9 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 
 /* Difficulty picker (pops out of the tile). */
 @keyframes sbFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sbPopOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.9); } }
+.pick-scrim.closing { animation: sbFadeOut 0.2s ease both; }
+.pick-scrim.closing .pick { animation: sbPopOut 0.2s cubic-bezier(0.32,0,0.67,0) both; }
 @keyframes sbPop { 0% { opacity: 0; transform: scale(0.35); } 60% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
 .pick-scrim { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(42,33,27,0.22);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: sbFade 0.25s ease both; }
@@ -99,3 +102,8 @@ button.card-glass { text-align: left; width: 100%; }
   color: var(--body); font-size: 11px; font-weight: 600; }
 .tabs a[aria-current="page"] { background: rgba(255,255,255,0.7); box-shadow: inset 0 1px 0 #fff, 0 2px 8px rgba(30,30,30,0.06); color: var(--brand); font-weight: 700; }
 html.app .tabs { display: none; }
+/* In the app the tab pages scroll the whole web view (not an inner box), so Apple's tab bar can shrink to the side as
+   you scroll down, like TasteBuddy's (Colin, 10/21). */
+html.app .phone:has(> .page) { height: auto; min-height: 100vh; overflow: visible; overflow-x: clip; }
+html.app .page { height: auto; min-height: calc(100vh - var(--safetop, 0px)); overflow: visible; }
+html.app .pick-scrim { position: fixed; }

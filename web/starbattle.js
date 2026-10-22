@@ -1,6 +1,6 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -382,11 +382,13 @@ $("undoBtn").onclick = () => {
   s.hinted.clear();
   render();
 };
-$("moreBtn").onclick = moreMenu({
+const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, auto-cross",
   onSettings: () => { s.settingsOpen = true; render(); },
   onRestart: () => { clearSaved("starbattle", packName); load(idx); },
 });
+$("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
+$("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
@@ -425,5 +427,6 @@ setInterval(() => {
 }, 500);
 addEventListener("pagehide", persist);
 
+smoothClose();
 openWipe();
 load(idx, packName, true);

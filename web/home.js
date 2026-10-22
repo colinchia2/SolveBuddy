@@ -1,6 +1,6 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a level → play the next
 // unsolved puzzle in that pack.
-import { GAMES, buzz, inApp, loadPack, openGame, post, savedGame, solvedIn } from "./bridge.js";
+import { GAMES, buzz, inApp, loadPack, openGame, post, savedGame, smoothClose, solvedIn } from "./bridge.js";
 import { $, FACE, FLAME, LOOK, esc, gameIcon, streaks, tabs } from "./screens.js";
 
 const sizes = {}; // "sudoku/easy" → number of puzzles
@@ -85,6 +85,7 @@ $("logoBtn").onclick = () => {
   buzz(12);
 };
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("home"));
+smoothClose();
 globalThis.sbRefresh = render; // the app calls this when you come back from a game
 render();
 

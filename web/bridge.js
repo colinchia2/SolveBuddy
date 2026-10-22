@@ -83,7 +83,27 @@ export function moreMenu({ settingsNote, onSettings, onRestart }) {
     else if (act === "restart") view("confirm");
     else if (act === "yes") { close(); onRestart(); }
   };
-  return () => { view("list"); el.hidden = false; };
+  return (v = "list") => { view(v); el.hidden = false; };
+}
+
+// The "TasteBuddy slide" on the way out (Colin, 10/21): pages just set `hidden` on a pop-up; this catches that, plays
+// the closing animation (CSS .closing), then really hides it.
+export function smoothClose() {
+  const SEL = ".scrim, .pick-scrim, .hint";
+  const settle = new WeakSet();
+  new MutationObserver((list) => {
+    for (const { target: el, oldValue } of list) {
+      if (settle.has(el)) { settle.delete(el); continue; }
+      if (!el.matches?.(SEL) || !el.hidden || oldValue !== null || el.classList.contains("closing")) continue;
+      el.hidden = false;
+      el.classList.add("closing");
+      setTimeout(() => {
+        el.classList.remove("closing");
+        settle.add(el);
+        el.hidden = true;
+      }, 230);
+    }
+  }).observe(document.body, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true, subtree: true });
 }
 
 // Puzzle numbers (1-based) already solved in one pack.

@@ -1,6 +1,6 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose } from "./bridge.js";
 import { celebrate, openWipe, solveFacts } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -361,11 +361,13 @@ $("undoBtn").onclick = () => {
   s.hint = null;
   render();
 };
-$("moreBtn").onclick = moreMenu({
+const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, highlights",
   onSettings: () => { s.settingsOpen = true; render(); },
   onRestart: () => { clearSaved("sudoku", packName); load(idx); },
 });
+$("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
+$("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
@@ -417,5 +419,6 @@ setInterval(() => {
 }, 500);
 addEventListener("pagehide", persist);
 
+smoothClose();
 openWipe();
 load(idx, packName, true);
