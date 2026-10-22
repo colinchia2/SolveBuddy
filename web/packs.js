@@ -1,6 +1,6 @@
 // Packs tab: every pack on this phone with how far you are, and what's coming. Tap a pack to play its next puzzle.
-import { GAMES, loadPack, openGame, solvedIn } from "./bridge.js";
-import { $, LOOK, gameIcon, tabs } from "./screens.js";
+import { GAMES, inApp, loadPack, openGame, post, solvedIn } from "./bridge.js";
+import { $, LOOK, gameIcon, headerLogo, tabs } from "./screens.js";
 
 const packs = [];
 for (const [g, game] of Object.entries(GAMES))
@@ -35,6 +35,8 @@ function render() {
     `<div class="card-glass"><span class="line">${gameIcon(look, 44, 24)}<span class="grow"><b>${name}</b><small>${note}</small></span><span class="soon">Soon</span></span></div>`).join("");
 }
 
+// The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
+headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("packs"));
 globalThis.sbRefresh = render;
 render();

@@ -319,4 +319,29 @@ if (existsSync(sbExpertFile)) {
   check("SB wrong star: every hint says why, and every play-through is honest", whyOk);
 }
 
+// Buddy standard §1–2 (10/21): the header face sits at the same spot on Home, Packs and Stats, centre (34, safe top + 34),
+// 40 wide in a 44 tap area; one 650ms linear "hello" for tap and idle; idle waits 10 quiet seconds and skips the rest.
+{
+  const css = readFileSync("web/screens.css", "utf8");
+  const px = (re: RegExp) => { const m = css.match(re); return m ? m.slice(1).map(Number) : [NaN]; };
+  const [padTop, padLeft] = px(/\.page \{[^}]*padding: (\d+)px (\d+)px/);
+  const [mTop, mLeft] = px(/\.brandbar \{[^}]*margin: (-?\d+)px 0 0 (-?\d+)px/);
+  const [btn, btnPad] = px(/\.logo-btn \{ width: (\d+)px;[^}]*padding: (\d+)px/);
+  const [face] = px(/\.logo \{ width: (\d+)px; height: \1px/);
+  check("header face: 44 tap area at (12, 12), 40 face centred at (34, safe top + 34)",
+    btn === 44 && face === 40 && padLeft + mLeft === 12 && padTop + mTop === 12 && padLeft + mLeft + btnPad + face / 2 === 34 && btnPad * 2 + face === btn);
+  check("header face: one hello, 650ms linear (wiggle, wink, smile), the old hop gone",
+    /\.logo\.hello \{ animation: sbHello 0\.65s linear; \}/.test(css) && /20% \{ transform: rotate\(-14deg\) scale\(1\.12\); \}/.test(css)
+    && /\.logo\.hello \.eye-r \{ animation: sbWink 0\.65s linear/.test(css) && /translateY\(7\.5px\) scaleY\(1\.25\)/.test(css) && !/sbHop|pick-scrim/.test(css));
+  const pagesOk = ["home", "packs", "stats"].every((p) => /<header class="brandbar">\s*<button class="logo-btn" id="logoBtn"/.test(readFileSync(`web/${p}.html`, "utf8"))
+    && readFileSync(`web/${p}.js`, "utf8").includes('headerLogo($("logoBtn")'));
+  check("header face on Home, Packs and Stats; Packs and Stats taps go to Library",
+    pagesOk && ["packs", "stats"].every((p) => readFileSync(`web/${p}.js`, "utf8").includes('post({ type: "tab", name: "Library" })')));
+  const { IDLE_MS, idleWinkAllowed } = await import("../web/screens.js");
+  const ok = { focused: true, hidden: false, reduced: false, splash: false, shown: true, popup: false };
+  check("idle wink: after 10s; skipped in the background, with Reduce Motion, during the opening, with the face hidden or a pop-up up",
+    IDLE_MS === 10000 && idleWinkAllowed(ok) && [["focused", false], ["hidden", true], ["reduced", true], ["splash", true], ["shown", false], ["popup", true]]
+      .every(([k, v]) => !idleWinkAllowed({ ...ok, [k as string]: v })));
+}
+
 if (failed) process.exit(1);

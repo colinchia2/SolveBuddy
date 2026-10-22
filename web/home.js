@@ -1,8 +1,8 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a pack (skipped when the game
 // has one) → the pack's levels with numbered puzzles → tap one: new ones start, solved ones offer View or Restart,
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
-import { GAMES, buzz, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
-import { $, FACE, FLAME, LOOK, esc, fmt, gameIcon, streaks, tabs } from "./screens.js";
+import { GAMES, clearSaved, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { $, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
 for (const [g, game] of Object.entries(GAMES))
@@ -193,15 +193,8 @@ $("rules").onclick = (e) => {
   if (e.target === $("rules") || e.target.closest("[data-act='close']")) $("rules").hidden = true;
 };
 
-$("logoBtn").innerHTML = `${FACE}<span class="wordmark">SolveBuddy</span>`;
-// Tap the face: it winks and hops (like TasteBuddy's logo), with a small buzz.
-$("logoBtn").onclick = () => {
-  const logo = $("logoBtn").querySelector(".logo");
-  logo.classList.remove("wink");
-  void logo.getBoundingClientRect();
-  logo.classList.add("wink");
-  buzz(12);
-};
+// Tap the face: it says hello (wiggle and wink, like TasteBuddy's logo) with a light tap; it also winks when idle.
+headerLogo($("logoBtn"));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("home"));
 smoothClose();
 globalThis.sbRefresh = render; // the app calls this when you come back from a game (you stay on the pack you were in)
@@ -210,7 +203,7 @@ render();
 // The app's opening animation lands its logo exactly on this one, so tell it where it is. Ours shows once it lands
 // (the app calls sbLanded), or after a few seconds whatever happens.
 globalThis.sbLanded = () => document.documentElement.classList.remove("splash");
-setTimeout(globalThis.sbLanded, 4000);
+setTimeout(globalThis.sbLanded, 6000); // the app reveals anyway after 5s
 if (inApp) {
   const r = $("logoBtn").querySelector(".logo").getBoundingClientRect();
   post({ type: "ready", logo: { x: r.left, y: r.top, size: r.width } });

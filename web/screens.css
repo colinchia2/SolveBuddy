@@ -7,19 +7,24 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 .lead { margin: 0; color: var(--body); }
 .muted { color: var(--muted); }
 
-/* Home header: the face top left (tap = wink, like TasteBuddy's logo), the streak top right. */
-.brandbar { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
-.logo-btn { border: 0; background: none; padding: 0; margin: 0; display: flex; align-items: center; gap: 10px; color: var(--ink); }
+/* Header on Home, Packs and Stats (Buddy standard §1, 10/21): the 44 tap area's top-left is 12 from the left and 12
+   below the safe top, so the 40 face's centre is (34, safe top + 34) on every tab; the name or title sits 12 to the
+   right of the face (10 past the tap area), centred on it. The negative margins pull it out of .page's 24/16 padding. */
+.brandbar { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -12px 0 0 -4px; }
+.logo-btn { width: 44px; height: 44px; flex: none; border: 0; background: none; padding: 2px; margin: 0; display: block; color: var(--ink); }
 .logo { width: 40px; height: 40px; display: block; overflow: visible; }
-.wordmark { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
-.streak { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 10px; }
-@keyframes sbHop { 0% { transform: none; } 30% { transform: translateY(-4px) rotate(-10deg) scale(1.12); } 60% { transform: rotate(6deg) scale(1.04); } 100% { transform: none; } }
+.brandbar .wordmark { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
+.streak { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 10px; }
+/* The "hello" (Buddy standard §2, same as TasteBuddy's WigglyLogo): 650ms, linear between evenly spaced keyframes.
+   The face wiggles, the right eye winks, the smile drops 7.5% of the box (7.5 of the 100 viewBox) and stretches 125%. */
+@keyframes sbHello { 0% { transform: none; } 20% { transform: rotate(-14deg) scale(1.12); } 40% { transform: rotate(12deg) scale(1.12); }
+  60% { transform: rotate(-8deg) scale(1.06); } 80% { transform: rotate(4deg) scale(1.03); } 100% { transform: none; } }
 @keyframes sbWink { 0%, 100% { transform: none; } 25%, 60% { transform: scaleY(0.12); } }
-@keyframes sbGrin { 0%, 100% { transform: none; } 30%, 60% { transform: scale(1.08, 1.15); } }
-.logo.wink { animation: sbHop 0.6s cubic-bezier(0.3, 1.4, 0.5, 1); }
+@keyframes sbSmile { 0%, 100% { transform: none; } 40% { transform: translateY(7.5px) scaleY(1.25); } }
+.logo.hello { animation: sbHello 0.65s linear; }
 .logo .eye-r, .logo .smile { transform-box: fill-box; transform-origin: center; }
-.logo.wink .eye-r { animation: sbWink 0.6s ease; }
-.logo.wink .smile { animation: sbGrin 0.6s ease; }
+.logo.hello .eye-r { animation: sbWink 0.65s linear; }
+.logo.hello .smile { animation: sbSmile 0.65s linear; }
 
 /* Game tiles. */
 .ask { margin: 0; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.01em; }
@@ -34,32 +39,10 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 .tile .count { font-size: 13px; color: var(--muted); }
 .gico { display: grid; place-items: center; flex: none; }
 
-/* Difficulty picker (pops out of the tile). */
-@keyframes sbFade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes sbPopOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: scale(0.9); } }
-.pick-scrim.closing { animation: sbFadeOut 0.2s ease both; }
-.pick-scrim.closing .pick { animation: sbPopOut 0.2s cubic-bezier(0.32,0,0.67,0) both; }
-@keyframes sbPop { 0% { opacity: 0; transform: scale(0.35); } 60% { opacity: 1; transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
-.pick-scrim { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 20px; background: rgba(42,33,27,0.22);
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); animation: sbFade 0.25s ease both; }
-.pick { width: 100%; padding: 20px; border-radius: 20px; display: flex; flex-direction: column; gap: 16px;
-  background: rgba(255,255,255,0.62); -webkit-backdrop-filter: blur(28px) saturate(170%); backdrop-filter: blur(28px) saturate(170%);
-  border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 24px 60px rgba(30,30,30,0.22), inset 0 1px 0 #fff; animation: sbPop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
-.pick-top { display: flex; justify-content: space-between; align-items: flex-start; }
-.pick h3 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.01em; }
-.pick p { margin: 4px 0 0; color: var(--body); font-size: 14px; }
 .label { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-.levels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.level { display: flex; align-items: center; gap: 10px; padding: 12px; min-height: 60px; border-radius: 12px; text-align: left;
-  background: rgba(255,255,255,0.4); border: 1px solid rgba(255,255,255,0.9); }
-.level[aria-pressed="true"] { background: rgba(255,255,255,0.92); border: 2px solid var(--brand); padding: 11px; }
-.level b { display: block; font-size: 15px; }
-.level small { display: block; font-size: 12px; color: var(--muted); }
 .bars { display: flex; gap: 3px; align-items: flex-end; }
 .bars i { width: 5px; border-radius: 2px; background: rgba(42,33,27,0.18); }
 .bars i.on { background: var(--brand); }
-.play { min-height: 50px; border-radius: 12px; border: 0; background: var(--brand); color: #fff; font: 700 15px Inter, sans-serif;
-  display: flex; align-items: center; justify-content: center; gap: 8px; }
 
 /* Cards and lists (Packs, Stats). */
 .card-glass { padding: 14px; border-radius: 14px; display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.4);
@@ -106,7 +89,7 @@ html.app .tabs { display: none; }
    you scroll down, like TasteBuddy's (Colin, 10/21). */
 html.app .phone:has(> .page) { height: auto; min-height: 100vh; overflow: visible; overflow-x: clip; }
 html.app .page { height: auto; min-height: calc(100vh - var(--safetop, 0px)); overflow: visible; }
-html.app .pick-scrim, html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on screen while the page scrolls */
+html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on screen while the page scrolls */
 
 /* Game page (approved mockup "Game page", Colin 10/21): pick a pack → the pack's levels with numbered puzzles. */
 @keyframes sbSlideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }

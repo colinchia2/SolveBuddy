@@ -1,7 +1,7 @@
 // Stats tab: streaks, puzzles per day this month, each game, and how many were solved without a hint.
 // Everything comes from the solve log on this phone (bridge.js); nothing is made up.
-import { GAMES, solves } from "./bridge.js";
-import { $, FLAME, LOOK, dayKey, fmt, gameIcon, streaks, tabs } from "./screens.js";
+import { GAMES, inApp, post, solves } from "./bridge.js";
+import { $, FLAME, LOOK, dayKey, fmt, gameIcon, headerLogo, streaks, tabs } from "./screens.js";
 
 const SHADES = ["rgba(42,33,27,0.07)", "#D6E6FD", "#A9C9F8", "#6FA4EE", "#2F6FD6"];
 
@@ -47,6 +47,8 @@ function render() {
     <span class="grow"><b>${log.length ? `${pct}% solved without hints` : "No puzzles solved yet"}</b><small>${log.length ? `${clean} of ${log.length} puzzles` : "Finish one and your stats start here."}</small></span>`;
 }
 
+// The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
+headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("stats"));
 globalThis.sbRefresh = render;
 render();

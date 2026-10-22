@@ -1,5 +1,5 @@
 // Shared by Home, Packs and Stats: the face, game colours, the browser-only tab bar, and streak maths.
-import { solves } from "./bridge.js";
+import { haptic, solves } from "./bridge.js";
 
 export const $ = (id) => document.getElementById(id);
 export const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -12,6 +12,40 @@ export const FACE = `<svg class="logo" viewBox="0 0 100 100" aria-hidden="true">
 <g class="eye-r"><path d="M67 22 A8 8 0 0 1 72 36.2 L71 41 H63 L62 36.2 A8 8 0 0 1 67 22 Z" fill="#FFFFFF" stroke="#5D4E37" stroke-width="3" stroke-linejoin="round"/>
 <path d="M63.5 45 H70.5 M64.5 49 H69.5" stroke="#5D4E37" stroke-width="3" stroke-linecap="round"/></g>
 <path class="smile" d="M25 57 Q50 85 75 57" stroke="#5D4E37" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
+
+// The header face (Buddy standard §2, 10/21). One "hello" (CSS .hello: wiggle, wink, smile) for a tap and the idle
+// wink. Tap = hello + a light haptic, then onTap (Packs and Stats go to Library). Idle = after 10 quiet seconds (no
+// touch in this page), hello again with no haptic, every further 10 quiet seconds. Never while the face is hidden (a
+// game view on Home), a pop-up is up, the opening animation is playing (html.splash), the tab is in the background
+// (the app calls sbFocus), or Reduce Motion is on.
+export const IDLE_MS = 10000;
+export function headerLogo(btn, onTap) {
+  btn.innerHTML = FACE;
+  const face = btn.querySelector(".logo");
+  const hello = () => {
+    face.classList.remove("hello");
+    void face.getBoundingClientRect(); // restart it if it's mid-play
+    face.classList.add("hello");
+  };
+  btn.onclick = () => {
+    hello();
+    haptic("tap");
+    onTap?.();
+  };
+  let quietSince = Date.now(), focused = true;
+  const touched = () => (quietSince = Date.now());
+  for (const ev of ["pointerdown", "touchstart", "keydown", "wheel", "scroll"]) addEventListener(ev, touched, { capture: true, passive: true });
+  globalThis.sbFocus = (on) => { focused = on; touched(); };
+  const calm = matchMedia("(prefers-reduced-motion: reduce)");
+  setInterval(() => {
+    if (Date.now() - quietSince < IDLE_MS) return;
+    touched();
+    if (idleWinkAllowed({ focused, hidden: document.hidden, reduced: calm.matches, splash: document.documentElement.classList.contains("splash"),
+      shown: !!btn.offsetParent, popup: !!document.querySelector(".scrim:not([hidden])") })) hello();
+  }, 500);
+}
+// Pure, so the checks can test it.
+export const idleWinkAllowed = (s) => s.focused && !s.hidden && !s.reduced && !s.splash && s.shown && !s.popup;
 
 // Each game keeps its own tile colour (Star Battle coral, Sudoku teal); the app around them is blue.
 export const LOOK = {

@@ -105,7 +105,7 @@ export function moreMenu({ settingsNote, onSettings, onRestart }) {
 // The "TasteBuddy slide" on the way out (Colin, 10/21): pages just set `hidden` on a pop-up; this catches that, plays
 // the closing animation (CSS .closing), then really hides it.
 export function smoothClose() {
-  const SEL = ".scrim, .pick-scrim, .hint";
+  const SEL = ".scrim, .hint";
   const settle = new WeakSet();
   new MutationObserver((list) => {
     for (const { target: el, oldValue } of list) {
