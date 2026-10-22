@@ -4,7 +4,7 @@
 // "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
-import { clearSaved, finalBoard, fitHint, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -352,7 +352,6 @@ function render() {
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }
-  fitHint($("hint"), $("board"));
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;

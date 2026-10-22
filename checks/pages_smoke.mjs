@@ -55,6 +55,34 @@ const wrongX = await page.evaluate(async () => {
 });
 check(`a wrong × isn't flagged on sight (hint: ${wrongX.chip || "—"} / ${wrongX.nudge})`, wrongX.chip !== "Check this");
 
+// Every game sits centred between the info row and the bottom bar, as on the phone (Colin, 10/22: "always centered,
+// never too high"): app layout with the notch space, on a tall and a short phone.
+for (const h of [844, 750]) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: h } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    const vars = () => { const d = document.documentElement; if (d) { d.style.setProperty("--tabbar", "0px"); d.style.setProperty("--safetop", "59px"); } };
+    vars(); document.addEventListener("readystatechange", vars);
+  });
+  const p = await ctx.newPage();
+  for (const [g, q] of [["starbattle", "?pack=easy&p=1"], ["starbattle", "?pack=triple&p=1"], ["sudoku", "?pack=easy&p=1"],
+                        ["watersort", "?pack=easy&p=1"], ["watersort", "?pack=hard&p=1"], ["blocks", ""]]) {
+    await p.goto(`${BASE}${g}.html${q}`);
+    await p.waitForTimeout(1500);
+    const off = await p.evaluate((g) => {
+      const r = (q) => document.querySelector(q)?.getBoundingClientRect();
+      const span = (els) => ({ top: Math.min(...els.map((e) => e.top)), bottom: Math.max(...els.map((e) => e.bottom)) });
+      const group = g === "sudoku" ? span([r("#board"), r(".pad") ?? r("#board")])
+        : g === "watersort" ? span([...document.querySelectorAll(".tube")].map((e) => e.getBoundingClientRect()))
+        : g === "blocks" ? r(".stage") : r("#board");
+      const top = r(".info").bottom, bottom = r(".dock")?.top ?? r(".screen").bottom - 30;
+      return Math.round((group.top + group.bottom) / 2 - (top + bottom) / 2);
+    }, g);
+    check(`${g}${q} centred on a ${h}px-tall phone (${off}px from the middle)`, Math.abs(off) <= 40);
+  }
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

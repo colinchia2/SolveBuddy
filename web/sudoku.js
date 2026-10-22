@@ -1,7 +1,7 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 // Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -318,7 +318,6 @@ function render() {
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }
-  fitHint($("hint"), $("board"));
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;

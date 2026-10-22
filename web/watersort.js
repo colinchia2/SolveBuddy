@@ -175,6 +175,10 @@ function startPour(from, to, done) {
     board.appendChild(stream);
   }
   const liq = src.querySelector(".liquid"), rest = (s.tubes[from].length - k) * UNIT;
+  // The liquid box clips what's outside it, and its top used to follow the shrinking colour while that colour slid to the
+  // mouth, so the poured run looked squeezed from both ends (Colin, 10/22). Full height for the pour: the run stays
+  // touching the mouth and drains only from its inner end. render() rebuilds the tube after.
+  if (!quiet) liq.style.height = `${CAP * UNIT}px`;
   const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, liq, rest, t: 0, speed: 1, last: null,
     D: quiet ? 260 : POUR_MS, tx: mx - Math.sin(rad) * dir * (sr.height / 2) - cx, ty: my + Math.cos(rad) * (sr.height / 2) - cy,
     deg: dir * TILT, base: liquid.getBoundingClientRect().bottom - br.top, my: my - br.top };

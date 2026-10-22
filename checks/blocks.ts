@@ -125,5 +125,26 @@ const withPiece = (t: number, extra: Partial<State> = {}): State =>
   check("no buttons under the well; Save sits last (bottom right)", !html.includes('class="dock"') && html.indexOf('id="best"') < html.indexOf('id="saveBtn"'));
 }
 
+// Scoring is the modern guideline (Colin, 10/22: "make sure the points are right"): 100/300/500/800 × level for 1–4 rows,
+// +1 a row for a soft drop and +2 a row for a hard drop, so dropping faster scores more. No T-spins or combos.
+{
+  const { LINE_POINTS } = await import("../engine/blocks/game.ts");
+  check("line points 100 / 300 / 500 / 800", JSON.stringify(LINE_POINTS) === "[0,100,300,500,800]");
+  const a = withPiece(1), b = withPiece(1);
+  const soft = (() => { let n = 0; while (softDrop(a)) n++; return a.score; })();
+  hardDrop(b, seeded());
+  check(`a hard drop scores twice a soft drop over the same rows (${b.score} vs ${soft})`, b.score === soft * 2 && soft > 0);
+  const c = withPiece(0, { level: 3 });
+  for (let x = 0; x < W; x++) c.board[H - 1][x] = x === 3 || x === 4 || x === 5 || x === 6 ? 0 : 1; // a 4-wide gap
+  c.piece = { t: 0, r: 0, x: 3, y: 0 };
+  const res = hardDrop(c, seeded());
+  check("points scale with the level (1 row at level 3 = 300)", res.points === 300);
+  const { readFileSync } = await import("node:fs");
+  const js = readFileSync("web/blocks.js", "utf8"), html = readFileSync("web/blocks.html", "utf8");
+  check("swipe up saves the piece; a quick flick down drops it", /doHold\(\); \/\/ swipe up = Save/.test(js) && /doDrop\(\); \/\/ quick flick down/.test(js)
+    && /Swipe up<\/strong> \(or tap Save\)/.test(html));
+  check("scores shrink to fit their card", js.includes("function fit(") && /fit\(\$\("score"\)/.test(js));
+}
+
 console.log(failed ? `${failed} FAILED` : "all ok");
 process.exitCode = failed ? 1 : 0;

@@ -42,14 +42,25 @@ $("next").innerHTML = Array.from({ length: 8 }, () => `<div class="b"></div>`).j
 const nextCells = [...$("next").children];
 $("hold").innerHTML = Array.from({ length: 8 }, () => `<div class="b"></div>`).join("");
 const holdCells = [...$("hold").children];
+// A number that always fits its card (Colin, 10/22: what happens past 99,999?): the text shrinks until it fits.
+function fit(el, text) {
+  if (el.textContent === text && el.dataset.fit) return;
+  el.textContent = text;
+  el.dataset.fit = "1";
+  for (let px = 18; px >= 10; px--) {
+    el.style.fontSize = `${px}px`;
+    if (el.scrollWidth <= el.clientWidth) break;
+  }
+}
 // A piece drawn small in a 4×2 box (Next and Save).
 function mini(els, t) {
   const cells = t == null ? [] : cellsOf({ t, r: 0, x: t === 1 ? 1 : 0, y: t === 0 ? -1 : 0 });
   const on = new Set(cells.map(([x, y]) => y * 4 + x));
   els.forEach((el, i) => { el.style.cssText = on.has(i) ? blockStyle(t + 1, true) : ""; });
   // Centre the piece in its box: 3-wide pieces sit half a block in (Colin, 10/22: the saved piece looked off-centre).
-  const xs = cells.map(([x]) => x), mid = xs.length ? (Math.min(...xs) + Math.max(...xs) + 1) / 2 : 2;
-  els[0].parentElement.style.transform = `translateX(${(2 - mid) * 15}px)`;
+  const xs = cells.map(([x]) => x), ys = cells.map(([, y]) => y);
+  const midX = xs.length ? (Math.min(...xs) + Math.max(...xs) + 1) / 2 : 2, midY = ys.length ? (Math.min(...ys) + Math.max(...ys) + 1) / 2 : 1;
+  els[0].parentElement.style.transform = `translate(${(2 - midX) * 15}px, ${(1 - midY) * 15}px)`; // the I piece is one row: half a row down
 }
 
 // The clock: stopped while paused, counting down, reading the rules or over.
@@ -123,9 +134,9 @@ function render() {
   $("saveBtn").classList.toggle("used", !s.canHold);
   $("saveBtn").classList.toggle("empty", s.hold == null);
   $("saveBtn").setAttribute("aria-label", s.hold == null ? "Save this piece for later" : "Swap with the saved piece");
-  $("score").textContent = s.score.toLocaleString();
-  $("lines").textContent = s.lines;
-  $("best").textContent = Math.max(blockScores().best ?? 0, s.score).toLocaleString();
+  fit($("score"), s.score.toLocaleString());
+  fit($("lines"), s.lines.toLocaleString());
+  fit($("best"), Math.max(blockScores().best ?? 0, s.score).toLocaleString());
   $("sub").textContent = `Level ${s.level}`;
 }
 
@@ -333,7 +344,8 @@ addEventListener("pagehide", persist);
 //   hold still (300ms+) = drop faster until you let go
 //   swipe sideways = one column per 24px
 //   slow drag down = soft drop, a row per 24px
-//   quick swipe up, or quick flick down = drop all the way
+//   swipe up = Save the piece (Colin, 10/22; same rule as the Save card: once per piece)
+//   quick flick down = drop all the way
 // The direction is decided once per touch (after 10px), so a sideways swipe never drops the piece.
 // Input must never get stuck (Colin: after ~10 turns it stopped answering): a new touch always replaces an old one
 // that never ended, and every way a touch can end (lift, cancel, lost capture, leaving the app) clears it.
@@ -395,7 +407,7 @@ function release(e) {
   const dy = e.clientY - d.y0, ms = performance.now() - d.at, v = speed(d);
   if (d.far < TAP_PX && ms < HOLD_MS + 50) return doTurn();
   if (d.axis !== "y") return;
-  if (dy <= -30 && (v <= -FLICK || dy <= -60)) doDrop(); // swipe up
+  if (dy <= -30 && (v <= -FLICK || dy <= -60)) doHold(); // swipe up = Save
   else if (dy >= 30 && v >= FLICK) doDrop(); // quick flick down
 }
 // On the window, so a finger lifted anywhere (even if capture was lost) still ends the touch.

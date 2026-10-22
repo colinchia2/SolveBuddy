@@ -10,8 +10,8 @@
 <style>
   /* Water Sort only (Colin, 10/22): glass tubes of stacked colour, in one or two rows. */
   .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 0 4px; }
-  /* Two rows of tubes sit near the top, so the hint card below never covers them. */
-  .stage.two { justify-content: flex-start; padding-top: 20px; }
+  /* Tubes sit centred, a little above the middle (Colin, 10/22); the hint card floats over the bottom. */
+  .stage { padding-bottom: 40px; }
   .tubes .missing { width: 330px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 6px; text-align: center; color: var(--body); }
   .tubes .missing b { font-size: 17px; color: var(--ink); }

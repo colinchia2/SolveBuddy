@@ -12,7 +12,7 @@
      No buttons under the well and no text to select: the controls are in the ? sheet (Colin, 10/22). */
   * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
   .screen { height: 844px; touch-action: none; } /* the whole play area takes swipes, never scrolls */
-  .stage { display: flex; gap: 10px; justify-content: center; margin: auto 0; } /* centred in the space the old buttons left */
+  .stage { display: flex; gap: 10px; justify-content: center; margin: auto 0; } /* centred between the info row and the bottom (Colin, 10/22) */
   .well { --c: 27px; position: relative; display: grid; grid-template-columns: repeat(10, var(--c)); grid-auto-rows: var(--c);
     border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--board);
     box-shadow: 0 12px 32px rgba(30,30,30,0.14);
@@ -54,7 +54,7 @@
   .side .panel.save { margin-top: auto; } /* bottom right, beside the bottom of the well (Colin, 10/22) */
   .panel { border-radius: 14px; padding: 8px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
   .panel small { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-  .panel b { font: 700 18px Inter, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .panel b { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; font: 700 18px Inter, sans-serif; font-variant-numeric: tabular-nums; color: var(--ink); }
   .panel b.pop { animation: sbBump .35s ease; }
   .next { display: grid; grid-template-columns: repeat(4, 14px); grid-auto-rows: 14px; gap: 1px; padding: 4px 0 2px; }
   .next .b { width: 14px; height: 14px; box-shadow: none; }
@@ -114,8 +114,8 @@
       <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg></span><span><strong>Tap</strong> anywhere to turn the piece.</span></div>
       <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5 M16 7l5 5-5 5"/></svg></span><span><strong>Swipe</strong> left or right to move it.</span></div>
       <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v13 M7 12l5 5 5-5"/></svg></span><span><strong>Hold</strong> your finger down, or drag down, to drop faster.</span></div>
-      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7 M7 12l5-5 5 5 M5 4h14"/></svg></span><span>Quick <strong>swipe up</strong> (or flick down) to drop it all the way.</span></div>
-      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6A45B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10H7z M4 4l3 3 M20 20l-3-3"/></svg></span><span>Tap <strong>Save</strong> to keep a piece for later and swap it back in. Once per piece, until it lands.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V7 M7 12l5-5 5 5 M5 4h14"/></svg></span><span>Quick <strong>flick down</strong> to drop it all the way. Dropping faster scores more.</span></div>
+      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6A45B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10H7z M4 4l3 3 M20 20l-3-3"/></svg></span><span><strong>Swipe up</strong> (or tap Save) to keep a piece for later and swap it back in. Once per piece, until it lands.</span></div>
       <button class="dark" data-close>Got it</button>
     </section>
   </div>
