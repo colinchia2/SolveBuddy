@@ -15,6 +15,7 @@ const PACKS = {
   tricks: await loadPack("sudoku9-tricks.json"), // one test per harder trick
   killer: await loadPack("sudoku9-killer-easy.json"), // cages that add up (Colin, 10/22)
   thermo: await loadPack("sudoku9-thermo-easy.json"), // numbers climb from the bulb (Colin, 10/22)
+  "killer-expert": await loadPack("sudoku9-killer-expert.json"), // the 45 rule (Colin, 10/22)
 };
 const VARIANT_NAMES = { killer: "Killer", thermo: "Thermo" };
 const query = new URLSearchParams(location.search);

@@ -21,7 +21,7 @@ const TILES = [
   { soon: "Five Letters", bg: "#DCEAFE", ink: "#1F57B5", path: "M2 8h5.5v8H2z M9.25 8h5.5v8h-5.5z M16.5 8H22v8h-5.5z" },
   { soon: "Groups", bg: "#DDEFD9", ink: "#2F6B4A", path: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z" },
 ];
-const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4 };
+const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4 };
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
   help: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,

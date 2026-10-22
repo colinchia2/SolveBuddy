@@ -85,27 +85,31 @@ for (const h of [844, 750]) {
 
 // Killer and Thermo Sudoku (10/22): the cages / thermometers draw, the first hint is a variant one, and Killer #1
 // and Thermo #1 are solved by Hint presses alone, to the Solved! card.
-for (const v of ["killer", "thermo"]) {
+// Expert (10/22): Killer Expert #1 too, where the 45 rule shows up.
+for (const v of ["killer", "thermo", "killer-expert"]) {
   await page.goto(`${BASE}sudoku.html?pack=${v}&p=1`);
   await page.waitForTimeout(1500);
   const r = await page.evaluate(async (v) => {
     const $ = (id) => document.getElementById(id);
     const wait = (ms) => new Promise((res) => setTimeout(res, ms));
     localStorage.removeItem("solvebuddy.saved");
-    const drawn = document.querySelectorAll(v === "killer" ? "svg.extra .sum" : "svg.extra circle").length;
+    const drawn = document.querySelectorAll(v.startsWith("killer") ? "svg.extra .sum" : "svg.extra circle").length;
     $("hintBtn").click(); await wait(80);
     $("hintNext").click(); await wait(30);
     const chip = $("hintChip").textContent;
     $("hintClose").click();
-    for (let i = 0; i < 300 && !$("won"); i++) {
+    const chips = new Set();
+    for (let i = 0; i < 400 && !$("won"); i++) {
       if ($("hint").hidden) { $("hintBtn").click(); await wait(20); }
+      $("hintNext").click(); chips.add($("hintChip").textContent);
       for (let g = 0; g < 10 && !$("hint").hidden; g++) $("hintNext").click();
     }
     await wait(2000);
-    return { drawn, chip, won: !!$("won"), sub: $("sub").textContent };
+    return { drawn, chip, won: !!$("won"), sub: $("sub").textContent, rule45: chips.has("45 rule") };
   }, v);
-  check(`${v} #1: drawn (${r.drawn}), first hint "${r.chip}", solved by hints (${r.sub})`,
-    r.drawn > 0 && ["Last cell in cage", "Cage sum", "Cage digits", "Thermo order"].includes(r.chip) && r.won);
+  check(`${v} #1: drawn (${r.drawn}), first hint "${r.chip}", solved by hints (${r.sub})${v === "killer-expert" ? `, 45 rule shown: ${r.rule45}` : ""}`,
+    r.drawn > 0 && ["Last cell in cage", "Cage sum", "Cage digits", "Thermo order", "45 rule", "Cage squeeze", "Thermo squeeze"].includes(r.chip) && r.won
+    && (v !== "killer-expert" || r.rule45));
 }
 
 check("no page errors anywhere", errors.length === 0);

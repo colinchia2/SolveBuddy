@@ -5,7 +5,8 @@ import { type Grid, fits as classicFits } from "./fullGrid.ts";
 import { type Rules, variantFits } from "./variants.ts";
 
 // rules: a Killer or Thermo puzzle's extra rules (10/22); none = classic.
-export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = [], rules?: Rules): number {
+// deadline (ms timestamp, optional): give up and report `limit` (treated as "not one answer") — puzzle makers only.
+export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = [], rules?: Rules, deadline = Infinity): number {
   const grid = puzzle.map((row) => [...row]);
   const fits = rules ? (g: Grid, r: number, c: number, n: number) => classicFits(g, r, c, n) && variantFits(g, rules, r, c, n) : classicFits;
   let count = 0;
@@ -23,6 +24,7 @@ export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = [], rule
   }
 
   function search(): void {
+    if (Date.now() > deadline) { count = limit; return; }
     // Pick the empty cell with the fewest possible numbers. Same answer, much faster.
     let best: { row: number; col: number; options: number[] } | null = null;
     for (let row = 0; row < 9; row++) {

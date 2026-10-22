@@ -7,13 +7,15 @@ import { type RuledOut, cellName, list } from "./techniques.ts";
 
 type Cell = [number, number];
 export type Cage = { cells: Cell[]; sum: number };
-export type Rules = { variant?: "killer" | "thermo"; cages?: Cage[]; thermos?: Cell[][] };
+// advanced: also use the Expert tricks (45 rule, cage claims, squeezes). Easy puzzles leave it off, so their hints
+// stay exactly as they were.
+export type Rules = { variant?: "killer" | "thermo"; cages?: Cage[]; thermos?: Cell[][]; advanced?: boolean };
 const NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const same = (a: Cell, b: Cell) => a[0] === b[0] && a[1] === b[1];
 const ord = (n: number) => ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth"][n];
 
-export const rulesOf = (p: { variant?: string; cages?: Cage[]; thermos?: Cell[][] }): Rules | undefined =>
-  p.variant ? { variant: p.variant as Rules["variant"], cages: p.cages, thermos: p.thermos } : undefined;
+export const rulesOf = (p: { variant?: string; cages?: Cage[]; thermos?: Cell[][]; advanced?: boolean }): Rules | undefined =>
+  p.variant ? { variant: p.variant as Rules["variant"], cages: p.cages, thermos: p.thermos, ...(p.advanced ? { advanced: true } : {}) } : undefined;
 
 // Can n go at (r, c) without breaking a cage or thermo, given the numbers already placed?
 export function variantFits(grid: Grid, rules: Rules | undefined, r: number, c: number, n: number): boolean {
@@ -171,14 +173,170 @@ function thermoStep(grid: Grid, line: Cell[], opts: (p: Cell) => number[], wantP
     why: `Numbers climb from the bulb at ${bulb}. ${range(first.cell)}. Its row, column and box allow ${list(opts(first.cell), "or")}, so it can only be ${list(first.marks, "or")}.${pencil.length > 1 ? " The same climb narrows the other cells on it too." : ""}` };
 }
 
-// The first variant trick that places a number right now.
+// ---- Expert tricks (rules.advanced) ----
+
+// Houses for the 45 rule: every row, column and box adds up to 45; 2 or 3 rows (or columns) side by side add up
+// to 90 or 135.
+type House = { label: string; k: number; cells: Cell[] };
+const key = ([r, c]: Cell) => `${r},${c}`;
+const rowCells = (r: number): Cell[] => NUMS.map((n) => [r, n - 1] as Cell);
+const colCells = (c: number): Cell[] => NUMS.map((n) => [n - 1, c] as Cell);
+const boxCells = (b: number): Cell[] => NUMS.map((n) => [Math.floor(b / 3) * 3 + Math.floor((n - 1) / 3), (b % 3) * 3 + ((n - 1) % 3)] as Cell);
+const SINGLE: House[] = [
+  ...[...Array(9).keys()].map((i) => ({ label: `row ${i + 1}`, k: 1, cells: rowCells(i) })),
+  ...[...Array(9).keys()].map((i) => ({ label: `column ${i + 1}`, k: 1, cells: colCells(i) })),
+  ...[...Array(9).keys()].map((i) => ({ label: `box ${i + 1}`, k: 1, cells: boxCells(i) })),
+];
+const HOUSES: House[] = [...SINGLE];
+for (const k of [2, 3]) {
+  for (let i = 0; i + k <= 9; i++) {
+    const idx = [...Array(k).keys()].map((j) => i + j);
+    HOUSES.push({ label: `rows ${i + 1}–${i + k}`, k, cells: idx.flatMap(rowCells) });
+    HOUSES.push({ label: `columns ${i + 1}–${i + k}`, k, cells: idx.flatMap(colCells) });
+  }
+}
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+const addsUp = (h: House) => `${cap(h.label)} add${h.k === 1 ? "s" : ""} up to ${45 * h.k}${h.k > 1 ? ` (45 each)` : ""}`;
+const sees = (a: Cell, b: Cell) => a[0] === b[0] || a[1] === b[1] || (Math.floor(a[0] / 3) === Math.floor(b[0] / 3) && Math.floor(a[1] / 3) === Math.floor(b[1] / 3));
+const named = (cells: Cell[], grid: Grid) => list(cells.map(([r, c]) => `${cellName(r, c)} is ${grid[r][c]}`));
+
+// What two cells that add up to x can still be (different numbers if they see each other or share a cage).
+function pairCands(a: Cell, b: Cell, x: number, opts: (p: Cell) => number[], cages: Cage[]) {
+  const diff = sees(a, b) || cages.some((cg) => cg.cells.some((p) => same(p, a)) && cg.cells.some((p) => same(p, b)));
+  const oa = opts(a), ob = opts(b);
+  return [oa.filter((d) => ob.some((e) => d + e === x && (!diff || d !== e))), ob.filter((e) => oa.some((d) => d + e === x && (!diff || d !== e)))];
+}
+
+// The 45 rule. Innie: the cages fully inside a house leave one cell (or two) of it uncovered. Outie: the cages that
+// touch a house stick out of it by one cell (or two). place: only one-cell versions (a number); else two-cell sums.
+function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: boolean): VariantStep | null {
+  for (const h of HOUSES) {
+    const inH = new Set(h.cells.map(key));
+    const inside = cages.filter((cg) => cg.cells.every((p) => inH.has(key(p))));
+    const partial = cages.filter((cg) => !inside.includes(cg) && cg.cells.some((p) => inH.has(key(p))));
+    const covered = new Set(inside.flatMap((cg) => cg.cells.map(key)));
+    const total = 45 * h.k;
+    const sIn = inside.reduce((s, cg) => s + cg.sum, 0);
+    // Innies: the house's cells no inside cage covers.
+    const rest = h.cells.filter((p) => !covered.has(key(p)));
+    const restPlaced = rest.filter(([r, c]) => grid[r][c]), restEmpty = rest.filter(([r, c]) => !grid[r][c]);
+    const known = restPlaced.reduce((s, [r, c]) => s + grid[r][c], 0);
+    const innie = total - sIn - known;
+    const inText = `The cages fully inside it make ${sIn}${restPlaced.length ? `, and ${named(restPlaced, grid)}` : ""}`;
+    const inSum = `${total} − ${sIn}${restPlaced.length ? ` − ${known}` : ""}`;
+    if (inside.length && restEmpty.length === 1 && place) {
+      const [cell] = restEmpty, own = opts(cell);
+      if (innie >= 1 && innie <= 9 && own.includes(innie) && own.length > 1) {
+        return { technique: "45 rule", focus: h.cells, place: { cell, value: innie },
+          nudge: `Look at ${h.label}. What does it add up to?`,
+          why: `${addsUp(h)}. ${inText}, so the one cell left, ${cellName(...cell)}, is ${inSum} = ${innie}.` };
+      }
+    }
+    if (inside.length && restEmpty.length === 2 && !place) {
+      const [a, b] = restEmpty;
+      const [ca, cb] = pairCands(a, b, innie, opts, cages);
+      const pencil = [{ cell: a, marks: ca }, { cell: b, marks: cb }].filter((x) => x.marks.length && x.marks.length < opts(x.cell).length);
+      if (pencil.length) {
+        return { technique: "45 rule", focus: h.cells, pencil,
+          nudge: `Look at ${h.label}. What does it add up to?`,
+          why: `${addsUp(h)}. ${inText}, so the two cells left, ${cellName(...a)} and ${cellName(...b)}, add up to ${inSum} = ${innie}. So ${cellName(...a)} can only be ${list(ca, "or")} and ${cellName(...b)} ${list(cb, "or")}.` };
+      }
+    }
+    // Outies: every cell of the house is in some cage, and the cages that touch it stick out of it.
+    if (!partial.length || !h.cells.every((p) => covered.has(key(p)) || partial.some((cg) => cg.cells.some((q) => same(p, q))))) continue;
+    const sTouch = sIn + partial.reduce((s, cg) => s + cg.sum, 0);
+    const outCells = partial.flatMap((cg) => cg.cells.filter((p) => !inH.has(key(p))));
+    const outPlaced = outCells.filter(([r, c]) => grid[r][c]), outEmpty = outCells.filter(([r, c]) => !grid[r][c]);
+    const oKnown = outPlaced.reduce((s, [r, c]) => s + grid[r][c], 0);
+    const outie = sTouch - total - oKnown;
+    const outText = `The cages that touch it add up to ${sTouch}, which is ${sTouch - total} more than ${total}: that's what sticks out of ${h.label}`;
+    const outSum = `${sTouch} − ${total}${outPlaced.length ? ` − ${oKnown}` : ""}`;
+    const plus = outPlaced.length ? ` Of the cells sticking out, ${named(outPlaced, grid)}` : "";
+    if (outEmpty.length === 1 && place) {
+      const [cell] = outEmpty, own = opts(cell);
+      if (outie >= 1 && outie <= 9 && own.includes(outie) && own.length > 1) {
+        return { technique: "45 rule", focus: [...h.cells, ...outCells], place: { cell, value: outie },
+          nudge: `Look at ${h.label} and the cages poking out of it.`,
+          why: `${addsUp(h)}. ${outText}.${plus}${plus ? "." : ""} So ${cellName(...cell)} is ${outSum} = ${outie}.` };
+      }
+    }
+    if (outEmpty.length === 2 && !place) {
+      const [a, b] = outEmpty;
+      const [ca, cb] = pairCands(a, b, outie, opts, cages);
+      const pencil = [{ cell: a, marks: ca }, { cell: b, marks: cb }].filter((x) => x.marks.length && x.marks.length < opts(x.cell).length);
+      if (pencil.length) {
+        return { technique: "45 rule", focus: [...h.cells, ...outCells], pencil,
+          nudge: `Look at ${h.label} and the cages poking out of it.`,
+          why: `${addsUp(h)}. ${outText}.${plus}${plus ? "." : ""} So ${cellName(...a)} and ${cellName(...b)} add up to ${outSum} = ${outie}: ${cellName(...a)} can only be ${list(ca, "or")} and ${cellName(...b)} ${list(cb, "or")}.` };
+      }
+    }
+  }
+  return null;
+}
+
+// What the cages and thermos leave in each empty cell (on top of its row, column and box).
+function variantOpts(grid: Grid, rules: Rules, opts: (p: Cell) => number[]) {
+  const left = new Map<string, number[]>();
+  const narrow = (cell: Cell, nums: number[]) => left.set(key(cell), (left.get(key(cell)) ?? opts(cell)).filter((n) => nums.includes(n)));
+  for (const cage of rules.cages ?? []) for (const { cell, nums } of cageAllows(grid, cage, opts).allow) narrow(cell, nums);
+  for (const line of rules.thermos ?? []) for (const { cell, nums } of thermoAllows(grid, line, opts).allow) narrow(cell, nums);
+  return (cell: Cell) => left.get(key(cell)) ?? opts(cell);
+}
+
+// Squeeze: in a row, column or box, a number has only one cell left once the cages or thermos rule out the others.
+function squeeze(grid: Grid, rules: Rules, opts: (p: Cell) => number[]): VariantStep | null {
+  const vopts = variantOpts(grid, rules, opts);
+  const thermo = rules.variant === "thermo";
+  for (const h of SINGLE) {
+    const empty = h.cells.filter(([r, c]) => !grid[r][c]);
+    for (const d of NUMS) {
+      if (h.cells.some(([r, c]) => grid[r][c] === d)) continue;
+      const classic = empty.filter((p) => opts(p).includes(d));
+      const spots = classic.filter((p) => vopts(p).includes(d));
+      if (spots.length !== 1 || classic.length < 2) continue;
+      const [cell] = spots, others = classic.filter((p) => !same(p, cell));
+      const what = thermo ? "thermometers" : "cages";
+      return { technique: thermo ? "Thermo squeeze" : "Cage squeeze", focus: h.cells, place: { cell, value: d },
+        nudge: `Where can ${d} go in ${h.label}?`,
+        why: `In ${h.label}, ${d} could go at ${list(classic.map((p) => cellName(...p)), "or")} by its row, column and box. But ${list(others.map((p) => cellName(...p)))} can't be ${d} because of their ${what} (${others.map((p) => `${cellName(...p)} can only be ${list(vopts(p), "or")}`).join("; ")}). So ${d} goes at ${cellName(...cell)}.` };
+    }
+  }
+  return null;
+}
+
+// Cage claims a number: every way to make the cage uses d, and inside the cage d can only go in one row, column or
+// box. So d can't go anywhere else there (like Pointing, for a cage).
+function cageClaims(grid: Grid, cages: Cage[], opts: (p: Cell) => number[]): VariantStep | null {
+  for (const cage of cages) {
+    const a = cageAllows(grid, cage, opts);
+    if (!a.fitWays.length || !a.empty.length) continue;
+    const must = NUMS.filter((d) => a.fitWays.every((w) => w.includes(d)));
+    for (const d of must) {
+      const where = a.allow.filter((x) => x.nums.includes(d)).map((x) => x.cell);
+      if (!where.length) continue;
+      for (const h of SINGLE) {
+        if (!where.every((p) => h.cells.some((q) => same(p, q)))) continue;
+        const pencil = h.cells.filter((p) => !grid[p[0]][p[1]] && !cage.cells.some((q) => same(p, q)) && opts(p).includes(d))
+          .map((cell) => ({ cell, marks: opts(cell).filter((n) => n !== d) }));
+        if (!pencil.length) continue;
+        return { technique: "Cage claims a number", focus: [...h.cells, ...cage.cells], pencil,
+          nudge: `Look at the cage at ${cellName(...cage.cells[0])}. Which number must it use?`,
+          why: `The cage at ${cellName(...cage.cells[0])} adds up to ${cage.sum}, and every way to make it uses ${d} (${wayText(a.fitWays)}). In the cage, ${d} can only go in ${list(where.map((p) => cellName(...p)), "or")}, all in ${h.label}. So ${d} can't go anywhere else in ${h.label}.` };
+      }
+    }
+  }
+  return null;
+}
+
+// The first variant trick that places a number right now (Expert tricks after the basic ones).
 export function variantPlace(grid: Grid, out: RuledOut, rules: Rules): VariantStep | null {
   const opts = optsFor(grid, out);
   for (const u of unitsOf(rules)) {
     const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, true) : thermoStep(grid, u.line!, opts, true);
     if (st) return st;
   }
-  return null;
+  if (!rules.advanced) return null;
+  return (rules.cages ? rule45(grid, rules.cages, opts, true) : null) ?? squeeze(grid, rules, opts);
 }
 
 // Variant rule-outs (pencil marks). Prefer one that lets a number be placed right after (variant or classic).
@@ -188,6 +346,11 @@ export function variantRuleOut(grid: Grid, out: RuledOut, rules: Rules, placesAf
   for (const u of unitsOf(rules)) {
     const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, false) : thermoStep(grid, u.line!, opts, false);
     if (st) all.push(st);
+  }
+  if (rules.advanced && rules.cages) {
+    const r45 = rule45(grid, rules.cages, opts, false), claim = cageClaims(grid, rules.cages, opts);
+    if (r45) all.push(r45);
+    if (claim) all.push(claim);
   }
   const outAfter = (st: VariantStep) => {
     const next = new Set(out);

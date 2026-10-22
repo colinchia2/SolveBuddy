@@ -43,9 +43,10 @@ export const GAMES = {
     ["easy", "sudoku9-easy-starter.json", "Easy"], ["medium", "sudoku9-medium.json", "Medium"],
     ["hard", "sudoku9-hard.json", "Hard"], ["expert", "sudoku9-expert.json", "Expert"],
     ["tricks", "sudoku9-tricks.json", "Trick tests"],
-    ["killer", "sudoku9-killer-easy.json", "Easy"], ["thermo", "sudoku9-thermo-easy.json", "Easy"]], // variants (Colin, 10/22)
+    ["killer", "sudoku9-killer-easy.json", "Easy"], ["thermo", "sudoku9-thermo-easy.json", "Easy"], // variants (Colin, 10/22)
+    ["killer-expert", "sudoku9-killer-expert.json", "Expert"]],
     sets: [{ name: "Starter", levels: ["easy", "medium", "hard", "expert"] }, { name: "Trick tests", levels: ["tricks"], note: "One per trick" },
-      { name: "Killer", levels: ["killer"] }, { name: "Thermo", levels: ["thermo"] }] },
+      { name: "Killer", levels: ["killer", "killer-expert"] }, { name: "Thermo", levels: ["thermo"] }] },
   starbattle: { name: "Star Battle", packs: [
     ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"],
     ["double", "starbattle10-double-expert.json", "Expert"], ["triple", "starbattle12-triple-expert.json", "Hard"]],
