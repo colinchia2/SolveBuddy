@@ -13,9 +13,9 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 .brandbar { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -12px 0 0 -4px; }
 /* The header stays put while the page scrolls under it (Colin 10/22), over a frosted strip that runs up under the clock. */
 .brandbar { position: sticky; top: calc(var(--safetop, 0px) + 12px); z-index: 5; }
-.brandbar::before { content: ""; position: absolute; z-index: -1; left: -20px; right: -20px; top: calc(-12px - var(--safetop, 0px)); bottom: -14px;
+.brandbar::before { content: ""; position: absolute; z-index: -1; left: -20px; right: -20px; top: calc(-12px - var(--safetop, 0px)); bottom: 0;
   background: rgba(246,244,241,0.88); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
-  -webkit-mask-image: linear-gradient(#000 calc(100% - 14px), transparent); mask-image: linear-gradient(#000 calc(100% - 14px), transparent); pointer-events: none; }
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 10px), transparent); mask-image: linear-gradient(#000 calc(100% - 10px), transparent); pointer-events: none; }
 .logo-btn { width: 44px; height: 44px; flex: none; border: 0; background: none; padding: 2px; margin: 0; display: block; color: var(--ink); }
 .logo { width: 40px; height: 40px; display: block; overflow: visible; }
 .brandbar .wordmark { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
@@ -82,8 +82,8 @@ button.card-glass { text-align: left; width: 100%; }
 .empty { text-align: center; padding: 28px 16px; color: var(--muted); }
 
 /* Tabs in a browser only; the app shows Apple's own Liquid Glass tab bar instead. */
-.tabs { position: absolute; left: 40px; right: 40px; bottom: 18px; height: 66px; padding: 6px; border-radius: 22px; z-index: 10;
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: rgba(255,255,255,0.28);
+.tabs { position: absolute; left: 24px; right: 24px; bottom: 18px; height: 66px; padding: 6px; border-radius: 22px; z-index: 10;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; background: rgba(255,255,255,0.28);
   -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); border: 1px solid rgba(255,255,255,0.8);
   box-shadow: 0 12px 32px rgba(30,30,30,0.12), inset 0 1px 0 rgba(255,255,255,0.95); }
 .tabs a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; text-decoration: none;

@@ -37,7 +37,7 @@ cpSync(join(ROOT, "packs"), join(OUT, "packs"), { recursive: true });
 const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f, JSON.parse(readFileSync(join(ROOT, "packs", f), "utf8"))]));
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
-for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks"]) {
+for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")

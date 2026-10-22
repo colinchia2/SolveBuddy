@@ -62,12 +62,13 @@ const TAB_ICONS = {
   home: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z",
   packs: "M21 8l-9-5-9 5 9 5z M3 8v8l9 5 9-5V8 M12 13v8",
   stats: "M4 20V10 M10 20V4 M16 20v-7 M22 20H2",
+  import: "M4 8h3l2-3h6l2 3h3v12H4z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0",
 };
 export const tabIcon = (name, size = 22) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${TAB_ICONS[name]}"/></svg>`;
 
 // The tab bar a browser shows (the app hides it and uses Apple's native one).
 export function tabs(current) {
-  const t = [["home", "Library"], ["packs", "Packs"], ["stats", "Stats"]];
+  const t = [["home", "Library"], ["packs", "Packs"], ["stats", "Stats"], ["import", "Import"]]; // Import 4th (Colin, 10/22)
   return `<nav class="tabs" aria-label="Tabs">${t.map(([p, label]) =>
     `<a href="${p}.html"${p === current ? ' aria-current="page"' : ""}>${tabIcon(p)}${label}</a>`).join("")}</nav>`;
 }

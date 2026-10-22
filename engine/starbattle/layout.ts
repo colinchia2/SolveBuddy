@@ -5,10 +5,16 @@ export type Regions = string[]; // N rows of N letters; each letter is one regio
 // stars[row] = the column of that row's star. Double Star Battle: stars[row] = the two columns, e.g. [1, 6].
 export type Stars = number[] | number[][];
 
-export const LETTERS = "ABCDEFGHIJ";
+export const LETTERS = "ABCDEFGHIJKL";
 
-// Stars per row, column and region: 1 on an 8×8 board, 2 on a 10×10 one (Double Star Battle, Colin 10/22).
-export const perUnit = (n: number) => (n >= 10 ? 2 : 1);
+// Stars per row, column and region. A puzzle can say (imports: 5×5 to 12×12 with 1, 2 or 3 stars, Colin 10/22) by
+// tagging its regions with withStars(); untagged packs keep the old rule: 1 on 8×8, 2 on 10×10 (Double).
+const starTags = new WeakMap<Regions, number>();
+export function withStars(regions: Regions, stars: number): Regions {
+  starTags.set(regions, stars);
+  return regions;
+}
+export const perUnit = (regions: Regions) => starTags.get(regions) ?? (regions.length >= 10 ? 2 : 1);
 // Is (r, c) one of the answer's stars?
 export const isAnswer = (stars: Stars, r: number, c: number) => {
   const x = stars[r];

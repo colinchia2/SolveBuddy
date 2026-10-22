@@ -55,6 +55,8 @@ header { display: flex; align-items: center; gap: 6px; }
 .tool.glass { background: rgba(255,255,255,0.55); }
 .tool.hint-tool { color: var(--brand-dark); }
 .tool.hint-tool.pressed { color: #fff; background: var(--brand); }
+.tool.hint-tool.thinking { animation: sbThink 0.8s ease-in-out infinite; }
+@keyframes sbThink { 50% { background: var(--brand-soft); transform: scale(0.97); } }
 /* More menu: Game settings, and Restart (which asks first). */
 .menu-row { width: 100%; min-height: 60px; padding: 10px 14px; border: 0; background: transparent; display: flex; align-items: center; gap: 12px;
   text-align: left; font: 15px Inter, sans-serif; color: var(--ink); }

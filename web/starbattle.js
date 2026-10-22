@@ -1,7 +1,9 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 // Double packs (Colin, 10/22) play on a 10×10 board with 2 stars per row, column and region.
+// Imported puzzles (?import=<id>, Colin 10/22) can be 5×5 to 12×12 with 1–3 stars; they save and log under pack
+// "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { isAnswer } from "../engine/starbattle/layout.ts";
+import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
 import { clearSaved, finalBoard, fitHint, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
@@ -13,14 +15,32 @@ const PACKS = {
   double: await loadPack("starbattle10-double-expert.json"),
 };
 const query = new URLSearchParams(location.search);
-let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+const importId = query.get("import");
+// An import lives in this phone's storage (made here) or in the bundled imports.json (added by Claude). In the app,
+// a just-made import can reach this page's copy of storage a moment late, so look again for up to 2 seconds.
+const IMPORTS_KEY = "solvebuddy.imports";
+async function findImport(id) {
+  const bundled = (await loadPack("imports.json").catch(() => null))?.puzzles ?? [];
+  for (let tries = 0; tries < 20; tries++) {
+    let mine = [];
+    try { mine = JSON.parse(localStorage.getItem(IMPORTS_KEY) || "[]"); } catch {}
+    const item = [...mine, ...bundled].find((p) => p.id === id && p.game === "starbattle");
+    if (item) return item;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return null;
+}
+if (importId) PACKS.import = { id: "import", difficulty: "Imported", puzzles: [] };
+let packName = importId ? "import" : PACKS[query.get("pack")] ? query.get("pack") : "easy";
 let pack = PACKS[packName];
 const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
-let N = 8; // board size: 8, or 10 for Double
-let K = 1; // stars per row, column and region: 1, or 2 for Double
+let N = 8; // board size: 8, 10 for Double, 5–12 for an import
+let K = 1; // stars per row, column and region: 1, 2 for Double, 1–3 for an import
 const COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8",
-  I: "#E2EA98", J: "#D3D0C8" };
+  I: "#E2EA98", J: "#D3D0C8", K: "#CDB497", L: "#E7AEDB" };
+// Which puzzle this is for saves, solves and your finished board: its number in a pack, or an import's id.
+const pid = () => (packName === "import" ? importId : idx + 1);
 const STAR_PATH = "M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z";
 const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, rgba(255,255,255,0) 4px 10px)";
 
@@ -38,7 +58,7 @@ function flipSetting(name) {
   render();
 }
 
-let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
+let idx = importId ? 0 : Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 let s; // game state
 const undoStack = [];
 
@@ -50,32 +70,35 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   const p = pack.puzzles[i];
   N = p.regions.length;
-  K = pack.stars ?? 1;
+  K = p.stars ?? pack.stars ?? 1;
   $("board").style.setProperty("--n", N);
-  $("board").classList.toggle("double", K > 1);
-  $("rulesStars").textContent = K > 1 ? "two stars" : "one star";
-  s = { regions: p.regions, solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
+  $("board").classList.toggle("double", N > 8 && N <= 10);
+  $("board").classList.toggle("big", N > 10);
+  $("board").classList.toggle("small", N < 8);
+  $("rulesStars").textContent = ["one star", "two stars", "three stars"][K - 1];
+  s = { regions: withStars(p.regions, K), solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
-  // Pick up where you left off (Colin, 10/21).
-  const saved = savedGame("starbattle", name, i + 1);
+  // Pick up where you left off (Colin, 10/21). An import starts from the marks in its photo (or made by hand).
+  const saved = savedGame("starbattle", name, pid());
   if (saved) {
     s.marks = saved.marks ?? {};
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
-  }
-  $("sub").textContent = `${N}×${N}${K > 1 ? " Double" : ""} · ${pack.difficulty} · #${i + 1}`;
+  } else if (name === "import") s.marks = { ...(p.marks ?? {}) };
+  $("sub").textContent = name === "import" ? `Imported · ${N}×${N} · ${K} star${K === 1 ? "" : "s"}`
+    : `${N}×${N}${K > 1 ? " Double" : ""} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  history.replaceState(null, "", name === "import" ? `?import=${encodeURIComponent(importId)}` : `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
   if (first && query.get("view")) {
-    const mine = finalBoard("starbattle", name, i + 1); // your own finished board; older solves show the answer
+    const mine = finalBoard("starbattle", name, pid()); // your own finished board; older solves show the answer
     if (mine) s.marks = { ...mine.marks };
     else for (let r = 0; r < N; r++) for (const c of [s.solution[r]].flat()) s.marks[key(r, c)] = STAR;
-    const best = solves().filter((e) => e.g === "starbattle" && e.pack === name && e.p === i + 1).map((e) => e.ms);
+    const best = solves().filter((e) => e.g === "starbattle" && e.pack === name && e.p === pid()).map((e) => e.ms);
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
     $("time").textContent = fmt(s.elapsed);
-    solvedBar(s.elapsed, () => { clearSaved("starbattle", packName, idx + 1); load(idx); });
+    solvedBar(s.elapsed, () => { clearSaved("starbattle", packName, pid()); load(idx); });
   }
   // The board builds as a colour wave from the top-left corner, then a shooting star lands in the counter.
   s.introAt = Date.now();
@@ -131,18 +154,19 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
-  clearSaved("starbattle", packName, idx + 1);
-  saveFinal("starbattle", packName, idx + 1, { marks: { ...s.marks } });
+  clearSaved("starbattle", packName, pid());
+  saveFinal("starbattle", packName, pid(), { marks: { ...s.marks } });
   haptic("success");
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
-  celebrate({ title: `${K > 1 ? "Double " : ""}${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+  logSolve({ g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
+  celebrate({ title: packName === "import" ? "Imported puzzle" : `${K > 1 ? "Double " : ""}${pack.difficulty} #${idx + 1}`,
+    level: pack.difficulty, facts, hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
 }
 
 // Stars that break a rule always show red, as in the mockup: touching, or too many in a row, column or
-// region (more than 1, or more than 2 on a Double board).
+// region (more than K).
 function conflicts() {
   const bad = new Set();
   const st = stars();
@@ -162,7 +186,7 @@ function conflicts() {
 
 // Hint: bulb → Nudge (focus area in full color) → Explain (striped cells / ringed cell) → Show me (does it).
 function openHint() {
-  if (s.solved) return;
+  if (s.solved || $("hintBtn").classList.contains("thinking")) return;
   if (s.hint) {
     s.hint = null;
     return render();
@@ -172,8 +196,13 @@ function openHint() {
   // An automatic × sitting on an answer cell comes from a wrong star; leave it out so the hint
   // points at that star (which the player can fix) rather than the × (which they can't).
   const b = board().map((row, r) => row.map((v, c) => (v === CROSS && !s.marks[key(r, c)] && isAnswer(s.solution, r, c) ? EMPTY : v)));
-  s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
-  render();
+  // A hard imported board can take a second to think: the Hint button pulses meanwhile (Colin, 10/22).
+  $("hintBtn").classList.add("thinking");
+  setTimeout(() => {
+    s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
+    $("hintBtn").classList.remove("thinking");
+    render();
+  }, 30);
 }
 // What if hints (Colin, 10/20): "Show me" first plays the chain out on the board with faint pretend marks:
 // play 0 = the pretend star, 1..k = each forced move, k+1 = the line that ran dry. Then the real × goes in.
@@ -248,7 +277,7 @@ function render() {
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
 
-  const starPx = N > 8 ? 22 : 26;
+  const starPx = N <= 6 ? 32 : N <= 8 ? 26 : N <= 10 ? 22 : 18;
   const cells = [];
   for (let r = 0; r < N; r++) {
     for (let c = 0; c < N; c++) {
@@ -335,6 +364,7 @@ function renderPicker() {
   const p = $("picker");
   p.querySelectorAll("button, .lbl").forEach((b) => b.remove());
   for (const [name, pk] of Object.entries(PACKS)) {
+    if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.className = "lbl";
     lbl.textContent = `${pk.stars > 1 ? "Double " : ""}${pk.difficulty}:`;
@@ -415,7 +445,7 @@ $("undoBtn").onclick = () => {
 const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, auto-cross",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("starbattle", packName, idx + 1); load(idx); },
+  onRestart: () => { clearSaved("starbattle", packName, pid()); load(idx); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
@@ -449,7 +479,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 // Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
 function persist() {
   if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("starbattle", packName, { p: idx + 1, marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
 }
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
@@ -459,4 +489,18 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-load(idx, packName, true);
+if (!importId) load(idx, packName, true);
+else {
+  $("count").textContent = "Loading…";
+  const item = await findImport(importId);
+  if (item) {
+    PACKS.import.puzzles = [item];
+    load(0, "import", true);
+  } else {
+    // Never found (deleted, or not on this phone yet): say so kindly, with a way back.
+    $("count").textContent = "";
+    $("board").innerHTML = `<div class="missing"><b>Couldn't find this import</b><span>It may have been deleted, or not reached this phone yet.</span>
+      <button class="dark" id="missingBack">Back</button></div>`;
+    $("missingBack").onclick = goHome;
+  }
+}

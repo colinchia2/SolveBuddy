@@ -1,0 +1,272 @@
+{
+ "id": "imports",
+ "game": "mixed",
+ "puzzles": [
+  {
+   "id": "claude-20261022-133733",
+   "game": "starbattle",
+   "size": 10,
+   "stars": 2,
+   "regions": [
+    "AAAAABBBBC",
+    "ADDDADCBCC",
+    "EDDDDDCBBC",
+    "EEFFDGCCCC",
+    "FEFFFGGGGC",
+    "FEEFFGGGGC",
+    "FFFFHHIIJC",
+    "FHHFHHHIJJ",
+    "FHHHHHIIJJ",
+    "FFFFHIIJJJ"
+   ],
+   "marks": {
+    "7,6": 1
+   },
+   "solution": [
+    [
+     3,
+     5
+    ],
+    [
+     0,
+     7
+    ],
+    [
+     2,
+     4
+    ],
+    [
+     0,
+     9
+    ],
+    [
+     5,
+     7
+    ],
+    [
+     1,
+     9
+    ],
+    [
+     3,
+     6
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     4,
+     6
+    ],
+    [
+     2,
+     8
+    ]
+   ],
+   "name": "10×10 with your one ×",
+   "addedAt": 1792690653000,
+   "source": "claude"
+  },
+  {
+   "id": "claude-20261022-133755",
+   "game": "starbattle",
+   "size": 10,
+   "stars": 2,
+   "regions": [
+    "AABBBBBBCD",
+    "AABBEEBCCD",
+    "AAEBEBBCDD",
+    "AEEEEEBCDF",
+    "AGGGCCCCDF",
+    "HGIICIICFF",
+    "HGGIIICCFC",
+    "HGHHJIJCCC",
+    "HHHJJIJCCJ",
+    "HHJJJJJJJJ"
+   ],
+   "marks": {},
+   "solution": [
+    [
+     7,
+     9
+    ],
+    [
+     0,
+     4
+    ],
+    [
+     2,
+     8
+    ],
+    [
+     0,
+     6
+    ],
+    [
+     2,
+     9
+    ],
+    [
+     4,
+     6
+    ],
+    [
+     1,
+     8
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     5
+    ]
+   ],
+   "name": "10×10, not started",
+   "addedAt": 1792690675000,
+   "source": "claude"
+  },
+  {
+   "id": "claude-20261022-133822",
+   "game": "starbattle",
+   "size": 10,
+   "stars": 2,
+   "regions": [
+    "AABBBCDDDD",
+    "ABBBBCEEED",
+    "ABAFCCCEDD",
+    "AAAFCCEEED",
+    "AGGFFFFFED",
+    "AGGGHEEFED",
+    "AAHGHHEEEE",
+    "HHHHHIIIIE",
+    "JHJJJIEEEE",
+    "JJJJJIIEEE"
+   ],
+   "marks": {
+    "0,0": 1,
+    "0,1": 1,
+    "0,5": 1,
+    "0,6": 1,
+    "0,7": 1,
+    "1,0": 2,
+    "1,1": 1,
+    "1,2": 1,
+    "1,3": 1,
+    "1,4": 1,
+    "1,5": 1,
+    "1,6": 2,
+    "1,7": 1,
+    "1,8": 1,
+    "1,9": 1,
+    "2,0": 1,
+    "2,1": 1,
+    "2,5": 1,
+    "2,6": 1,
+    "2,7": 1
+   },
+   "solution": [
+    [
+     4,
+     8
+    ],
+    [
+     0,
+     2
+    ],
+    [
+     4,
+     6
+    ],
+    [
+     0,
+     8
+    ],
+    [
+     2,
+     5
+    ],
+    [
+     7,
+     9
+    ],
+    [
+     3,
+     5
+    ],
+    [
+     1,
+     7
+    ],
+    [
+     3,
+     9
+    ],
+    [
+     1,
+     6
+    ]
+   ],
+   "name": "10×10 with two stars you guessed",
+   "addedAt": 1792690702000,
+   "source": "claude"
+  },
+  {
+   "id": "claude-20261022-134040",
+   "game": "starbattle",
+   "size": 5,
+   "stars": 1,
+   "regions": [
+    "AABCC",
+    "AABBB",
+    "AADDB",
+    "AEEEB",
+    "AEEEB"
+   ],
+   "marks": {
+    "0,2": 1,
+    "0,3": 2,
+    "0,4": 1,
+    "1,1": 1,
+    "1,2": 1,
+    "1,3": 1,
+    "1,4": 1,
+    "2,0": 1,
+    "2,1": 1,
+    "2,2": 2,
+    "2,3": 1,
+    "2,4": 1,
+    "3,1": 1,
+    "3,2": 1,
+    "3,3": 1,
+    "4,3": 1
+   },
+   "solution": [
+    [
+     3
+    ],
+    [
+     0
+    ],
+    [
+     2
+    ],
+    [
+     4
+    ],
+    [
+     1
+    ]
+   ],
+   "name": "5×5, nearly done",
+   "addedAt": 1792690840000,
+   "source": "claude"
+  }
+ ]
+}

@@ -364,4 +364,17 @@ if (existsSync(sbExpertFile)) {
   check("Block Drop: game logic checks pass", spawnSync(process.execPath, ["checks/blocks.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Import tab (10/22): day groups, size/stars rule, valid imports, the hand builder's verdicts (details: import.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Import: list grouping, import checks and the hand builder's verdicts", spawnSync(process.execPath, ["checks/import.ts"], { encoding: "utf8" }).status === 0);
+}
+
+// Star Battle for imports (10/22): any size 5–12 with 1–3 stars; packed puzzles unchanged (details: starbattle_any.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Star Battle any size and stars: one answer, Hint never wrong, packs grade and hint as before",
+    spawnSync(process.execPath, ["checks/starbattle_any.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);

@@ -21,9 +21,10 @@ export type Step = {
   dead?: { label: string; cells: Cell[] };
 };
 
-// Friendly names for regions A–J, matching the colors on screen.
+// Friendly names for regions A–L, matching the colors on screen.
 export const COLOR_NAMES: Record<string, string> = {
   A: "purple", B: "yellow", C: "teal", D: "green", E: "pink", F: "orange", G: "blue", H: "tan", I: "lime", J: "grey",
+  K: "brown", L: "magenta",
 };
 
 type Unit = { kind: "row" | "column" | "region"; label: string; cells: Cell[]; letter?: string };
@@ -56,22 +57,33 @@ const hasStar = (b: Board, cells: Cell[]) => cells.some((p) => at(b, p) === STAR
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 const touch = ([a, b]: Cell, [c, d]: Cell) => Math.abs(a - c) <= 1 && Math.abs(b - d) <= 1;
 // Stars a row, column or region still needs (0 = done).
-const needOf = (b: Board, regions: Regions, u: Unit) => perUnit(regions.length) - u.cells.filter((p) => at(b, p) === STAR).length;
-// How many more stars fit in a unit's open cells without touching (counted up to 2).
-function room(b: Board, cells: Cell[]) {
+const needOf = (b: Board, regions: Regions, u: Unit) => perUnit(regions) - u.cells.filter((p) => at(b, p) === STAR).length;
+// How many more stars fit in a unit's open cells without touching, counted up to `upTo` (2 unless 3 are needed).
+function room(b: Board, cells: Cell[], upTo = 2) {
   const o = open(b, cells);
-  for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (!touch(o[i], o[j])) return 2;
-  return Math.min(o.length, 1);
+  if (upTo <= 2) {
+    for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (!touch(o[i], o[j])) return 2;
+    return Math.min(o.length, 1);
+  }
+  // 3 stars: search for the most non-touching cells, stopping as soon as there are enough.
+  let best = 0;
+  const grow = (from: number, chosen: Cell[]) => {
+    best = Math.max(best, chosen.length);
+    if (best >= upTo) return;
+    for (let i = from; i < o.length && best < upTo; i++) if (!chosen.some((p) => touch(p, o[i]))) grow(i + 1, [...chosen, o[i]]);
+  };
+  grow(0, []);
+  return best;
 }
 // A row, column or region that can no longer fit the stars it still needs.
-const noRoom = (b: Board, regions: Regions, u: Unit) => { const need = needOf(b, regions, u); return need > 0 && room(b, u.cells) < need; };
-const nowhere = (regions: Regions) => (perUnit(regions.length) === 1 ? "nowhere left for its star" : "no room left for its stars");
+const noRoom = (b: Board, regions: Regions, u: Unit) => { const need = needOf(b, regions, u); return need > 0 && room(b, u.cells, need) < need; };
+const nowhere = (regions: Regions) => (perUnit(regions) === 1 ? "nowhere left for its star" : "no room left for its stars");
 const stars = (k: number) => (k === 1 ? "1 more star" : `${k} more stars`);
 
 // Every cell a star at (r, c) rules out: the 8 cells touching it, and its row, column and region once they're
 // full (with one star per unit that's always). b = the board, to count a Double board's stars.
 export function ruledOutBy(regions: Regions, [r, c]: Cell, b?: Board): Cell[] {
-  const n = regions.length, k = perUnit(n);
+  const n = regions.length, k = perUnit(regions);
   const full = (inUnit: (a: number, d: number) => boolean) => {
     if (k === 1) return true;
     let count = 1;
@@ -99,8 +111,8 @@ function starRulesOut(b: Board, regions: Regions): Step | null {
       if (!cross.length) continue;
       return { technique: "Star rules out", star: null, cross, focus: [[r, c]],
         nudge: `Look at the star in row ${r + 1}.`,
-        why: perUnit(b.length) === 1 ? "A star rules out the rest of its row, column and region, and every cell touching it."
-          : "A star rules out every cell touching it. Once a row, column or region has both its stars, the rest of it is out too." };
+        why: perUnit(regions) === 1 ? "A star rules out the rest of its row, column and region, and every cell touching it."
+          : `A star rules out every cell touching it. Once a row, column or region has ${perUnit(regions) === 2 ? "both" : "all"} its stars, the rest of it is out too.` };
     }
   }
   return null;
@@ -108,7 +120,7 @@ function starRulesOut(b: Board, regions: Regions): Step | null {
 
 // 2. A row, column or region with only as many open cells as stars it still needs gets its stars there.
 function lastCell(b: Board, regions: Regions): Step | null {
-  const k = perUnit(regions.length);
+  const k = perUnit(regions);
   for (const u of units(regions)) {
     const need = needOf(b, regions, u);
     if (need <= 0) continue;
@@ -122,12 +134,12 @@ function lastCell(b: Board, regions: Regions): Step | null {
   return null;
 }
 
-// 2b. (Double only) Squeeze: try every way to fit a unit's missing stars without touching or overfilling a row,
+// 2b. (2 or 3 stars) Squeeze: try every way to fit a unit's missing stars without touching or overfilling a row,
 //     column or region. A cell every way uses is a star; cells no way uses are out. E.g. 2 stars in 3 cells
 //     side by side must go at both ends.
 function squeeze(b: Board, regions: Regions): Step | null {
   const n = regions.length;
-  if (perUnit(n) < 2) return null;
+  if (perUnit(regions) < 2) return null;
   const all = units(regions);
   const needs = all.map((u) => needOf(b, regions, u));
   // units() lists row i at 2i, column i at 2i + 1, then the regions in letter order.
@@ -146,7 +158,16 @@ function squeeze(b: Board, regions: Regions): Step | null {
     if (o.length <= need) continue;
     const ways: Cell[][] = [];
     if (need === 1) { for (const p of o) if (fitsOne(p)) ways.push([p]); }
-    else for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (fitsTwo(o[i], o[j])) ways.push([o[i], o[j]]);
+    else if (need === 2) { for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (fitsTwo(o[i], o[j])) ways.push([o[i], o[j]]); }
+    else {
+      // 3 stars: every pair must fit, and no unit may get more stars than it needs.
+      const fitsThree = (p: Cell, q: Cell, s: Cell) => fitsTwo(p, q) && fitsTwo(p, s) && fitsTwo(q, s) &&
+        [p, q, s].flatMap(unitsOf).every((i, _, list) => list.filter((x) => x === i).length <= needs[i]);
+      for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) {
+        if (!fitsTwo(o[i], o[j])) continue;
+        for (let k = j + 1; k < o.length; k++) if (fitsThree(o[i], o[j], o[k])) ways.push([o[i], o[j], o[k]]);
+      }
+    }
     if (!ways.length) continue; // a broken board: the mistake check deals with it
     const used = (p: Cell) => ways.filter((w) => w.includes(p)).length;
     const star = o.find((p) => used(p) === ways.length);
@@ -167,7 +188,7 @@ function squeeze(b: Board, regions: Regions): Step | null {
 //    no other cell in that line can have a star.
 function confinedRegion(b: Board, regions: Regions): Step | null {
   const all = units(regions);
-  const k = perUnit(regions.length);
+  const k = perUnit(regions);
   for (const reg of all.filter((u) => u.kind === "region")) {
     const need = needOf(b, regions, reg);
     if (need <= 0) continue;
@@ -192,7 +213,7 @@ function confinedRegion(b: Board, regions: Regions): Step | null {
 //    so the rest of the region is ruled out.
 function lineInsideRegion(b: Board, regions: Regions): Step | null {
   const all = units(regions);
-  const k = perUnit(regions.length);
+  const k = perUnit(regions);
   for (const line of all.filter((u) => u.kind !== "region")) {
     const need = needOf(b, regions, line);
     if (need <= 0) continue;
@@ -226,7 +247,7 @@ function wouldBlock(b: Board, regions: Regions): Step | null {
       if (!blocked) continue;
       return { technique: "Would block", star: null, cross: [[r, c]], focus: blocked.cells,
         nudge: `Look at ${blocked.label}.`,
-        why: perUnit(b.length) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out every open cell of ${blocked.label}. So that cell can't have a star.`
+        why: perUnit(regions) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out every open cell of ${blocked.label}. So that cell can't have a star.`
           : `A star at row ${r + 1}, column ${c + 1} would leave ${blocked.label} with ${nowhere(regions)}. So that cell can't have a star.` };
     }
   }
@@ -240,7 +261,7 @@ function wouldBlock(b: Board, regions: Regions): Step | null {
 // rows still need (and the mirror), from 1 region or row up.
 function groups(b: Board, regions: Regions): Step | null {
   const all = units(regions);
-  const k = perUnit(regions.length);
+  const k = perUnit(regions);
   // Each unit's need and open cells, worked out once (this trick tries hundreds of combinations).
   const needs = new Map(all.map((u) => [u, needOf(b, regions, u)]));
   const opens = new Map(all.map((u) => [u, open(b, u.cells)]));
@@ -317,7 +338,8 @@ function groups(b: Board, regions: Regions): Step | null {
 // Put a star at `from` and follow the forced moves (tricks 1–6) until a row, column or region has nowhere
 // left for its star. Null if the moves run out first. Also explains a wrong star in a mistake hint.
 // maxLen: give up (null) once the chain reaches this many moves; the hint only wants the shortest one.
-export function chainFrom(b: Board, regions: Regions, from: Cell, maxLen = Infinity) {
+// full: let the chain use group moves too (multi-star boards normally skip them to stay quick; see whatIf).
+export function chainFrom(b: Board, regions: Regions, from: Cell, maxLen = Infinity, full = false) {
   const all = units(regions);
   const trial = b.map((row) => [...row]);
   // Each star (the pretend one too) crosses its own neighbors in the same move, so the chain only
@@ -334,7 +356,7 @@ export function chainFrom(b: Board, regions: Regions, from: Cell, maxLen = Infin
     const dead = all.find((u) => noRoom(trial, regions, u));
     if (dead) return { chain, pretendCross, dead: { label: dead.label, cells: dead.cells } };
     if (chain.length >= maxLen) return null;
-    const step = nextStep(trial, regions, perUnit(regions.length) === 1 ? HARD_TECHNIQUES : MEDIUM_TECHNIQUES);
+    const step = nextStep(trial, regions, full || perUnit(regions) === 1 ? HARD_TECHNIQUES : MEDIUM_TECHNIQUES);
     if (!step) return null;
     if (step.star) {
       chain.push({ star: step.star, cross: place(step.star), focus: step.focus, why: step.why });
@@ -345,19 +367,30 @@ export function chainFrom(b: Board, regions: Regions, from: Cell, maxLen = Infin
   }
 }
 
+// Big boards with 3 stars (imports) get a time budget so a hint stays quick: past it, the shortest chain found so far
+// is used (still a sound deduction), or none, and the hint says it's stuck. Packed puzzles never hit it.
+const WHAT_IF_MS = 450;
+// Multi-star boards try quick chains first; only if none works, chains with group moves (Colin's hard imported
+// 10×10 got stuck without them, 10/22). Pack puzzles never need the second pass, so their hints don't change.
 function whatIf(b: Board, regions: Regions): Step | null {
+  return whatIfWith(b, regions, false) ?? (perUnit(regions) > 1 ? whatIfWith(b, regions, true) : null);
+}
+function whatIfWith(b: Board, regions: Regions, full: boolean): Step | null {
   let best: (Step & { forced: number }) | null = null;
+  // The fuller second pass always has a budget, so a hint never freezes the phone for long.
+  const budget = full ? Date.now() + 700 : perUnit(regions) >= 3 || regions.length > 10 ? Date.now() + WHAT_IF_MS : Infinity;
   for (let r = 0; r < b.length; r++) {
     for (let c = 0; c < b.length; c++) {
       if (b[r][c] !== EMPTY) continue;
-      const found = chainFrom(b, regions, [r, c], best ? best.forced : Infinity);
+      if (Date.now() > budget) break;
+      const found = chainFrom(b, regions, [r, c], best ? best.forced : Infinity, full);
       if (!found || (best && best.forced <= found.chain.length)) continue;
       const { chain, pretendCross, dead } = found;
       const forced = chain.length;
       best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced, chain, pretendCross, dead,
         nudge: `Imagine a star at row ${r + 1}, column ${c + 1}. What happens?`,
         why: forced === 0
-          ? (perUnit(regions.length) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out the last open cells of ${dead.label}. So that cell can't have one.`
+          ? (perUnit(regions) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out the last open cells of ${dead.label}. So that cell can't have one.`
             : `A star at row ${r + 1}, column ${c + 1} would leave ${dead.label} with ${nowhere(regions)}. So that cell can't have one.`)
           : `If row ${r + 1}, column ${c + 1} had a star, after ${forced} forced move${forced === 1 ? "" : "s"} ${dead.label} would have ${nowhere(regions)}. So that cell can't have one.` };
     }

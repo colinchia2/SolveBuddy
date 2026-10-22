@@ -23,6 +23,12 @@
   .cell.bb { border-bottom: 3px solid var(--ink); }
   .cell .xm { font-size: 22px; font-weight: 600; line-height: 1; color: #7A6B5F; }
   .board.double .xm { font-size: 18px; }
+  .board.big .xm { font-size: 15px; }
+  .board.small .xm { font-size: 28px; }
+  .board .missing { grid-column: 1 / -1; width: 352px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; text-align: center; background: var(--board); color: var(--body); }
+  .board .missing b { font-size: 17px; color: var(--ink); }
+  .board .missing button { margin-top: 8px; min-width: 140px; }
   .cell .xm.auto { color: #B8ABA0; }
   .cell .xm.hinted { color: var(--accent-dark); }
   .cell .xm.wrong { color: var(--conflict-star); }

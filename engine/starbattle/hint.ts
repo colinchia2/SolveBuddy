@@ -66,7 +66,8 @@ function whyWrong(board: Board, regions: Regions, solution: Stars, [r, c]: Cell)
     const isStar = isAnswer(solution, a, b);
     return (v === STAR && !isStar) || (v === CROSS && isStar) ? EMPTY : v;
   }));
-  if (perUnit(n) === 1) {
+  const per = perUnit(regions);
+  if (per === 1) {
     for (let a = 0; a < n; a++) {
       const b = base[a].indexOf(STAR);
       if (b < 0) continue;
@@ -76,25 +77,25 @@ function whyWrong(board: Board, regions: Regions, solution: Stars, [r, c]: Cell)
       if (clash) return { text: `It ${clash} the star at row ${a + 1}, column ${b + 1}.`, found: null };
     }
   } else {
-    // Double: it touches a star, or makes a third star in a row, column or region.
+    // 2 or 3 stars: it touches a star, or makes one too many in a row, column or region.
     const all: [number, number][] = [];
     base.forEach((row, a) => row.forEach((v, b) => v === STAR && all.push([a, b])));
     const near = all.find(([a, b]) => Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1);
     if (near) return { text: `It touches the star at row ${near[0] + 1}, column ${near[1] + 1}.`, found: null };
-    const full = all.filter(([a]) => a === r).length >= 2 ? `row ${r + 1}`
-      : all.filter(([, b]) => b === c).length >= 2 ? `column ${c + 1}`
-      : all.filter(([a, b]) => regions[a][b] === regions[r][c]).length >= 2 ? "its region" : "";
-    if (full) return { text: `It would be a third star in ${full}.`, found: null };
+    const full = all.filter(([a]) => a === r).length >= per ? `row ${r + 1}`
+      : all.filter(([, b]) => b === c).length >= per ? `column ${c + 1}`
+      : all.filter(([a, b]) => regions[a][b] === regions[r][c]).length >= per ? "its region" : "";
+    if (full) return { text: `It would be a ${per === 2 ? "third" : "fourth"} star in ${full}.`, found: null };
   }
   const found = chainFrom(base, regions, [r, c]);
   if (!found || found.chain.length > 5) {
     return { text: "It only breaks after a long chain of moves, so take it off and look elsewhere.", found: null };
   }
   const k = found.chain.length;
-  const nowhere = perUnit(n) === 1 ? "nowhere left for its star" : "no room left for its stars";
+  const nowhere = per === 1 ? "nowhere left for its star" : "no room left for its stars";
   return {
     text: k === 0
-      ? (perUnit(n) === 1 ? `It rules out the last open cells of ${found.dead.label}, so that would have ${nowhere}.`
+      ? (per === 1 ? `It rules out the last open cells of ${found.dead.label}, so that would have ${nowhere}.`
         : `With a star there, ${found.dead.label} would have ${nowhere}.`)
       : `With a star there, after ${k} forced move${k === 1 ? "" : "s"} ${found.dead.label} would have ${nowhere}.`,
     found,

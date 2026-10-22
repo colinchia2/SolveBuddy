@@ -31,7 +31,7 @@ export function grade(regions: Regions): Grade {
   let last: Step[] = [];
   for (const [level, techniques] of TIERS) {
     const { board, steps } = solveWith(regions, techniques);
-    if (starCount(board) === regions.length * perUnit(regions.length)) return { level, steps };
+    if (starCount(board) === regions.length * perUnit(regions)) return { level, steps };
     last = steps;
   }
   return { level: "Too hard", steps: last };
