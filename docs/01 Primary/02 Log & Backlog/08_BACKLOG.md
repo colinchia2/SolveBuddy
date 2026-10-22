@@ -11,6 +11,11 @@ Top item = what's next.
 3. **Sudoku variants** (Killer first, then Thermo, Arrow, a creator's own rules from a photo).
 4. **After-puzzle review** ("here's what you could have done").
 5. **New games:** Binairo, Shikaku, Five Letters, Groups (hold until Colin picks).
+6. **Import several at once** (Colin 10/22: later; one or two at a time for now).
+7. **Block Drop harder modes (idea):** today it gets harder only by speed, like modern versions, with a fair 7-piece
+   bag. Options if Colin wants more challenge: pick a start level, a faster speed curve, or a "garbage rows" mode.
+8. **Star Battle hint polish:** Colin will call out confusing hints as he plays; fix them one at a time.
+9. **"Get more packs":** the card goes to the Packs tab; real downloadable packs (e.g. Halloween) come later.
 
 ## Colin's 10/22 evening voice note (phone testing), one at a time, improvements first
 Improvements:
