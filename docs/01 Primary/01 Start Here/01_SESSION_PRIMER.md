@@ -12,8 +12,8 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   "exactly one answer" check).
 - **This chat is closing.** From now on Colin uses ONE agent for all Buddy apps ("pick up Buddy Family work"):
   `Buddies\00 Family\00_PRIMER.md`, section "How Colin works from now on".
-- **Next (backlog top):** in-app photo reading (needs a small PythonAnywhere page + a SolveBuddy Anthropic key Colin
-  makes; ~1–3¢ a photo); deeper 3-star "What if" so a real Expert Triple pack is possible; Sudoku variants;
+- **Next (backlog top):** in-app photo reading (needs a small server, likely a Cloudflare Worker since SolveBuddy
+  never uses PythonAnywhere, + a SolveBuddy Anthropic key Colin makes; ~1–3¢ a photo); deeper 3-star "What if" so a real Expert Triple pack is possible; Sudoku variants;
   after-puzzle review; new games (Binairo, Shikaku, Five Letters, Groups).
 - **Open questions:** none waiting. Colin tests the 10/22 evening update and flags anything.
 - **To pick up, read:**
