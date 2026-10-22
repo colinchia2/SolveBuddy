@@ -44,8 +44,12 @@ $("hold").innerHTML = Array.from({ length: 8 }, () => `<div class="b"></div>`).j
 const holdCells = [...$("hold").children];
 // A piece drawn small in a 4×2 box (Next and Save).
 function mini(els, t) {
-  const on = t == null ? new Set() : new Set(cellsOf({ t, r: 0, x: t === 1 ? 1 : 0, y: t === 0 ? -1 : 0 }).map(([x, y]) => y * 4 + x));
+  const cells = t == null ? [] : cellsOf({ t, r: 0, x: t === 1 ? 1 : 0, y: t === 0 ? -1 : 0 });
+  const on = new Set(cells.map(([x, y]) => y * 4 + x));
   els.forEach((el, i) => { el.style.cssText = on.has(i) ? blockStyle(t + 1, true) : ""; });
+  // Centre the piece in its box: 3-wide pieces sit half a block in (Colin, 10/22: the saved piece looked off-centre).
+  const xs = cells.map(([x]) => x), mid = xs.length ? (Math.min(...xs) + Math.max(...xs) + 1) / 2 : 2;
+  els[0].parentElement.style.transform = `translateX(${(2 - mid) * 15}px)`;
 }
 
 // The clock: stopped while paused, counting down, reading the rules or over.

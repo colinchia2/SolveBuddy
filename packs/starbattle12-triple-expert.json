@@ -1,0 +1,904 @@
+{
+ "id": "starbattle12-triple-expert",
+ "game": "starbattle",
+ "size": 12,
+ "stars": 3,
+ "difficulty": "Hard",
+ "puzzles": [
+  {
+   "id": "starbattle12-triple-expert-1",
+   "regions": [
+    "LGGGGGGGDDBB",
+    "LGKKGIDDDDBB",
+    "LKKKGIDDDBBB",
+    "LLKKIIIDDBBB",
+    "LLKKIIIICBBF",
+    "LLLLHCIICFFF",
+    "LLHHHCICCFFF",
+    "LLHHHCCCCFFF",
+    "LEHHCCJCJAFA",
+    "EEHHCCJJJAAA",
+    "EEEEEEJJJAAA",
+    "EEEEEJJAAAAA"
+   ],
+   "solution": [
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Star rules out",
+    "Would block",
+    "Confined region",
+    "Last cell in row",
+    "Last cells in row",
+    "Last cell in column",
+    "Last cell in region",
+    "Last cells in column"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-2",
+   "regions": [
+    "AAFFDDDJJJJJ",
+    "AAAFFFDJJJJJ",
+    "AAFFFDDDDJLJ",
+    "AAFFFFJJJJLJ",
+    "HHHHHCCJLLLK",
+    "HHHHCCCJLLLK",
+    "EHHHHCIJLKKK",
+    "EEEHCCIIKKKK",
+    "EEEHCCIIKGKK",
+    "EEEEBBIIKGKG",
+    "EEBBBBIIGGGG",
+    "BBBBBIIGGGGG"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Star rules out",
+    "Would block",
+    "Last cell in region",
+    "Last cells in region",
+    "Last cells in column",
+    "Last cell in column",
+    "Last cell in row",
+    "Last cells in row"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-3",
+   "regions": [
+    "HHHHHHDDCCLL",
+    "BHHHHHDDCCLL",
+    "BHBHHHDDCCLL",
+    "BBBBHDDDCLLL",
+    "BBFFFDDDCLLL",
+    "FBFFFDDICCJJ",
+    "FFFFFIIICKKJ",
+    "FGGGGIIICKKJ",
+    "GGGGGIIIIKJJ",
+    "EEEGGAIIKKJJ",
+    "EEEEGAAAKKJJ",
+    "EEEEAAAAAAJJ"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Star rules out",
+    "Would block",
+    "Last cells in column",
+    "Last cell in column",
+    "Last cell in region",
+    "Last cells in row",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-4",
+   "regions": [
+    "GGGLLLIIICDD",
+    "GGGGLLIIICDD",
+    "GGGGLLLICCCD",
+    "GGBBLIIICCDD",
+    "BBBBJJIICCDE",
+    "BBBBJJIICDDE",
+    "BJJJJJJACDDE",
+    "JJJJJFFAADEE",
+    "KKJJJFAAAAEE",
+    "KKHHHFFFFAEE",
+    "KKKHHHHHFFEE",
+    "KKKKHHHHHFFE"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Would block",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region",
+    "Last cell in column",
+    "Last cells in column"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-5",
+   "regions": [
+    "FFGGGAAAAIII",
+    "FFGGGGAAAAII",
+    "FFFGGGACCCCI",
+    "FFDDGGAABCCI",
+    "FFDDGGBBBCCI",
+    "FFDDEJBJBCII",
+    "FDDEEJJJBBBI",
+    "DDEEEEJJJBII",
+    "DHHHHHJJJJLI",
+    "HHHHHHHLJLLI",
+    "KKKKKKKLLLLL",
+    "KKKKKKKLLLLL"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Star rules out",
+    "Would block",
+    "Last cell in column",
+    "Last cells in row",
+    "Last cell in row",
+    "Last cell in region",
+    "Last cells in column"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-6",
+   "regions": [
+    "KKDDDDBBBBBB",
+    "KKDDDDBBBBBB",
+    "FKKKDDJBJBBB",
+    "FFKKKJJJJJJJ",
+    "FFEEEHJIJJLL",
+    "FFEHHHJIILLL",
+    "FEEHAAIIILLL",
+    "FEEHAIIIIILL",
+    "FEEHAGGIIILG",
+    "FHHHAAGGGGGG",
+    "HHHHAAGCGCCC",
+    "HHHAAACCCCCC"
+   ],
+   "solution": [
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Would block",
+    "Star rules out",
+    "Last cell in row",
+    "Last cells in region",
+    "Last cell in region",
+    "Last cell in column",
+    "Last cells in column"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-7",
+   "regions": [
+    "BBBBJJJJJJJJ",
+    "BBBBDDHHJJJE",
+    "CCBBDDDHHEEE",
+    "CCBBDHHHHEEE",
+    "CCLLDDHHHEEE",
+    "CCLLIIIIIEEE",
+    "CLLLIIIIIIEE",
+    "CCLFFFAAIAEG",
+    "CLLFFFAAAAGG",
+    "LLKKFFAAAAGG",
+    "LKKKKKAAAGGG",
+    "LLKKKKAAAGGG"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column",
+    "Would block",
+    "Confined region",
+    "Last cells in region",
+    "Last cells in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-8",
+   "regions": [
+    "GGGLLDDDEEEC",
+    "GGGLLDDDEEEC",
+    "GGGLLFFDDECC",
+    "GGLLFFDDDECC",
+    "GGGLLFFFBECC",
+    "JGHLHHFFBECC",
+    "JHHHHHAABBBC",
+    "JJIIHHAKBBBB",
+    "JJIIHAAKKBBB",
+    "JJIIIAAKKKBK",
+    "JIIIIIAAKKBK",
+    "JIIIIAAKKKKK"
+   ],
+   "solution": [
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Would block",
+    "Star rules out",
+    "Last cell in region",
+    "Column inside one region",
+    "Confined region",
+    "Last cell in row",
+    "Last cell in column",
+    "Last cells in row"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-9",
+   "regions": [
+    "FDDDDAAAAAII",
+    "FFDHHABBAAII",
+    "FDDHBBBBAIII",
+    "FFDHHHBBAIII",
+    "FDDHHHBBBIIG",
+    "FDDDHHBCCCGG",
+    "EEEJHHBCCCGG",
+    "EEEJHLLLCCGG",
+    "EEEJJLLLCCGG",
+    "EEEJJJLLLCGG",
+    "EEEJJLLLKKGG",
+    "EEEKKKKKKKGG"
+   ],
+   "solution": [
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Would block",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "Confined region",
+    "Star rules out",
+    "Last cell in region",
+    "Last cells in row",
+    "Last cell in row",
+    "Last cell in column",
+    "Last cells in column"
+   ]
+  },
+  {
+   "id": "starbattle12-triple-expert-10",
+   "regions": [
+    "EEEEEEEEECCC",
+    "BBEEEEEDCCCC",
+    "BBBBBBEDDDDC",
+    "BBGGBBDDDDCC",
+    "BHHGGGGLLKKC",
+    "HHHHGGGLKKKF",
+    "HHHHGGLLKKKF",
+    "AHHHLLLLKFKF",
+    "AAAALLJLJFFF",
+    "IIAAAAJJJFFF",
+    "IIAIIIJJJFFF",
+    "IIIIIIIJJFFF"
+   ],
+   "solution": [
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     1,
+     3,
+     5
+    ],
+    [
+     7,
+     9,
+     11
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ],
+    [
+     0,
+     2,
+     4
+    ],
+    [
+     6,
+     8,
+     10
+    ]
+   ],
+   "techniquesUsed": [
+    "Squeeze",
+    "Would block",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column",
+    "Last cell in row",
+    "Last cells in row"
+   ]
+  }
+ ]
+}

@@ -65,14 +65,20 @@ function room(b: Board, cells: Cell[], upTo = 2) {
     for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (!touch(o[i], o[j])) return 2;
     return Math.min(o.length, 1);
   }
-  // 3 stars: search for the most non-touching cells, stopping as soon as there are enough.
+  // 3 stars: search for the most non-touching cells, stopping as soon as there are enough (one shared list, no copies:
+  // this runs thousands of times per hint on a 12×12).
   let best = 0;
-  const grow = (from: number, chosen: Cell[]) => {
-    best = Math.max(best, chosen.length);
+  const chosen: Cell[] = [];
+  const grow = (from: number) => {
+    if (chosen.length > best) best = chosen.length;
     if (best >= upTo) return;
-    for (let i = from; i < o.length && best < upTo; i++) if (!chosen.some((p) => touch(p, o[i]))) grow(i + 1, [...chosen, o[i]]);
+    for (let i = from; i < o.length && best < upTo; i++) {
+      let free = true;
+      for (const p of chosen) if (touch(p, o[i])) { free = false; break; }
+      if (free) { chosen.push(o[i]); grow(i + 1); chosen.pop(); }
+    }
   };
-  grow(0, []);
+  grow(0);
   return best;
 }
 // A row, column or region that can no longer fit the stars it still needs.
@@ -156,21 +162,33 @@ function squeeze(b: Board, regions: Regions): Step | null {
     if (need <= 0) continue;
     const o = open(b, u.cells);
     if (o.length <= need) continue;
-    const ways: Cell[][] = [];
-    if (need === 1) { for (const p of o) if (fitsOne(p)) ways.push([p]); }
-    else if (need === 2) { for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (fitsTwo(o[i], o[j])) ways.push([o[i], o[j]]); }
-    else {
-      // 3 stars: every pair must fit, and no unit may get more stars than it needs.
-      const fitsThree = (p: Cell, q: Cell, s: Cell) => fitsTwo(p, q) && fitsTwo(p, s) && fitsTwo(q, s) &&
-        [p, q, s].flatMap(unitsOf).every((i, _, list) => list.filter((x) => x === i).length <= needs[i]);
-      for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) {
-        if (!fitsTwo(o[i], o[j])) continue;
-        for (let k = j + 1; k < o.length; k++) if (fitsThree(o[i], o[j], o[k])) ways.push([o[i], o[j], o[k]]);
+    let total = 0, used: (p: Cell) => number;
+    if (need <= 2) {
+      const ways: Cell[][] = [];
+      if (need === 1) { for (const p of o) if (fitsOne(p)) ways.push([p]); }
+      else { for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++) if (fitsTwo(o[i], o[j])) ways.push([o[i], o[j]]); }
+      total = ways.length;
+      used = (p: Cell) => ways.filter((w) => w.includes(p)).length;
+    } else {
+      // 3 stars: every pair must fit, and no unit may get more stars than it needs. Counted per cell rather than
+      // listing every triple (a 12×12 region can have thousands); same answer, much quicker.
+      const m = o.length, us = o.map(unitsOf), fit2 = o.map((p) => o.map((q) => fitsTwo(p, q)));
+      const count = new Array(m).fill(0);
+      for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) {
+        if (!fit2[i][j]) continue;
+        for (let x = j + 1; x < m; x++) {
+          if (!fit2[i][x] || !fit2[j][x]) continue;
+          // Pairs already fit, so the only overfill left is all three in one row, column or region needing fewer than 3.
+          let over = false;
+          for (let s = 0; s < 3; s++) if (us[i][s] === us[j][s] && us[j][s] === us[x][s] && needs[us[i][s]] < 3) over = true;
+          if (over) continue;
+          count[i]++; count[j]++; count[x]++; total++;
+        }
       }
+      used = (p: Cell) => count[o.indexOf(p)];
     }
-    if (!ways.length) continue; // a broken board: the mistake check deals with it
-    const used = (p: Cell) => ways.filter((w) => w.includes(p)).length;
-    const star = o.find((p) => used(p) === ways.length);
+    if (!total) continue; // a broken board: the mistake check deals with it
+    const star = o.find((p) => used(p) === total);
     if (star) {
       return { technique: "Squeeze", star, cross: [], focus: u.cells, nudge: `Look at ${u.label}.`,
         why: `${cap(u.label)} needs ${stars(need)}. Every way to fit ${need === 1 ? "it" : "them"} without touching uses row ${star[0] + 1}, column ${star[1] + 1}, so that's a star.` };
@@ -369,7 +387,8 @@ export function chainFrom(b: Board, regions: Regions, from: Cell, maxLen = Infin
 
 // Big boards with 3 stars (imports) get a time budget so a hint stays quick: past it, the shortest chain found so far
 // is used (still a sound deduction), or none, and the hint says it's stuck. Packed puzzles never hit it.
-const WHAT_IF_MS = 450;
+// Packs are picked so no hint comes near these (checks lift them with timeLimits to prove it); imports may.
+export const timeLimits = { whatIfMs: 450, fullMs: 700 };
 // Multi-star boards try quick chains first; only if none works, chains with group moves (Colin's hard imported
 // 10×10 got stuck without them, 10/22). Pack puzzles never need the second pass, so their hints don't change.
 function whatIf(b: Board, regions: Regions): Step | null {
@@ -378,7 +397,7 @@ function whatIf(b: Board, regions: Regions): Step | null {
 function whatIfWith(b: Board, regions: Regions, full: boolean): Step | null {
   let best: (Step & { forced: number }) | null = null;
   // The fuller second pass always has a budget, so a hint never freezes the phone for long.
-  const budget = full ? Date.now() + 700 : perUnit(regions) >= 3 || regions.length > 10 ? Date.now() + WHAT_IF_MS : Infinity;
+  const budget = full ? Date.now() + timeLimits.fullMs : perUnit(regions) >= 3 || regions.length > 10 ? Date.now() + timeLimits.whatIfMs : Infinity;
   for (let r = 0; r < b.length; r++) {
     for (let c = 0; c < b.length; c++) {
       if (b[r][c] !== EMPTY) continue;

@@ -13,7 +13,9 @@ const PACKS = {
   easy: await loadPack("starbattle8-easy-starter.json"),
   expert: await loadPack("starbattle8-expert.json"),
   double: await loadPack("starbattle10-double-expert.json"),
+  triple: await loadPack("starbattle12-triple-expert.json"), // 12×12, 3 stars (Colin, 10/22)
 };
+const MORE = ["", "", " Double", " Triple"]; // the name a 2- or 3-star pack shows after its size
 const query = new URLSearchParams(location.search);
 const importId = query.get("import");
 // An import lives in this phone's storage (made here) or in the bundled imports.json (added by Claude). In the app,
@@ -86,7 +88,7 @@ function load(i, name = packName, first = false) {
     s.hints = saved.hints ?? 0;
   } else if (name === "import") s.marks = { ...(p.marks ?? {}) };
   $("sub").textContent = name === "import" ? `Imported · ${N}×${N} · ${K} star${K === 1 ? "" : "s"}`
-    : `${N}×${N}${K > 1 ? " Double" : ""} · ${pack.difficulty} · #${i + 1}`;
+    : `${N}×${N}${MORE[K]} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", name === "import" ? `?import=${encodeURIComponent(importId)}` : `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
@@ -160,7 +162,7 @@ function checkSolved() {
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
   logSolve({ g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
-  celebrate({ title: packName === "import" ? "Imported puzzle" : `${K > 1 ? "Double " : ""}${pack.difficulty} #${idx + 1}`,
+  celebrate({ title: packName === "import" ? "Imported puzzle" : `${MORE[K].trim()} ${pack.difficulty} #${idx + 1}`.trim(),
     level: pack.difficulty, facts, hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
 }
@@ -367,7 +369,7 @@ function renderPicker() {
     if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.className = "lbl";
-    lbl.textContent = `${pk.stars > 1 ? "Double " : ""}${pk.difficulty}:`;
+    lbl.textContent = `${MORE[pk.stars ?? 1].trim()} ${pk.difficulty}:`.trim();
     lbl.style.marginLeft = "6px";
     p.appendChild(lbl);
     pk.puzzles.forEach((_, i) => {

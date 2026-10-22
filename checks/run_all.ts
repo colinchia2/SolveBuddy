@@ -182,7 +182,7 @@ check("maker: 10 new Easy puzzles are all good", Array.from({ length: 10 }, make
 const packFile = "packs/sudoku9-easy-starter.json";
 if (existsSync(packFile)) {
   const pack = JSON.parse(readFileSync(packFile, "utf8"));
-  check("saved pack: 5 puzzles, all good", pack.puzzles.length === 5 && pack.puzzles.every(goodEasy));
+  check("saved pack: 10 puzzles, all good", pack.puzzles.length === 10 && pack.puzzles.every(goodEasy));
 
   // Hints: tapping "Show me" over and over must finish every puzzle, with only correct moves.
   const solvedByHints = pack.puzzles.every((p: Saved) => {
@@ -228,7 +228,7 @@ function goodSb(p: SbSaved) {
 const sbPackFile = "packs/starbattle8-easy-starter.json";
 if (existsSync(sbPackFile)) {
   const sbPack = JSON.parse(readFileSync(sbPackFile, "utf8"));
-  check("SB saved pack: 5 puzzles, one answer each, even regions, Easy", sbPack.puzzles.length === 5 && sbPack.puzzles.every(goodSb));
+  check("SB saved pack: 10 puzzles, one answer each, even regions, Easy", sbPack.puzzles.length === 10 && sbPack.puzzles.every(goodSb));
 
   // Every trick move must agree with the answer, and "Show me" over and over must finish each puzzle.
   const sbHintsOk = sbPack.puzzles.every((p: SbSaved) => {
@@ -375,6 +375,13 @@ if (existsSync(sbExpertFile)) {
   const { spawnSync } = await import("node:child_process");
   check("Star Battle any size and stars: one answer, Hint never wrong, packs grade and hint as before",
     spawnSync(process.execPath, ["checks/starbattle_any.ts"], { encoding: "utf8" }).status === 0);
+}
+
+// Triple Star Battle (12×12, 3 stars, 10/22): one answer each, Hint alone solves all 10 (details: starbattle_triple.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Triple Star Battle: one answer each, Hint alone solves all 10",
+    spawnSync(process.execPath, ["checks/starbattle_triple.ts"], { encoding: "utf8" }).status === 0);
 }
 
 if (failed) process.exit(1);

@@ -154,6 +154,156 @@
     "Last cell in row",
     "Last cell in column"
    ]
+  },
+  {
+   "id": "starbattle8-easy-6",
+   "regions": [
+    "AACCCCCC",
+    "ACCBBBDC",
+    "ACBBABDC",
+    "AAAAABDD",
+    "AAEEAEDD",
+    "EEEEEEEF",
+    "EEEGFFFF",
+    "GGGGGHHH"
+   ],
+   "solution": [
+    0,
+    4,
+    1,
+    6,
+    2,
+    7,
+    3,
+    5
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-easy-7",
+   "regions": [
+    "DAAAAACB",
+    "DDDDAACB",
+    "DDFGACCB",
+    "DFFGGCCB",
+    "FFGGGCEE",
+    "FFGGGGGE",
+    "FHHHGGHH",
+    "FHHHHHHH"
+   ],
+   "solution": [
+    3,
+    7,
+    5,
+    0,
+    6,
+    1,
+    4,
+    2
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-easy-8",
+   "regions": [
+    "BBBBBBAA",
+    "CCCBDBBA",
+    "CHCDDDBA",
+    "CHHDDDDE",
+    "HHHDFFDE",
+    "HHFFFFFE",
+    "HHHGFGFE",
+    "HHHGGGFE"
+   ],
+   "solution": [
+    6,
+    3,
+    0,
+    4,
+    7,
+    2,
+    5,
+    1
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Column inside one region",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-easy-9",
+   "regions": [
+    "BBBAAAFF",
+    "DBBBECCF",
+    "DDDEECFF",
+    "DDDDEEFF",
+    "GGDGEHFF",
+    "GGGGHHFF",
+    "GHHHHHFF",
+    "GHHHHHHF"
+   ],
+   "solution": [
+    3,
+    1,
+    5,
+    2,
+    4,
+    7,
+    0,
+    6
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Column inside one region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-easy-10",
+   "regions": [
+    "AAABBBBB",
+    "ABBBBBCC",
+    "AEBCCCCC",
+    "AEBBCDCC",
+    "EEEEDDDC",
+    "FFEEEEDC",
+    "FFGEEEEC",
+    "FGGGHHHC"
+   ],
+   "solution": [
+    1,
+    4,
+    7,
+    5,
+    3,
+    0,
+    2,
+    6
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
   }
  ]
 }

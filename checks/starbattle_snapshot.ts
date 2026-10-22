@@ -9,8 +9,10 @@ import { EMPTY, CROSS, STAR } from "../engine/starbattle/techniques.ts";
 
 export function snapshot() {
   const out: any[] = [];
-  for (const f of ["starbattle8-easy-starter.json", "starbattle8-expert.json", "starbattle10-double-expert.json"]) {
-    for (const p of JSON.parse(readFileSync(`packs/${f}`, "utf8")).puzzles) {
+  // The puzzles that existed when the snapshot was taken (packs only grow at the end, so later ones don't change it).
+  const SNAP: [string, number][] = [["starbattle8-easy-starter.json", 5], ["starbattle8-expert.json", 10], ["starbattle10-double-expert.json", 10]];
+  for (const [f, count] of SNAP) {
+    for (const p of JSON.parse(readFileSync(`packs/${f}`, "utf8")).puzzles.slice(0, count)) {
       const g = grade(p.regions);
       out.push({ id: p.id, level: g.level, steps: g.steps });
       const all = solveWith(p.regions).steps;

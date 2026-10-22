@@ -1,19 +1,20 @@
 // Top a pack up to a number of puzzles, keeping the ones already in it (saves and solves point at puzzle numbers).
 // Run: node scripts/fill_pack.ts sudoku medium 10   ·   node scripts/fill_pack.ts starbattle expert 10
 import { readFileSync, writeFileSync } from "node:fs";
-import { makeLevel } from "../engine/sudoku/makePuzzle.ts";
-import { makePuzzle } from "../engine/starbattle/makePuzzle.ts";
+import { makeEasy as sudokuEasy, makeLevel } from "../engine/sudoku/makePuzzle.ts";
+import { makeEasy as starEasy, makePuzzle } from "../engine/starbattle/makePuzzle.ts";
 import { grade } from "../engine/starbattle/grade.ts";
 
 const [game, level, want] = [process.argv[2], process.argv[3], Number(process.argv[4] || 10)];
 const FILES: Record<string, string> = {
+  "sudoku/easy": "packs/sudoku9-easy-starter.json", "starbattle/easy": "packs/starbattle8-easy-starter.json",
   "sudoku/medium": "packs/sudoku9-medium.json", "sudoku/hard": "packs/sudoku9-hard.json",
   "sudoku/expert": "packs/sudoku9-expert.json", "starbattle/expert": "packs/starbattle8-expert.json",
 };
 // Each level must show its own trick at least once (same rule as the first puzzle of each pack).
 const SUDOKU_TRICKS: Record<string, string[]> = { medium: ["Pointing"], hard: ["Pairs"], expert: ["X-wing", "Y-wing"] };
 // A hint must never show a trick from a harder level (a Medium once showed a Y-wing).
-const ABOVE: Record<string, string[]> = { medium: ["Pairs", "Hidden pairs", "X-wing", "Y-wing"], hard: ["X-wing", "Y-wing"] };
+const ABOVE: Record<string, string[]> = { easy: ["Pointing", "Claiming", "Pairs", "Hidden pairs", "X-wing", "Y-wing"], medium: ["Pairs", "Hidden pairs", "X-wing", "Y-wing"], hard: ["X-wing", "Y-wing"] };
 const file = FILES[`${game}/${level}`];
 if (!file) throw new Error(`no pack for ${game}/${level}`);
 const pack = JSON.parse(readFileSync(file, "utf8"));
@@ -35,7 +36,8 @@ function starExpert() {
 const seen = new Set(pack.puzzles.map((p: any) => JSON.stringify(p.givens ?? p.regions)));
 while (pack.puzzles.length < want) {
   const t0 = Date.now();
-  const p: any = game === "sudoku" ? makeLevel(Level as any, SUDOKU_TRICKS[level])! : starExpert();
+  const p: any = game === "sudoku" ? (level === "easy" ? sudokuEasy() : makeLevel(Level as any, SUDOKU_TRICKS[level])!)
+    : level === "easy" ? (({ tries, ...q }) => q)(starEasy()) : starExpert();
   const k = JSON.stringify(p.givens ?? p.regions);
   if (seen.has(k) || p.techniquesUsed.some((t: string) => (ABOVE[level] ?? []).includes(t))) continue;
   seen.add(k);

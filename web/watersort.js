@@ -3,7 +3,7 @@
 import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
-import { clearSaved, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -13,7 +13,24 @@ const PACKS = {
   hard: await loadPack("watersort-hard.json"),
 };
 const query = new URLSearchParams(location.search);
-let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+// Imported levels (?import=<id>, Colin 10/22) start from the tubes as they were, and save and log under pack
+// "import" with p = the import's id. They live in this phone's storage (made here) or in the bundled imports.json
+// (added by Claude); in the app a just-made one can reach this page a moment late, so look again for up to 2 seconds.
+const importId = query.get("import");
+const IMPORTS_KEY = "solvebuddy.imports";
+async function findImport(id) {
+  const bundled = (await loadPack("imports.json").catch(() => null))?.puzzles ?? [];
+  for (let tries = 0; tries < 20; tries++) {
+    let mine = [];
+    try { mine = JSON.parse(localStorage.getItem(IMPORTS_KEY) || "[]"); } catch {}
+    const item = [...mine, ...bundled].find((p) => p.id === id && p.game === "watersort");
+    if (item) return item;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return null;
+}
+if (importId) PACKS.import = { id: "import", difficulty: "Imported", puzzles: [] };
+let packName = importId ? "import" : PACKS[query.get("pack")] ? query.get("pack") : "easy";
 let pack = PACKS[packName];
 const $ = (id) => document.getElementById(id);
 // 12 colours, bright enough to tell apart at a glance.
@@ -46,7 +63,9 @@ const POUR_MS = 1000, FAST_MS = 150, TILT = 100; // TILT > 90°: the mouth dips 
 const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
 
-let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
+let idx = importId ? 0 : Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
+// Which level this is for saves, solves and your finished board: its number in a pack, or an import's id.
+const pid = () => (packName === "import" ? importId : idx + 1);
 let s; // game state
 const undoStack = []; // earlier tube states, one per pour
 
@@ -60,7 +79,7 @@ function load(i, name = packName, first = false) {
   s = { tubes: p.tubes.map((t) => [...t]), picked: null, moves: 0, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false };
   // Pick up where you left off.
-  const saved = savedGame("watersort", name, i + 1);
+  const saved = savedGame("watersort", name, pid());
   if (saved) {
     s.tubes = saved.tubes ?? s.tubes;
     s.moves = saved.moves ?? 0;
@@ -68,18 +87,19 @@ function load(i, name = packName, first = false) {
     s.hints = saved.hints ?? 0;
     undoStack.push(...(saved.undo ?? []));
   }
-  $("sub").textContent = `${p.colors} colours · ${pack.difficulty} · #${i + 1}`;
+  $("sub").textContent = name === "import" ? `Imported · ${p.tubes.length} tubes · ${p.colors} colours`
+    : `${p.colors} colours · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  history.replaceState(null, "", name === "import" ? `?import=${encodeURIComponent(importId)}` : `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle": every colour in its own full tube, with your best time.
   if (first && query.get("view")) {
     const colours = [...new Set(p.tubes.flat())].sort();
     s.tubes = [...colours.map((c) => Array(CAP).fill(c)), ...Array(p.tubes.length - colours.length).fill(0).map(() => [])];
-    const best = solves().filter((e) => e.g === "watersort" && e.pack === name && e.p === i + 1).map((e) => e.ms);
+    const best = solves().filter((e) => e.g === "watersort" && e.pack === name && e.p === pid()).map((e) => e.ms);
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
     $("time").textContent = fmt(s.elapsed);
-    solvedBar(s.elapsed, () => { clearSaved("watersort", packName, idx + 1); load(idx); });
+    solvedBar(s.elapsed, () => { clearSaved("watersort", packName, pid()); load(idx); });
   }
   s.introAt = Date.now();
   s.introWait = first ? 0.45 : 0.05;
@@ -185,14 +205,13 @@ function drawPour(A) {
   A.src.style.transform = `translate(${A.tx * move}px, ${A.lift + (A.ty - A.lift) * move}px) rotate(${A.deg * move}deg)`;
   A.drain.forEach((u, j) => (u.style.height = `${UNIT * (1 - clamp(A.k * q - j))}px`));
   A.fill.forEach((u, j) => (u.style.height = `${UNIT * clamp(A.k * q - j)}px`));
-  // Tilted past level, the liquid runs down to the mouth (Colin, 10/22: it sat at the closed end, with a gap before
-  // the stream). The column slides along the tube as it tilts, so the stream leaves right from the liquid, and what's
-  // left drains out of the mouth end; it slides back as the tube goes home.
+  // Tilted past level, only the colour being poured runs down to the mouth, so the stream leaves right from it (Colin,
+  // 10/22). The colours underneath stay put at the closed end the whole time; the poured run shrinks as the other
+  // tube fills, then whatever's left of it settles back on top as the tube goes home.
   if (!A.quiet) {
     const h = A.rest + A.drain.reduce((sum, u, j) => sum + UNIT * (1 - clamp(A.k * q - j)), 0);
-    const r = 19 - 16 * move;
-    A.liq.style.transform = `translateY(${-(CAP * UNIT - h) * move}px)`;
-    A.liq.style.borderRadius = `3px 3px ${r}px ${r}px`;
+    const gap = CAP * UNIT - h; // empty space between the liquid's top and the mouth
+    A.drain.forEach((u) => (u.style.transform = `translateY(${-gap * move}px)`));
   }
   if (A.stream) {
     const surface = A.base - (A.had + A.k * q) * UNIT;
@@ -237,14 +256,16 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now();
-  clearSaved("watersort", packName, idx + 1);
+  clearSaved("watersort", packName, pid());
+  saveFinal("watersort", packName, pid(), { tubes: s.tubes.map((t) => [...t]) });
   haptic("success");
   const full = s.tubes.filter((t) => t.length).length;
   for (let k = 1; k < full; k++) setTimeout(() => haptic("tap"), k * 110); // a tick as each tube hops
   const facts = solveFacts("watersort", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "watersort", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
+  logSolve({ g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
   render();
-  celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+  celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
+    hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
 }
 
@@ -304,12 +325,12 @@ function hintText(h) {
   return ["Poured!", h.why.after, "Done"];
 }
 
-// Tubes in one row, or two rows when there are more than 6.
+// Tubes in one row, two rows when there are more than 6, three rows of 6 past 12 (imports go up to 18).
 function render() {
   const h = s.hint;
   const n = s.tubes.length;
-  const perRow = n <= 6 ? n : Math.ceil(n / 2);
-  UNIT = n > 6 ? 34 : 38;
+  const perRow = n <= 6 ? n : n <= 12 ? Math.ceil(n / 2) : 6;
+  UNIT = n > 12 ? 26 : n > 6 ? 34 : 38;
   $("stage").classList.toggle("two", n > 6);
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
@@ -358,6 +379,7 @@ function renderPicker() {
   const p = $("picker");
   p.querySelectorAll("button, .lbl").forEach((b) => b.remove());
   for (const [name, pk] of Object.entries(PACKS)) {
+    if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.className = "lbl";
     lbl.textContent = `${pk.difficulty}:`;
@@ -415,7 +437,7 @@ $("undoBtn").onclick = undo;
 const openMore = moreMenu({
   settingsNote: "Timer",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("watersort", packName, idx + 1); load(idx); },
+  onRestart: () => { clearSaved("watersort", packName, pid()); load(idx); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm");
@@ -449,8 +471,8 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 // Keep the half-done level saved (twice a second), with the last 100 undo steps.
 function persist() {
   if (!s || s.solved) return;
-  if (!s.moves) return void (savedGame("watersort", packName, idx + 1) && clearSaved("watersort", packName, idx + 1)); // back at the start
-  saveGame("watersort", packName, { p: idx + 1, tubes: s.tubes, moves: s.moves, undo: undoStack.slice(-100),
+  if (!s.moves) return void (savedGame("watersort", packName, pid()) && clearSaved("watersort", packName, pid())); // back at the start
+  saveGame("watersort", packName, { p: pid(), tubes: s.tubes, moves: s.moves, undo: undoStack.slice(-100),
     ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
 }
 setInterval(() => {
@@ -461,4 +483,16 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-load(idx, packName, true);
+if (!importId) load(idx, packName, true);
+else {
+  const item = await findImport(importId);
+  if (item) {
+    PACKS.import.puzzles = [{ ...item, colors: item.colors ?? new Set(item.tubes.flat()).size }];
+    load(0, "import", true);
+  } else {
+    // Never found (deleted, or not on this phone yet): say so kindly, with a way back.
+    $("board").innerHTML = `<div class="missing"><b>Couldn't find this import</b><span>It may have been deleted, or not reached this phone yet.</span>
+      <button class="dark" id="missingBack">Back</button></div>`;
+    $("missingBack").onclick = goHome;
+  }
+}

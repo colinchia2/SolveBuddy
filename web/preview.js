@@ -2,7 +2,7 @@
 // board"). Drawn from the save (or your finished board / the answer when solved), the same colours as each game.
 
 const SB_COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8",
-  I: "#E2EA98", J: "#D3D0C8" };
+  I: "#E2EA98", J: "#D3D0C8", K: "#CDB497", L: "#E7AEDB" };
 const WS_COLORS = { A: "#E8574F", B: "#3E86E8", C: "#F4C542", D: "#4CB86A", E: "#9B6BD6", F: "#F28C38",
   G: "#EE7BB0", H: "#2BB3B1", I: "#9C6B4E", J: "#A8D45A", K: "#2F4A8A", L: "#9AA3AD" };
 const STAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z" fill="#2A211B"/></svg>`;

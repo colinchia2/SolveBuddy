@@ -1,6 +1,7 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
+// Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, fitHint, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
@@ -13,7 +14,23 @@ const PACKS = {
   tricks: await loadPack("sudoku9-tricks.json"), // one test per harder trick
 };
 const query = new URLSearchParams(location.search);
-let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+const importId = query.get("import");
+// An import lives in this phone's storage (made here) or in the bundled imports.json (added by Claude). In the app,
+// a just-made import can reach this page's copy of storage a moment late, so look again for up to 2 seconds.
+const IMPORTS_KEY = "solvebuddy.imports";
+async function findImport(id) {
+  const bundled = (await loadPack("imports.json").catch(() => null))?.puzzles ?? [];
+  for (let tries = 0; tries < 20; tries++) {
+    let mine = [];
+    try { mine = JSON.parse(localStorage.getItem(IMPORTS_KEY) || "[]"); } catch {}
+    const item = [...mine, ...bundled].find((p) => p.id === id && p.game === "sudoku");
+    if (item) return item;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return null;
+}
+if (importId) PACKS.import = { id: "import", difficulty: "Imported", puzzles: [] };
+let packName = importId ? "import" : PACKS[query.get("pack")] ? query.get("pack") : "easy";
 let pack = PACKS[packName];
 const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, rgba(255,255,255,0) 4px 10px)";
 const $ = (id) => document.getElementById(id);
@@ -25,7 +42,9 @@ const CORNER_POS = [
   "top:13px;left:3px", "top:13px;right:3px", "top:13px;left:0;right:0;text-align:center",
 ];
 
-let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
+let idx = importId ? 0 : Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
+// Which puzzle this is for saves, solves and your finished board: its number in a pack, or an import's id.
+const pid = () => (packName === "import" ? importId : idx + 1);
 let s; // game state
 const undoStack = []; // board snapshots for Undo
 
@@ -53,23 +72,25 @@ function load(i, name = packName, first = false) {
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, picked: new Set(), mode: s?.mode || "normal",
     hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
   // Pick up where you left off (Colin, 10/21).
-  const saved = savedGame("sudoku", name, i + 1);
+  // An import starts from the numbers you'd already filled in (from the photo, or made by hand).
+  const saved = savedGame("sudoku", name, pid());
   if (saved) {
     Object.assign(s, { entries: saved.entries ?? {}, corner: saved.corner ?? {}, center: saved.center ?? {} });
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
-  }
-  $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
+  } else if (name === "import") s.entries = { ...(p.entries ?? {}) };
+  $("sub").textContent = name === "import" ? "Imported · Classic 9×9"
+    : p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  history.replaceState(null, "", name === "import" ? `?import=${encodeURIComponent(importId)}` : `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
   if (first && query.get("view")) {
     s.givens.forEach((row, r) => row.forEach((v, c) => { if (!v) s.entries[key(r, c)] = s.solution[r][c]; }));
-    const best = solves().filter((e) => e.g === "sudoku" && e.pack === name && e.p === i + 1).map((e) => e.ms);
+    const best = solves().filter((e) => e.g === "sudoku" && e.pack === name && e.p === pid()).map((e) => e.ms);
     s.solved = true;
     s.elapsed = best.length ? Math.min(...best) : 0;
     $("time").textContent = fmt(s.elapsed);
-    solvedBar(s.elapsed, () => { clearSaved("sudoku", packName, idx + 1); load(idx); });
+    solvedBar(s.elapsed, () => { clearSaved("sudoku", packName, pid()); load(idx); });
   }
   // The clues drop in box by box, then the number pad rises key by key.
   s.introAt = Date.now();
@@ -151,13 +172,15 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // a blue flash sweeps the board corner to corner, then the Solved! card rises
-  clearSaved("sudoku", packName, idx + 1);
+  clearSaved("sudoku", packName, pid());
+  saveFinal("sudoku", packName, pid(), { entries: { ...s.entries } });
   haptic("success");
   [250, 500, 750].forEach((ms) => setTimeout(() => haptic("tap"), ms)); // ticks with the blue sweep
   const facts = solveFacts("sudoku", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
+  logSolve({ g: "sudoku", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
   const p = pack.puzzles[idx];
-  celebrate({ title: p.label || `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+  celebrate({ title: packName === "import" ? "Imported puzzle" : p.label || `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
+    hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1000 });
 }
 
@@ -309,6 +332,7 @@ function renderPicker() {
   const p = $("picker");
   p.querySelectorAll("button, .lbl").forEach((b) => b.remove());
   for (const [name, pk] of Object.entries(PACKS)) {
+    if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.className = "lbl";
     lbl.textContent = `${pk.difficulty}:`;
@@ -377,7 +401,7 @@ $("undoBtn").onclick = () => {
 const openMore = moreMenu({
   settingsNote: "Timer, show mistakes, highlights",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("sudoku", packName, idx + 1); load(idx); },
+  onRestart: () => { clearSaved("sudoku", packName, pid()); load(idx); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
@@ -423,7 +447,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 // Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
 function persist() {
   if (!s || s.solved || ![s.entries, s.corner, s.center].some((m) => Object.keys(m).length)) return;
-  saveGame("sudoku", packName, { p: idx + 1, entries: s.entries, corner: s.corner, center: s.center,
+  saveGame("sudoku", packName, { p: pid(), entries: s.entries, corner: s.corner, center: s.center,
     ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
 }
 setInterval(() => {
@@ -434,4 +458,16 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-load(idx, packName, true);
+if (!importId) load(idx, packName, true);
+else {
+  const item = await findImport(importId);
+  if (item) {
+    PACKS.import.puzzles = [item];
+    load(0, "import", true);
+  } else {
+    // Never found (deleted, or not on this phone yet): say so kindly, with a way back.
+    $("board").innerHTML = `<div class="missing"><b>Couldn't find this import</b><span>It may have been deleted, or not reached this phone yet.</span>
+      <button class="dark" id="missingBack">Back</button></div>`;
+    $("missingBack").onclick = goHome;
+  }
+}

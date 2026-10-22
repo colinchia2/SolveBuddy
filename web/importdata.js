@@ -1,8 +1,12 @@
 // Imported puzzles (Colin, 10/22): the ones you build by hand on this phone, plus the ones Claude adds from your
 // screenshots (packs/imports.json, until the app reads photos itself). Plain logic, no page, so the checks can test it.
 //
-// One import: { id: "imp-<time>", game: "starbattle", size, stars, regions: ["AABB…", …], marks: { "r,c": 1 (×) | 2 (★) },
-//   solution: [[cols of row 0's stars], …], name, addedAt (ms or an ISO date), source: "hand" | "claude" }
+// One import (all: id, game, name, addedAt (ms or an ISO date), source: "hand" | "claude"):
+//   Star Battle: { game: "starbattle", size, stars, regions: ["AABB…", …], marks: { "r,c": 1 (×) | 2 (★) },
+//     solution: [[cols of row 0's stars], …] }
+//   Sudoku: { game: "sudoku", size: 9, givens: 9×9 numbers (0 = empty), entries: { "r,c": n } (numbers you'd filled in),
+//     solution: 9×9 } — Classic rules only for now; variant rules (a rules photo) come later.
+//   Water Sort: { game: "watersort", tubes: [["A","B",…] bottom → top, …] as they are now, colors: n }
 
 export const IMPORTS_KEY = "solvebuddy.imports";
 export const LETTERS = "ABCDEFGHIJKL";
@@ -12,6 +16,13 @@ export const MIN_SIZE = 5, MAX_SIZE = 12;
 
 // Most stars per row a board can hold in practice: 1 up to 7×7, 2 on 8×8 and 9×9, 3 from 10×10.
 export const maxStars = (size) => (size >= 10 ? 3 : size >= 8 ? 2 : 1);
+
+// Water Sort: 4 to 18 tubes (3 rows of 6 at most), 4 units each, the game's 12 colours.
+export const MIN_TUBES = 4, MAX_TUBES = 18, TUBE_CAP = 4;
+export const WATER_COLORS = { A: "#E8574F", B: "#3E86E8", C: "#F4C542", D: "#4CB86A", E: "#9B6BD6", F: "#F28C38",
+  G: "#EE7BB0", H: "#2BB3B1", I: "#9C6B4E", J: "#A8D45A", K: "#2F4A8A", L: "#9AA3AD" };
+export const WATER_NAMES = { A: "red", B: "blue", C: "yellow", D: "green", E: "purple", F: "orange", G: "pink", H: "teal", I: "brown",
+  J: "lime", K: "navy", L: "grey" };
 
 export function handImports() {
   try {
@@ -35,12 +46,60 @@ export function allImports(bundled = [], mine = handImports()) {
 export const toMs = (t) => (typeof t === "number" ? t : Date.parse(t) || 0);
 
 export function validImport(x) {
-  if (!x || typeof x.id !== "string" || x.game !== "starbattle") return false;
+  if (!x || typeof x.id !== "string") return false;
+  if (x.game === "sudoku") return validSudoku(x);
+  if (x.game === "watersort") return validWater(x);
+  if (x.game !== "starbattle") return false;
   const n = x.size;
   if (!Number.isInteger(n) || n < MIN_SIZE || n > MAX_SIZE || !Number.isInteger(x.stars) || x.stars < 1 || x.stars > maxStars(n)) return false;
   if (!Array.isArray(x.regions) || x.regions.length !== n || x.regions.some((r) => typeof r !== "string" || r.length !== n)) return false;
   if (new Set(x.regions.join("")).size !== n) return false;
   return Array.isArray(x.solution) && x.solution.length === n && x.solution.every((r) => Array.isArray(r) && r.length === x.stars);
+}
+
+const isGrid9 = (g, lo) => Array.isArray(g) && g.length === 9 && g.every((r) => Array.isArray(r) && r.length === 9 && r.every((v) => Number.isInteger(v) && v >= lo && v <= 9));
+function validSudoku(x) {
+  if (x.size !== 9 || !isGrid9(x.givens, 0) || !isGrid9(x.solution, 1)) return false;
+  return Object.entries(x.entries ?? {}).every(([k, v]) => /^[0-8],[0-8]$/.test(k) && Number.isInteger(v) && v >= 1 && v <= 9);
+}
+function validWater(x) {
+  const t = x.tubes;
+  if (!Array.isArray(t) || t.length < MIN_TUBES || t.length > MAX_TUBES) return false;
+  if (!t.every((tube) => Array.isArray(tube) && tube.length <= TUBE_CAP && tube.every((c) => c in WATER_COLORS))) return false;
+  return waterProblem(t) === null;
+}
+
+// Sudoku: cells whose number appears twice in a row, column or box. board = 9×9 numbers (0 = empty).
+export function sudokuClashes(board) {
+  const out = new Set();
+  const groups = [];
+  for (let i = 0; i < 9; i++) {
+    groups.push([...Array(9).keys()].map((c) => [i, c]), [...Array(9).keys()].map((r) => [r, i]));
+    const r0 = Math.floor(i / 3) * 3, c0 = (i % 3) * 3;
+    groups.push([...Array(9).keys()].map((k) => [r0 + Math.floor(k / 3), c0 + (k % 3)]));
+  }
+  for (const g of groups) {
+    const seen = {};
+    for (const [r, c] of g) { const v = board[r][c]; if (v) (seen[v] ??= []).push(`${r},${c}`); }
+    for (const cells of Object.values(seen)) if (cells.length > 1) cells.forEach((k) => out.add(k));
+  }
+  return [...out];
+}
+// Your own numbers that disagree with the answer.
+export const sudokuWrong = (entries, solution) =>
+  Object.entries(entries).filter(([k, v]) => { const [r, c] = k.split(",").map(Number); return solution[r][c] !== v; }).map(([k]) => k);
+
+// Water Sort: what's wrong before solving, or null. Every colour used needs exactly 4 units, and there must be room
+// to move (not every tube full).
+export function waterProblem(tubes) {
+  const count = {};
+  for (const t of tubes) for (const c of t) count[c] = (count[c] ?? 0) + 1;
+  const used = Object.keys(count);
+  if (!used.length) return { kind: "wait", title: "Fill the tubes", text: "Pick a tube, then tap colours to fill it from the bottom up, like your photo." };
+  const off = used.filter((c) => count[c] !== TUBE_CAP);
+  if (off.length) return { kind: "bad", title: "Each colour needs exactly 4", text: off.sort().map((c) => `${WATER_NAMES[c]} has ${count[c]}`).join(", ") + "." };
+  if (used.length * TUBE_CAP >= tubes.length * TUBE_CAP) return { kind: "bad", title: "Leave some room", text: "With every tube full nothing can move. Add an empty tube." };
+  return null;
 }
 
 // "Today", "Yesterday", or "Oct 18" (with the year if it isn't this year), in the phone's own days.

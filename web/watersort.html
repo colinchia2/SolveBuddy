@@ -12,6 +12,10 @@
   .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 8px 0 4px; }
   /* Two rows of tubes sit near the top, so the hint card below never covers them. */
   .stage.two { justify-content: flex-start; padding-top: 20px; }
+  .tubes .missing { width: 330px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px; text-align: center; color: var(--body); }
+  .tubes .missing b { font-size: 17px; color: var(--ink); }
+  .tubes .missing button { margin-top: 8px; min-width: 140px; }
   /* The hint card always shows in full, with its button, floating over the bottom of the screen (Colin, 10/22). */
   #hint { max-height: none; overflow: visible; }
   .tubes { position: relative; display: flex; flex-direction: column; align-items: center; gap: 28px; touch-action: manipulation; user-select: none; -webkit-user-select: none; }

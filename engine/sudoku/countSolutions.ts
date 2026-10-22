@@ -1,10 +1,11 @@
 // The checker: how many answers does this puzzle have? We only care about 0, 1, or "2 or more",
 // so it stops counting at 2. It tries every possibility (no human tricks), so it is never wrong.
+// found (optional) gets a copy of each answer, e.g. for an imported puzzle's solution (Colin, 10/22).
 import { type Grid, fits } from "./fullGrid.ts";
 
-export function countSolutions(puzzle: Grid, limit = 2): number {
+export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = []): number {
   const grid = puzzle.map((row) => [...row]);
-  let found = 0;
+  let count = 0;
 
   // If the numbers already there break a rule, there are no answers.
   for (let row = 0; row < 9; row++) {
@@ -29,17 +30,18 @@ export function countSolutions(puzzle: Grid, limit = 2): number {
       }
     }
     if (!best) {
-      found++; // no empty cells left: one complete answer
+      count++; // no empty cells left: one complete answer
+      found.push(grid.map((row) => [...row]));
       return;
     }
     for (const n of best.options) {
       grid[best.row][best.col] = n;
       search();
       grid[best.row][best.col] = 0;
-      if (found >= limit) return;
+      if (count >= limit) return;
     }
   }
 
   search();
-  return found;
+  return count;
 }

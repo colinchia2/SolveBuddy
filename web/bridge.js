@@ -46,9 +46,10 @@ export const GAMES = {
     sets: [{ name: "Starter", levels: ["easy", "medium", "hard", "expert"] }, { name: "Trick tests", levels: ["tricks"], note: "One per trick" }] },
   starbattle: { name: "Star Battle", packs: [
     ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"],
-    ["double", "starbattle10-double-expert.json", "Expert"]],
+    ["double", "starbattle10-double-expert.json", "Expert"], ["triple", "starbattle12-triple-expert.json", "Hard"]],
     // Single = one star per row on 8×8; Double = two per row on 10×10 (Colin, 10/22).
-    sets: [{ name: "Starter – Single", levels: ["easy", "expert"] }, { name: "Starter – Double", levels: ["double"], note: "Expert" }] },
+    sets: [{ name: "Starter – Single", levels: ["easy", "expert"] }, { name: "Starter – Double", levels: ["double"], note: "Expert" },
+      { name: "Starter – Triple", levels: ["triple"], note: "Hard" }] }, // 12×12, 3 stars (Colin, 10/22)
   // Water Sort (Colin, 10/22): pour the colours until every tube holds one colour.
   watersort: { name: "Water Sort", packs: [
     ["easy", "watersort-easy.json", "Easy"], ["medium", "watersort-medium.json", "Medium"], ["hard", "watersort-hard.json", "Hard"]],

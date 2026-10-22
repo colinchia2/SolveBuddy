@@ -6,6 +6,7 @@
     "checks": "node checks/run_all.ts"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "playwright": "^1.56.1"
   }
 }

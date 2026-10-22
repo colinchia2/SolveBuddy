@@ -10,6 +10,10 @@
 <style>
   .screen { gap: 10px; }
   /* Sudoku-only: board, pencil marks, mode bar, keypad. */
+  .board .missing { grid-column: 1 / -1; width: 351px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px; text-align: center; color: var(--body); }
+  .board .missing b { font-size: 17px; color: var(--ink); }
+  .board .missing button { margin-top: 8px; min-width: 140px; }
   .board { align-self: center; display: grid; grid-template-columns: repeat(9, 39px);
     border-top: 3px solid var(--ink); border-left: 3px solid var(--ink); border-radius: 10px; overflow: hidden;
     background: var(--board); box-shadow: 0 12px 32px rgba(30,30,30,0.12); touch-action: none; user-select: none; }
