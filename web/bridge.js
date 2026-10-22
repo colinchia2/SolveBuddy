@@ -16,14 +16,19 @@ export const buzz = (ms = 10) => navigator.vibrate?.(ms);
 // The phone app's offline pages carry the packs inside them (SB_PACKS); otherwise fetch them.
 export const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
 
-// Every pack on the phone, per game: [key in the game page's ?pack=, file, label].
+// Every pack file on the phone, per game: [key in the game page's ?pack=, file, level label].
+// sets = the named packs you pick from (Colin, 10/21): each holds one or more levels (pack keys above), e.g. a future
+// Halloween pack = { name: "Halloween", levels: ["halloween-easy", "halloween-hard"] }. note = a section name that
+// isn't a level (Trick tests: "One per trick").
 export const GAMES = {
   sudoku: { name: "Sudoku", packs: [
     ["easy", "sudoku9-easy-starter.json", "Easy"], ["medium", "sudoku9-medium.json", "Medium"],
     ["hard", "sudoku9-hard.json", "Hard"], ["expert", "sudoku9-expert.json", "Expert"],
-    ["tricks", "sudoku9-tricks.json", "Trick tests"]] },
+    ["tricks", "sudoku9-tricks.json", "Trick tests"]],
+    sets: [{ name: "Starter", levels: ["easy", "medium", "hard", "expert"] }, { name: "Trick tests", levels: ["tricks"], note: "One per trick" }] },
   starbattle: { name: "Star Battle", packs: [
-    ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"]] },
+    ["easy", "starbattle8-easy-starter.json", "Easy"], ["expert", "starbattle8-expert.json", "Expert"]],
+    sets: [{ name: "Starter", levels: ["easy", "expert"] }] },
 };
 
 // Solve log: one entry per finished puzzle. Stored in this browser / on this phone only.

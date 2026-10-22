@@ -106,4 +106,70 @@ html.app .tabs { display: none; }
    you scroll down, like TasteBuddy's (Colin, 10/21). */
 html.app .phone:has(> .page) { height: auto; min-height: 100vh; overflow: visible; overflow-x: clip; }
 html.app .page { height: auto; min-height: calc(100vh - var(--safetop, 0px)); overflow: visible; }
-html.app .pick-scrim { position: fixed; }
+html.app .pick-scrim, html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on screen while the page scrolls */
+
+/* Game page (approved mockup "Game page", Colin 10/21): pick a pack → the pack's levels with numbered puzzles. */
+@keyframes sbSlideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+@keyframes sbTileIn { 0% { opacity: 0; transform: scale(0.6); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
+.gameview { display: flex; flex-direction: column; gap: 16px; }
+.gameview.enter { animation: sbSlideIn 0.3s cubic-bezier(0.33,1,0.68,1) both; }
+.gp-head { display: flex; align-items: center; gap: 12px; }
+.gp-head .sq { flex: none; }
+.gp-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gp-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 25px; line-height: 1.1; letter-spacing: -0.01em; }
+.gp-title span { font-size: 13px; color: var(--muted); }
+.gp-packs { display: flex; flex-direction: column; gap: 10px; margin-top: -6px; }
+.pack-card, .more-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; text-align: left; width: 100%; color: var(--ink); }
+.pack-card { background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(30,30,30,0.06);
+  animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.06s) cubic-bezier(0.3,1.3,0.5,1) both; }
+.more-card { padding: 14px; background: rgba(255,255,255,0.45); border: 1px dashed rgba(47,111,214,0.4); }
+.pack-art { width: 56px; height: 56px; flex: none; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+.pack-art b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; }
+.pack-art small { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; }
+.pack-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.pack-text b { font-size: 16px; }
+.pack-text small { font-size: 13px; color: var(--muted); }
+.pack-text em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--body); }
+.track { display: block; height: 5px; border-radius: 3px; background: rgba(42,33,27,0.08); }
+.track .fill { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
+.pack-done { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--brand); display: grid; place-items: center; }
+.more-ico { width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
+.gp-level { display: flex; flex-direction: column; gap: 10px; }
+.gp-level-head { display: flex; align-items: center; gap: 10px; }
+.gp-level-head h2 { margin: 0; flex: 1; font-size: 17px; font-weight: 700; }
+.gp-level-head > span:last-child { font-size: 13px; font-weight: 600; color: var(--body); }
+.gp-bar .track { height: 6px; }
+.gp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.ptile { position: relative; aspect-ratio: 1; border-radius: 16px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  color: var(--ink); background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 4px 12px rgba(30,30,30,0.05);
+  animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.035s) cubic-bezier(0.3,1.3,0.5,1) both; }
+.ptile b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; line-height: 1; }
+.ptile small { font-size: 10px; font-weight: 700; color: var(--muted); }
+.ptile.solved { background: var(--brand-soft); border-color: rgba(47,111,214,0.25); color: var(--brand-dark); }
+.ptile.progress { background: #fff; border: 2.5px solid var(--brand); box-shadow: 0 6px 16px rgba(47,111,214,0.2); }
+.ptile.progress small { color: var(--brand); }
+.ptile-star { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); border: 2px solid var(--bg);
+  display: grid; place-items: center; }
+.gp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.gp-legend span { display: flex; align-items: center; gap: 5px; }
+.gp-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.gp-legend i.solved { background: var(--brand-soft); border: 1px solid rgba(47,111,214,0.3); }
+.gp-legend i.progress { background: #fff; border: 2px solid var(--brand); }
+.gp-legend i.new { background: rgba(255,255,255,0.7); border: 1px solid rgba(42,33,27,0.15); }
+/* The tap pop-up: a little picture of the puzzle, its state, then the two choices. */
+.tile-top { display: flex; gap: 14px; align-items: center; }
+.tile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tile-text h2 { font-size: 22px; line-height: 1.15; }
+.tile-text .chip { align-self: flex-start; font-size: 12px; font-weight: 700; }
+.tile-text .chip.progress { background: #FFF1D6; color: #7A4E00; }
+.tile-top .x { align-self: flex-start; flex: none; }
+.thumb { width: 76px; height: 76px; flex: none; display: grid; gap: 1px; padding: 3px; border-radius: 12px; background: var(--ink); overflow: hidden; }
+.thumb i { display: block; }
+.thumb i.dot { background: var(--ink); }
+.thumb.nine i { background: #FFFDF9; }
+.thumb.nine i.on { background: var(--sel); }
+.thumb.nine i.br { margin-right: 1px; }
+.thumb.nine i.bb { margin-bottom: 1px; }
+.tile-main { min-height: 54px; border-radius: 14px; border: 0; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px; }
+.tile-restart { display: flex; align-items: center; justify-content: center; gap: 8px; }

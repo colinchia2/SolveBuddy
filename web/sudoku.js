@@ -1,7 +1,7 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose } from "./bridge.js";
-import { celebrate, openWipe, solveFacts } from "./celebrate.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -62,6 +62,15 @@ function load(i, name = packName, first = false) {
   $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
+  if (first && query.get("view")) {
+    s.givens.forEach((row, r) => row.forEach((v, c) => { if (!v) s.entries[key(r, c)] = s.solution[r][c]; }));
+    const best = solves().filter((e) => e.g === "sudoku" && e.pack === name && e.p === i + 1).map((e) => e.ms);
+    s.solved = true;
+    s.elapsed = best.length ? Math.min(...best) : 0;
+    $("time").textContent = fmt(s.elapsed);
+    solvedBar(s.elapsed, () => { clearSaved("sudoku", packName); load(idx); });
+  }
   // The clues drop in box by box, then the number pad rises key by key.
   s.introAt = Date.now();
   s.introWait = first ? 0.45 : 0.05;

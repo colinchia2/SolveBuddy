@@ -1,7 +1,7 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose } from "./bridge.js";
-import { celebrate, openWipe, shootingStar, solveFacts } from "./celebrate.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -56,6 +56,15 @@ function load(i, name = packName, first = false) {
   $("sub").textContent = `8×8 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
+  if (first && query.get("view")) {
+    for (let r = 0; r < N; r++) s.marks[key(r, s.solution[r])] = STAR;
+    const best = solves().filter((e) => e.g === "starbattle" && e.pack === name && e.p === i + 1).map((e) => e.ms);
+    s.solved = true;
+    s.elapsed = best.length ? Math.min(...best) : 0;
+    $("time").textContent = fmt(s.elapsed);
+    solvedBar(s.elapsed, () => { clearSaved("starbattle", packName); load(idx); });
+  }
   // The board builds as a colour wave from the top-left corner, then a shooting star lands in the counter.
   s.introAt = Date.now();
   s.introWait = first ? 0.45 : 0.05;

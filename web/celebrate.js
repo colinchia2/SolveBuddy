@@ -70,6 +70,20 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000 }
   };
 }
 
+// "View solved puzzle" (from a pack's numbers): the finished board with a small bar, and Play again.
+export function solvedBar(ms, onAgain) {
+  document.getElementById("won")?.remove();
+  const el = document.createElement("div");
+  el.id = "won";
+  el.className = "viewing";
+  el.innerHTML = `<div class="won-bar">
+    <span class="won-pill">${star(18, "#2F6FD6")}Solved in ${fmt(ms)}</span>
+    <button class="won-go" data-act="again"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Play again</button>
+  </div>`;
+  document.querySelector(".phone").appendChild(el);
+  el.querySelector("[data-act=again]").onclick = () => { el.remove(); onAgain(); };
+}
+
 // The blue wipe a game opens with: a circle grows from near the bottom, then fades to show the page.
 export function openWipe() {
   const w = document.createElement("div");
