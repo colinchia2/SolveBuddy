@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 2026-10-22 (late) — Centring, last phone fixes, app backup
+- Every game centred between the info row and the bottom bar (Star Battle was 95px high); `checks/pages_smoke.mjs`
+  fails if a board is >40px off at 844 or 750px tall. Hint cards float over the bottom (no more squeezing).
+- Water Sort: the poured colour drains from one end only (the clip box no longer follows it).
+- Block Drop: swipe up = Save, quick flick down = drop, hold = faster; scores shrink to fit past 99,999; Next/Save
+  pieces centred within 1px; scoring checks (guideline 100/300/500/800 × level, soft 1, hard 2 per row).
+- App folder backed up: private repo `colinchia2/SolveBuddyApp` (push works now).
+- Backlogs: TasteBuddy haptics question (TasteBuddy backlog), launch screens + CheckBuddy bar (family backlog).
+
 ## 2026-10-22 (evening) — Two new games, Import tab, phone feedback rounds
 - **Water Sort** (30 levels, Starter pack Easy/Medium/Hard): solver hints that say WHY (`engine/watersort/explain.ts`,
   1–3 moves ahead, no move counts), tilt-and-pour animation where only the poured colour moves, tap to speed up.

@@ -10,6 +10,7 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   4–18 tubes; build one by hand, or Colin sends a screenshot to Claude in chat and Claude adds it to
   `packs/imports.json` (4 Star Battles added 10/22, read with `scripts/read_starbattle_screenshot.py`: thick-line reading +
   "exactly one answer" check).
+- **App backup:** `C:\dev\SolveBuddyApp` pushes to the private repo `colinchia2/SolveBuddyApp` (since 10/22).
 - **This chat is closing.** From now on Colin uses ONE agent for all Buddy apps ("pick up Buddy Family work"):
   `Buddies\00 Family\00_PRIMER.md`, section "How Colin works from now on".
 - **Next (backlog top):** in-app photo reading (needs a small server, likely a Cloudflare Worker since SolveBuddy
