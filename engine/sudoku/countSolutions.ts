@@ -1,10 +1,13 @@
 // The checker: how many answers does this puzzle have? We only care about 0, 1, or "2 or more",
 // so it stops counting at 2. It tries every possibility (no human tricks), so it is never wrong.
 // found (optional) gets a copy of each answer, e.g. for an imported puzzle's solution (Colin, 10/22).
-import { type Grid, fits } from "./fullGrid.ts";
+import { type Grid, fits as classicFits } from "./fullGrid.ts";
+import { type Rules, variantFits } from "./variants.ts";
 
-export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = []): number {
+// rules: a Killer or Thermo puzzle's extra rules (10/22); none = classic.
+export function countSolutions(puzzle: Grid, limit = 2, found: Grid[] = [], rules?: Rules): number {
   const grid = puzzle.map((row) => [...row]);
+  const fits = rules ? (g: Grid, r: number, c: number, n: number) => classicFits(g, r, c, n) && variantFits(g, rules, r, c, n) : classicFits;
   let count = 0;
 
   // If the numbers already there break a rule, there are no answers.

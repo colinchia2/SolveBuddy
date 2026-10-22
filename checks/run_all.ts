@@ -384,4 +384,11 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/starbattle_triple.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Killer and Thermo Sudoku (10/22): one answer each, hints alone solve them, classic packs unchanged (sudoku_variants.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Killer + Thermo Sudoku: one answer each, Hint alone solves all 10, classic hints unchanged",
+    spawnSync(process.execPath, ["checks/sudoku_variants.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);

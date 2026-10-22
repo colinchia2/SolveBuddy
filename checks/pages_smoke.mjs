@@ -83,6 +83,31 @@ for (const h of [844, 750]) {
   await ctx.close();
 }
 
+// Killer and Thermo Sudoku (10/22): the cages / thermometers draw, the first hint is a variant one, and Killer #1
+// and Thermo #1 are solved by Hint presses alone, to the Solved! card.
+for (const v of ["killer", "thermo"]) {
+  await page.goto(`${BASE}sudoku.html?pack=${v}&p=1`);
+  await page.waitForTimeout(1500);
+  const r = await page.evaluate(async (v) => {
+    const $ = (id) => document.getElementById(id);
+    const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    localStorage.removeItem("solvebuddy.saved");
+    const drawn = document.querySelectorAll(v === "killer" ? "svg.extra .sum" : "svg.extra circle").length;
+    $("hintBtn").click(); await wait(80);
+    $("hintNext").click(); await wait(30);
+    const chip = $("hintChip").textContent;
+    $("hintClose").click();
+    for (let i = 0; i < 300 && !$("won"); i++) {
+      if ($("hint").hidden) { $("hintBtn").click(); await wait(20); }
+      for (let g = 0; g < 10 && !$("hint").hidden; g++) $("hintNext").click();
+    }
+    await wait(2000);
+    return { drawn, chip, won: !!$("won"), sub: $("sub").textContent };
+  }, v);
+  check(`${v} #1: drawn (${r.drawn}), first hint "${r.chip}", solved by hints (${r.sub})`,
+    r.drawn > 0 && ["Last cell in cage", "Cage sum", "Cage digits", "Thermo order"].includes(r.chip) && r.won);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

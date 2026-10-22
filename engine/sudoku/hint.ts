@@ -10,6 +10,7 @@
 // Each hint has three levels the player clicks through: Nudge → Explain → Show me.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
+import { type Rules, variantPlace, variantRuleOut } from "./variants.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -211,7 +212,9 @@ function findChain(grid: Grid, out: RuledOut) {
 }
 
 // `board` = givens plus the player's numbers (0 = empty). `marks` / `corners` = the player's center / corner marks.
-export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Marks = {}): Hint {
+// rules: a Killer or Thermo puzzle's extra rules. Their tricks go first (Colin, 10/22): a number from a cage or
+// thermo, then a classic number, then a cage or thermo narrowing (written as pencil marks), then classic rule-outs.
+export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Marks = {}, rules?: Rules): Hint {
   const none = { remove: null, value: 0 };
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -242,6 +245,14 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   }
   fromGroups(board, solution, marks, corners, out, from);
 
+  if (rules) {
+    const v = variantPlace(board, out, rules);
+    if (v) {
+      const [r, c] = v.place!.cell;
+      return { kind: "step", technique: v.technique, focus: v.focus, target: [r, c], value: v.place!.value, remove: null,
+        nudge: v.nudge, explain: v.why, showMe: `It's ${v.place!.value === 8 ? "an" : "a"} ${v.place!.value}!` };
+    }
+  }
   const place = firstOf(board, out);
   if (place) {
     return {
@@ -250,6 +261,15 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
     };
   }
 
+  if (rules) {
+    const v = variantRuleOut(board, out, rules, (o) => !!firstOf(board, o));
+    if (v) {
+      const pencil = v.pencil!;
+      return { kind: "step", technique: v.technique, focus: v.focus, target: null, value: 0, remove: [], spots: pencil.map((p) => p.cell),
+        pencil, nudge: v.nudge, explain: v.why,
+        showMe: pencil.length === 1 ? `Wrote ${pencil[0].marks.join(" ")} in ${cellName(...pencil[0].cell)}.` : `Wrote what's left in ${pencil.length} cells.` };
+    }
+  }
   // No number yet: give one rule-out, and write it into pencil marks so it's on the board.
   // Prefer the one that leads to a number soonest.
   const step = findChain(board, out)?.steps[0] ?? nextStep(board, out);
@@ -304,13 +324,13 @@ export function writeMarks(h: Hint, marks: Marks, corners: Marks) {
 
 // Tap the bulb and "Show me" over and over, like a player who only follows hints (numbers + the pencil marks
 // hints write). Returns every hint shown and whether it finished. Used by the puzzle maker and the checks.
-export function playHints(givens: Grid, solution: Grid, limit = 300) {
+export function playHints(givens: Grid, solution: Grid, limit = 300, rules?: Rules) {
   const b = givens.map((r) => [...r]);
   const marks: Marks = {};
   const corners: Marks = {};
   const shown: Hint[] = [];
   for (let i = 0; i < limit; i++) {
-    const h = hint(b, solution, marks, corners);
+    const h = hint(b, solution, marks, corners, rules);
     if (h.kind !== "step") break;
     shown.push(h);
     if (!h.target) {

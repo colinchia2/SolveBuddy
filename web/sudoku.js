@@ -1,6 +1,7 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 // Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
+import { rulesOf } from "../engine/sudoku/variants.ts";
 import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
@@ -12,7 +13,10 @@ const PACKS = {
   hard: await loadPack("sudoku9-hard.json"),
   expert: await loadPack("sudoku9-expert.json"),
   tricks: await loadPack("sudoku9-tricks.json"), // one test per harder trick
+  killer: await loadPack("sudoku9-killer-easy.json"), // cages that add up (Colin, 10/22)
+  thermo: await loadPack("sudoku9-thermo-easy.json"), // numbers climb from the bulb (Colin, 10/22)
 };
+const VARIANT_NAMES = { killer: "Killer", thermo: "Thermo" };
 const query = new URLSearchParams(location.search);
 const importId = query.get("import");
 // An import lives in this phone's storage (made here) or in the bundled imports.json (added by Claude). In the app,
@@ -70,7 +74,11 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { givens: p.givens, solution: p.solution, entries: {}, corner: {}, center: {}, sel: null, picked: new Set(), mode: s?.mode || "normal",
-    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false };
+    hint: null, started: Date.now(), elapsed: 0, solved: false, rules: false, settingsOpen: false, extra: rulesOf(p) };
+  $("variantRule").hidden = !s.extra;
+  if (s.extra) $("variantRuleText").innerHTML = s.extra.variant === "killer"
+    ? "<strong>Killer:</strong> the numbers in each dashed cage add up to its small number, and never repeat inside a cage."
+    : "<strong>Thermo:</strong> along each grey thermometer, numbers climb from the round bulb to the end.";
   // Pick up where you left off (Colin, 10/21).
   // An import starts from the numbers you'd already filled in (from the photo, or made by hand).
   const saved = savedGame("sudoku", name, pid());
@@ -80,7 +88,7 @@ function load(i, name = packName, first = false) {
     s.hints = saved.hints ?? 0;
   } else if (name === "import") s.entries = { ...(p.entries ?? {}) };
   $("sub").textContent = name === "import" ? "Imported · Classic 9×9"
-    : p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
+    : p.label ? `Classic 9×9 · ${p.label}` : `${VARIANT_NAMES[p.variant] ?? "Classic 9×9"} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", name === "import" ? `?import=${encodeURIComponent(importId)}` : `?pack=${name}&p=${i + 1}`);
   // "View solved puzzle" from the pack's numbers: the finished board, read-only, with your best time.
@@ -193,7 +201,7 @@ function openHint() {
     return render();
   }
   s.hints = (s.hints ?? 0) + 1; // for Stats: solved with or without hints
-  s.hint = { data: findHint(board(), s.solution, s.center, s.corner), level: 1 };
+  s.hint = { data: findHint(board(), s.solution, s.center, s.corner, s.extra), level: 1 };
   render();
 }
 function advanceHint() {
@@ -230,6 +238,40 @@ function placeHint(d) {
   delete s.corner[k];
   delete s.center[k];
   selectOnly(r, c);
+}
+
+// Killer cages (dashed outline, sum in the top-left corner) and Thermo lines (grey bulb and line), drawn over the cell
+// backgrounds but under the numbers. Cells are 39px apart (their lines are inside them), after the board's 3px frame.
+const CELL = 39;
+const edgeAt = (i) => 3 + i * CELL; // left (or top) of cell i, from the board's outer corner
+function extraLayer() {
+  const x = s.extra;
+  if (!x) return "";
+  const parts = [];
+  const mid = (i) => edgeAt(i) + CELL / 2;
+  for (const line of x.thermos ?? []) {
+    const pts = line.map(([r, c]) => `${mid(c)},${mid(r)}`).join(" ");
+    parts.push(`<polyline points="${pts}" fill="none" stroke="#BDB6AD" stroke-opacity="0.55" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`);
+    const [br, bc] = line[0];
+    parts.push(`<circle cx="${mid(bc)}" cy="${mid(br)}" r="15" fill="#BDB6AD" fill-opacity="0.55"/>`);
+  }
+  for (const cage of x.cages ?? []) {
+    const inCage = (r, c) => cage.cells.some(([a, b]) => a === r && b === c);
+    const pad = 3;
+    for (const [r, c] of cage.cells) {
+      const x0 = edgeAt(c) + pad, y0 = edgeAt(r) + pad, x1 = edgeAt(c) + CELL - pad, y1 = edgeAt(r) + CELL - pad;
+      // Each side with no cage neighbour gets a dashed edge; sides shared inside the cage stay open (extended to meet).
+      const L = inCage(r, c - 1), R = inCage(r, c + 1), U = inCage(r - 1, c), D = inCage(r + 1, c);
+      const ext = pad + 1;
+      if (!U) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y0}" x2="${x1 + (R ? ext : 0)}" y2="${y0}"/>`);
+      if (!D) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y1}" x2="${x1 + (R ? ext : 0)}" y2="${y1}"/>`);
+      if (!L) parts.push(`<line x1="${x0}" y1="${y0 - (U ? ext : 0)}" x2="${x0}" y2="${y1 + (D ? ext : 0)}"/>`);
+      if (!R) parts.push(`<line x1="${x1}" y1="${y0 - (U ? ext : 0)}" x2="${x1}" y2="${y1 + (D ? ext : 0)}"/>`);
+    }
+    const [r, c] = cage.cells[0];
+    parts.push(`<text x="${edgeAt(c) + 4}" y="${edgeAt(r) + 11}" class="sum">${cage.sum}</text>`);
+  }
+  return `<svg class="extra" width="${edgeAt(9)}" height="${edgeAt(9)}" aria-hidden="true">${parts.join("")}</svg>`;
 }
 
 function render() {
@@ -288,7 +330,7 @@ function render() {
       cells.push(`<button class="${cls}" data-r="${r}" data-c="${c}" style="--d:${d.toFixed(3)}s;background:${bg};box-shadow:${ring}" aria-label="Row ${r + 1} column ${c + 1}, ${v || "empty"}">${inner}</button>`);
     }
   }
-  $("board").innerHTML = cells.join("");
+  $("board").innerHTML = cells.join("") + extraLayer();
 
   document.querySelectorAll(".seg[data-mode]").forEach((b) => b.classList.toggle("on", b.dataset.mode === s.mode));
   $("pad").classList.toggle("pencil", s.mode !== "normal");
@@ -334,7 +376,7 @@ function renderPicker() {
     if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.className = "lbl";
-    lbl.textContent = `${pk.difficulty}:`;
+    lbl.textContent = `${pk.variant ? `${VARIANT_NAMES[pk.variant]} ` : ""}${pk.difficulty}:`;
     lbl.style.marginLeft = "6px";
     p.appendChild(lbl);
     pk.puzzles.forEach((_, i) => {
