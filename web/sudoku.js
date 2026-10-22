@@ -1,6 +1,7 @@
 // Sudoku play page: the approved 9×9 design, wired to the real engine and the Easy pack.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, saveGame, savedGame } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame } from "./bridge.js";
+import { celebrate, openWipe, solveFacts } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -42,7 +43,8 @@ function flipSetting(name) {
   render();
 }
 
-function load(i, name = packName) {
+// first = the page just opened: the blue wipe plays first, so the board waits for it.
+function load(i, name = packName, first = false) {
   packName = name;
   pack = PACKS[name];
   idx = i;
@@ -60,6 +62,14 @@ function load(i, name = packName) {
   $("sub").textContent = p.label ? `Classic 9×9 · ${p.label}` : `Classic 9×9 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  // The clues drop in box by box, then the number pad rises key by key.
+  s.introAt = Date.now();
+  s.introWait = first ? 0.45 : 0.05;
+  const pad = $("pad");
+  pad.querySelectorAll(".key").forEach((k, n) => k.style.setProperty("--d", `${(s.introWait + 1.05 + n * 0.04).toFixed(2)}s`));
+  pad.classList.remove("intro");
+  void pad.offsetWidth;
+  pad.classList.add("intro");
   renderPicker();
   render();
 }
@@ -127,12 +137,16 @@ function erase() {
 
 function checkSolved() {
   const b = board();
-  if (b.every((row, r) => row.every((v, c) => v === s.solution[r][c]))) {
-    s.solved = true;
-    s.elapsed = Date.now() - s.started;
-    clearSaved("sudoku", packName);
-    logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
-  }
+  if (s.solved || !b.every((row, r) => row.every((v, c) => v === s.solution[r][c]))) return;
+  s.solved = true;
+  s.elapsed = Date.now() - s.started;
+  s.winAt = Date.now(); // a blue flash sweeps the board corner to corner, then the Solved! card rises
+  clearSaved("sudoku", packName);
+  const facts = solveFacts("sudoku", packName, s.elapsed, s.hints ?? 0);
+  logSolve({ g: "sudoku", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
+  const p = pack.puzzles[idx];
+  celebrate({ title: p.label || `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+    onNext: () => load(idx + 1), delay: 1000 });
 }
 
 // Hint: tap the bulb → Nudge; then Explain; then Show me (does the move); then Done.
@@ -199,6 +213,8 @@ function render() {
   const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
   const [sr, sc] = s.sel || [-1, -1];
   const selVal = s.sel ? valueAt(sr, sc) : 0;
+  const intro = Date.now() - s.introAt < 1500;
+  const won = s.winAt && Date.now() - s.winAt < 1500;
 
   const cells = [];
   for (let r = 0; r < 9; r++) {
@@ -231,8 +247,10 @@ function render() {
         inner += `<span class="ctr">${s.center[k].join("")}</span>`;
       }
       if (!v && s.corner[k]) inner += s.corner[k].map((d, i) => `<span class="cn" style="${CORNER_POS[i]}">${d}</span>`).join("");
-      const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : ""].join(" ");
-      cells.push(`<button class="${cls}" data-r="${r}" data-c="${c}" style="background:${bg};box-shadow:${ring}" aria-label="Row ${r + 1} column ${c + 1}, ${v || "empty"}">${inner}</button>`);
+      const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : "", intro ? "drop" : "", won ? "won wave" : ""].join(" ");
+      const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+      const d = intro ? s.introWait + 0.15 + box * 0.09 + ((r % 3) * 3 + (c % 3)) * 0.025 : (r + c) * 0.03;
+      cells.push(`<button class="${cls}" data-r="${r}" data-c="${c}" style="--d:${d.toFixed(3)}s;background:${bg};box-shadow:${ring}" aria-label="Row ${r + 1} column ${c + 1}, ${v || "empty"}">${inner}</button>`);
     }
   }
   $("board").innerHTML = cells.join("");
@@ -273,11 +291,6 @@ function render() {
   $("timer").classList.toggle("notime", !settings.timer); // the pause button stays even with the clock hidden
   $("paused").hidden = !s.pausedAt;
   if (s.pausedAt) $("pausedText").textContent = `${$("sub").textContent} · ${fmt(s.pausedAt - s.started)}`;
-  $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
-  if (s.solved) {
-    $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
-    $("nextPuzzle").hidden = idx === pack.puzzles.length - 1;
-  }
 }
 
 function renderPicker() {
@@ -348,15 +361,16 @@ $("undoBtn").onclick = () => {
   s.hint = null;
   render();
 };
-$("restartBtn").onclick = () => { clearSaved("sudoku", packName); load(idx); };
+$("moreBtn").onclick = moreMenu({
+  settingsNote: "Timer, show mistakes, highlights",
+  onSettings: () => { s.settingsOpen = true; render(); },
+  onRestart: () => { clearSaved("sudoku", packName); load(idx); },
+});
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
-$("nextPuzzle").onclick = () => load(idx + 1);
-document.querySelectorAll("#solved [data-close]").forEach((b) => (b.onclick = () => { s.solvedClosed = true; render(); }));
-$("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
 document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));
 
@@ -403,4 +417,5 @@ setInterval(() => {
 }, 500);
 addEventListener("pagehide", persist);
 
-load(idx);
+openWipe();
+load(idx, packName, true);

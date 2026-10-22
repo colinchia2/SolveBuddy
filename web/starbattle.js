@@ -1,6 +1,7 @@
 // Star Battle play page: the approved 8×8 design, wired to the real engine and the packs.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
-import { clearSaved, fitHint, goHome, logSolve, saveGame, savedGame } from "./bridge.js";
+import { clearSaved, fitHint, goHome, logSolve, moreMenu, saveGame, savedGame } from "./bridge.js";
+import { celebrate, openWipe, shootingStar, solveFacts } from "./celebrate.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -36,7 +37,8 @@ let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") ||
 let s; // game state
 const undoStack = [];
 
-function load(i, name = packName) {
+// first = the page just opened: the blue wipe plays first, so the board waits for it.
+function load(i, name = packName, first = false) {
   packName = name;
   pack = PACKS[name];
   idx = i;
@@ -54,8 +56,12 @@ function load(i, name = packName) {
   $("sub").textContent = `8×8 · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?pack=${name}&p=${i + 1}`);
+  // The board builds as a colour wave from the top-left corner, then a shooting star lands in the counter.
+  s.introAt = Date.now();
+  s.introWait = first ? 0.45 : 0.05;
   renderPicker();
   render();
+  shootingStar($("board"), $("count").parentElement, s.introWait + 0.75);
 }
 
 const stars = () => Object.keys(s.marks).filter((k) => s.marks[k] === STAR).map((k) => k.split(",").map(Number));
@@ -99,12 +105,15 @@ function tap(r, c) {
 
 function checkSolved() {
   const st = stars();
-  if (st.length === N && st.every(([r, c]) => s.solution[r] === c)) {
-    s.solved = true;
-    s.elapsed = Date.now() - s.started;
-    clearSaved("starbattle", packName);
-    logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
-  }
+  if (s.solved || st.length !== N || !st.every(([r, c]) => s.solution[r] === c)) return;
+  s.solved = true;
+  s.elapsed = Date.now() - s.started;
+  s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
+  clearSaved("starbattle", packName);
+  const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
+  logSolve({ g: "starbattle", pack: packName, p: idx + 1, ms: s.elapsed, hints: s.hints ?? 0 });
+  celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+    onNext: () => load(idx + 1), delay: 1100 });
 }
 
 // Stars that break a rule (same row, column or region, or touching) always show red, as in the mockup.
@@ -208,6 +217,8 @@ function render() {
   const ringKey = ringed ? key(...ringed) : null;
   const bad = conflicts();
   const auto = autoCrossed();
+  const intro = Date.now() - s.introAt < 1500;
+  const won = s.winAt && Date.now() - s.winAt < 1500;
 
   const cells = [];
   for (let r = 0; r < N; r++) {
@@ -240,7 +251,8 @@ function render() {
         inner = `<span class="xm auto">×</span>`;
       }
       const label = `Row ${r + 1} column ${c + 1}${m === STAR ? ", star" : m === CROSS ? ", crossed" : ""}`;
-      cells.push(`<button class="cell ${br} ${bb}" data-r="${r}" data-c="${c}" style="background:${bg};box-shadow:${ring}" aria-label="${label}">${inner}</button>`);
+      const fx = intro ? ` intro" style="--d:${(s.introWait + 0.15 + (r + c) * 0.035).toFixed(3)}s;` : won && m === STAR ? ` won" style="--d:${(r * 0.11).toFixed(2)}s;` : `" style="`;
+      cells.push(`<button class="cell ${br} ${bb}${fx}background:${bg};box-shadow:${ring}" data-r="${r}" data-c="${c}" aria-label="${label}">${inner}</button>`);
     }
   }
   $("board").innerHTML = cells.join("");
@@ -288,11 +300,6 @@ function render() {
   $("timer").classList.toggle("notime", !settings.timer); // the pause button stays even with the clock hidden
   $("paused").hidden = !s.pausedAt;
   if (s.pausedAt) $("pausedText").textContent = `${$("sub").textContent} · ${fmt(s.pausedAt - s.started)}`;
-  $("solved").hidden = !s.solved || s.solvedClosed; // the close button keeps the finished board on screen
-  if (s.solved) {
-    $("solvedText").textContent = `You finished puzzle #${idx + 1} in ${fmt(s.elapsed)}.`;
-    $("nextPuzzle").hidden = idx === pack.puzzles.length - 1;
-  }
 }
 
 function renderPicker() {
@@ -375,17 +382,18 @@ $("undoBtn").onclick = () => {
   s.hinted.clear();
   render();
 };
-$("restartBtn").onclick = () => { clearSaved("starbattle", packName); load(idx); };
+$("moreBtn").onclick = moreMenu({
+  settingsNote: "Timer, show mistakes, auto-cross",
+  onSettings: () => { s.settingsOpen = true; render(); },
+  onRestart: () => { clearSaved("starbattle", packName); load(idx); },
+});
 $("hintBtn").onclick = openHint;
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = advanceHint;
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
-$("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
 document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));
-$("nextPuzzle").onclick = () => load(idx + 1);
-document.querySelectorAll("#solved [data-close]").forEach((b) => (b.onclick = () => { s.solvedClosed = true; render(); }));
 document.addEventListener("keydown", (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === "z" && !s.pausedAt) $("undoBtn").onclick();
 });
@@ -417,4 +425,5 @@ setInterval(() => {
 }, 500);
 addEventListener("pagehide", persist);
 
-load(idx);
+openWipe();
+load(idx, packName, true);

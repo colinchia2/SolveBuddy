@@ -56,5 +56,35 @@ export function fitHint(card, board) {
   card.style.maxHeight = room >= 150 ? `${room}px` : "";
 }
 
+// The More menu behind the bottom bar's ⋯ (Colin, 10/21): Game settings, and Restart, which asks before clearing.
+const GEAR = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1L7 17 M17 7l2.1-2.1"/></svg>`;
+const RESTART = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B3261E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>`;
+export function moreMenu({ settingsNote, onSettings, onRestart }) {
+  const el = document.createElement("div");
+  el.className = "scrim";
+  el.hidden = true;
+  el.innerHTML = `<section class="sheet" role="dialog" aria-label="More">
+    <div data-view="list" class="card">
+      <button class="menu-row" data-act="settings">${GEAR}<span><b>Game settings</b><small>${settingsNote}</small></span></button>
+      <button class="menu-row danger" data-act="restart">${RESTART}<span><b>Restart puzzle</b><small>Asks before clearing</small></span></button>
+    </div>
+    <button class="dark" data-view="list" data-act="close">Done</button>
+    <h2 data-view="confirm">Start over?</h2>
+    <p data-view="confirm">Your marks and time on this puzzle will be cleared.</p>
+    <div class="two" data-view="confirm"><button class="ghost" data-act="close">Keep playing</button><button class="danger-btn" data-act="yes">Start over</button></div>
+  </section>`;
+  document.querySelector(".phone").appendChild(el);
+  const view = (v) => el.querySelectorAll("[data-view]").forEach((n) => (n.hidden = n.dataset.view !== v));
+  const close = () => (el.hidden = true);
+  el.onclick = (e) => {
+    const act = e.target.closest("[data-act]")?.dataset.act;
+    if (e.target === el || act === "close") close();
+    else if (act === "settings") { close(); onSettings(); }
+    else if (act === "restart") view("confirm");
+    else if (act === "yes") { close(); onRestart(); }
+  };
+  return () => { view("list"); el.hidden = false; };
+}
+
 // Puzzle numbers (1-based) already solved in one pack.
 export const solvedIn = (game, pack) => new Set(solves().filter((e) => e.g === game && e.pack === pack).map((e) => e.p));

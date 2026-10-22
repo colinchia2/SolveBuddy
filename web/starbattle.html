@@ -43,22 +43,22 @@
       <button class="sq glass" id="backBtn" aria-label="Back to library"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
       <div class="title"><b>Star Battle</b><span id="sub"></span></div>
       <button class="sq glass" id="rulesBtn" aria-label="How to play"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg></button>
-      <button class="sq glass" id="undoBtn" aria-label="Undo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
-      <button class="sq glass" id="hintBtn" aria-label="Hint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2F6FD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></button>
     </header>
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
       <span class="count"><svg width="15" height="15" viewBox="0 0 24 24" fill="#C24E2A"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg><span id="count">0 / 8 stars</span></span>
-      <div class="info-right">
-        <button class="restart glass sqs" id="settingsBtn" aria-label="Game settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h10 M18 7h2 M4 17h2 M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
-        <button class="restart glass" id="restartBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Restart</button>
-      </div>
     </div>
 
     <div class="stage" id="stage">
       <div class="board" id="board"></div>
       <p class="tip">Tap once for ×, twice for a star · drag to mark ×</p>
+    </div>
+    <!-- Option A (Colin, 10/21): the buttons you press most sit under your thumb; Restart lives in More and asks first. -->
+    <div class="dock">
+      <button class="dock-sq glass" id="undoBtn" aria-label="Undo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+      <button class="dock-hint" id="hintBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg>Hint</button>
+      <button class="dock-sq glass" id="moreBtn" aria-label="More"><svg width="22" height="22" viewBox="0 0 24 24" fill="#2A211B"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     </div>
   </div>
 
@@ -118,14 +118,6 @@
     <h2>Paused</h2>
     <p id="pausedText"></p>
     <button class="dark" id="resumeBtn">Resume</button>
-  </div>
-
-  <div class="scrim" id="solved" hidden>
-    <section class="sheet" role="dialog" aria-label="Solved">
-      <div class="sheet-top"><h2>Solved!</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
-      <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span id="solvedText"></span></div>
-      <button class="dark" id="nextPuzzle">Next puzzle<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>
-    </section>
   </div>
 </div>
 
