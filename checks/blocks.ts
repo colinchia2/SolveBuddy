@@ -1,6 +1,6 @@
 // Block Drop checks (free, repeatable): pieces, turning with wall kicks, line clears and scoring, the bag, game over.
 // Run: node checks/blocks.ts
-import { W, H, cellsOf, fits, newGame, move, rotate, hardDrop, softDrop, lock, ghost, gravityMs, type State } from "../engine/blocks/game.ts";
+import { W, H, cellsOf, fits, newGame, move, rotate, hardDrop, softDrop, lock, ghost, gravityMs, holdPiece, type State } from "../engine/blocks/game.ts";
 
 let failed = 0;
 function check(name: string, ok: boolean) {
@@ -11,7 +11,7 @@ function check(name: string, ok: boolean) {
 const seeded = (seed = 7) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 const empty = () => Array.from({ length: H }, () => Array(W).fill(0));
 const withPiece = (t: number, extra: Partial<State> = {}): State =>
-  ({ board: empty(), piece: { t, r: 0, x: 3, y: 0 }, bag: [], next: 2, score: 0, lines: 0, level: 1, over: false, ...extra });
+  ({ board: empty(), piece: { t, r: 0, x: 3, y: 0 }, bag: [], next: 2, hold: null, canHold: true, score: 0, lines: 0, level: 1, over: false, ...extra });
 
 // The bag: every 7 pieces in a row hold each piece once.
 {
@@ -86,6 +86,28 @@ const withPiece = (t: number, extra: Partial<State> = {}): State =>
   const s = withPiece(1, { board, piece: { t: 1, r: 0, x: 0, y: -2 } });
   lock(s, seeded());
   check("game over when the next piece doesn't fit", s.over && !s.piece && !fits(board, { t: 2, r: 0, x: 3, y: 0 }));
+}
+
+// Ghost (Colin 10/22 saw it wrong): on an uneven stack it sits right on top of the highest block under the piece.
+{
+  const board = empty();
+  board[19][7] = 7; board[19][8] = 7; board[19][9] = 7; board[18][9] = 7; // an L lying at the bottom right
+  const s = withPiece(1, { board, piece: { t: 1, r: 0, x: 6, y: 2 } }); // O over columns 6–7
+  const g = ghost(s)!, rows = [...new Set(cellsOf(g).map(([, y]) => y))].sort();
+  check("ghost: O over an uneven stack lands on rows 17–18, touching nothing", rows.join() === "17,18" && fits(board, g));
+  const i = withPiece(0, { board: empty(), piece: { t: 0, r: 1, x: 3, y: 0 } }); // upright I, empty well
+  check("ghost: upright I on an empty well fills rows 16–19", cellsOf(ghost(i)!).map(([, y]) => y).sort((a, b) => a - b).join() === "16,17,18,19");
+}
+
+// Save piece: first save takes the next piece; one swap per piece; setting a piece allows the next swap.
+{
+  const rand = seeded(3), s = newGame(rand);
+  const first = s.piece!.t, next = s.next;
+  check("save: the first save keeps the piece and brings in the next one", holdPiece(s, rand) && s.hold === first && s.piece!.t === next);
+  check("save: no second swap before the piece sets", !holdPiece(s, rand) && s.hold === first);
+  hardDrop(s, rand);
+  const now = s.piece!.t;
+  check("save: after a piece sets, swapping brings the saved piece back at the top", holdPiece(s, rand) && s.piece!.t === first && s.hold === now && s.piece!.r === 0);
 }
 
 console.log(failed ? `${failed} FAILED` : "all ok");

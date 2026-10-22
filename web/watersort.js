@@ -36,18 +36,27 @@ function flipSetting(name) {
   render();
 }
 
+// The pour on screen, if any (Colin, 10/22): the tube lifts, moves over the other and tilts, a stream runs in while
+// one level drops and the other rises, then it goes back. A tap anywhere speeds it up.
+let anim = null;
+const calm = matchMedia("(prefers-reduced-motion: reduce)");
+const POUR_MS = 1000, FAST_MS = 150, TILT = 100; // TILT > 90°: the mouth dips below the bottom, so it pours
+const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+
 let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 let s; // game state
 const undoStack = []; // earlier tube states, one per pour
 
 function load(i, name = packName, first = false) {
+  settle();
   packName = name;
   pack = PACKS[name];
   idx = i;
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { tubes: p.tubes.map((t) => [...t]), picked: null, moves: 0, hint: null, started: Date.now(), elapsed: 0,
-    solved: false, rules: false, settingsOpen: false, poured: null };
+    solved: false, rules: false, settingsOpen: false };
   // Pick up where you left off.
   const saved = savedGame("watersort", name, i + 1);
   if (saved) {
@@ -78,6 +87,7 @@ function load(i, name = packName, first = false) {
 
 // Tap a tube: pick it up, pour into it, or put it down.
 function tap(i) {
+  if (anim) return speedUp();
   if (s.solved || s.pausedAt) return;
   const from = s.picked;
   if (from == null) {
@@ -95,17 +105,110 @@ function tap(i) {
     render();
     return shake(i);
   }
-  haptic("thud");
+  startPour(from, i);
+}
+
+// Pour `from` into `to` with the animation, then update the board. done = what the hint does after "Show me".
+function startPour(from, to, done) {
+  const board = $("board");
+  const src = board.querySelector(`.tube[data-i="${from}"]`), dst = board.querySelector(`.tube[data-i="${to}"]`);
+  const after = pour(s.tubes, from, to);
+  const had = s.tubes[to].length, k = after[to].length - had;
+  const c = s.tubes[from][s.tubes[from].length - 1];
   undoStack.push(s.tubes.map((t) => [...t]));
-  const before = s.tubes[i].length;
-  s.tubes = pour(s.tubes, from, i);
-  s.poured = { tube: i, from: before };
   s.picked = null;
+  if (!done) { // your own pour closes an open hint
+    s.hint = null;
+    $("hint").hidden = true;
+    $("hintBtn").classList.remove("pressed");
+  }
+  const lift = src.classList.contains("up") ? -16 : 0;
+  src.classList.remove("up", "ring", "shake");
+  dst.classList.remove("ring", "target");
+  src.style.transition = "none";
+  src.style.zIndex = 50;
+  src.style.transform = `translateY(${lift}px)`;
+  const br = board.getBoundingClientRect(), sr = src.getBoundingClientRect(), tr = dst.getBoundingClientRect();
+  const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift;
+  const dir = tr.left + tr.width / 2 >= cx ? 1 : -1;
+  // Tilted, the tube's mouth sits just above the middle of the other tube's mouth.
+  const mx = tr.left + tr.width / 2, my = tr.top - 20, rad = (TILT * Math.PI) / 180;
+  const drain = [...src.querySelectorAll(".u")].slice(-k).reverse(); // top unit first
+  const liquid = dst.querySelector(".liquid");
+  const fill = Array.from({ length: k }, () => {
+    const u = document.createElement("span");
+    u.className = "u";
+    u.style.cssText = `height:0px;background-color:${COLORS[c]}`;
+    liquid.appendChild(u);
+    return u;
+  });
+  const quiet = calm.matches;
+  let stream = null;
+  if (!quiet) {
+    stream = document.createElement("span");
+    stream.className = "stream";
+    stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${COLORS[c]}`;
+    board.appendChild(stream);
+  }
+  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
+    D: quiet ? 260 : POUR_MS, tx: mx - Math.sin(rad) * dir * (sr.height / 2) - cx, ty: my + Math.cos(rad) * (sr.height / 2) - cy,
+    deg: dir * TILT, base: liquid.getBoundingClientRect().bottom - br.top, my: my - br.top };
+  if (quiet) haptic("thud");
+  const step = (now) => {
+    if (anim !== A) return;
+    A.t = Math.min(1, A.t + ((now - (A.last ?? now)) / A.D) * A.speed);
+    A.last = now;
+    drawPour(A);
+    if (A.t >= 1) finishPour();
+    else requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+  // If the screen stops drawing frames (the app goes to the background), finish the pour anyway.
+  A.seen = performance.now();
+  const guard = () => {
+    if (anim !== A) return;
+    if (performance.now() - (A.last ?? A.seen) > 400) settle();
+    else setTimeout(guard, 400);
+  };
+  setTimeout(guard, 400);
+}
+function drawPour(A) {
+  const t = A.t;
+  // 0–28%: lift, move over and tilt · 30–72%: pour · 75–100%: back to its place.
+  const move = A.quiet ? 0 : t < 0.75 ? ease(t / 0.28) : 1 - ease((t - 0.75) / 0.25);
+  const q = A.quiet ? t : clamp((t - 0.3) / 0.42);
+  A.src.style.transform = `translate(${A.tx * move}px, ${A.lift + (A.ty - A.lift) * move}px) rotate(${A.deg * move}deg)`;
+  A.drain.forEach((u, j) => (u.style.height = `${UNIT * (1 - clamp(A.k * q - j))}px`));
+  A.fill.forEach((u, j) => (u.style.height = `${UNIT * clamp(A.k * q - j)}px`));
+  if (A.stream) {
+    const surface = A.base - (A.had + A.k * q) * UNIT;
+    const top = A.my + (surface - A.my) * clamp((t - 0.7) / 0.06);
+    const bottom = A.my + (surface - A.my) * clamp((t - 0.27) / 0.06);
+    A.stream.style.transform = `translateY(${top}px)`;
+    A.stream.style.height = `${Math.max(0, bottom - top)}px`;
+  }
+  if (!A.thud && !A.quiet && t >= 0.28) { A.thud = true; haptic("thud"); }
+}
+function finishPour() {
+  const A = anim;
+  anim = null;
+  A.stream?.remove();
+  s.tubes = A.after;
   s.moves++;
   s.hint = null;
   render();
-  s.poured = null;
   checkSolved();
+  A.done?.();
+}
+// A tap during a pour: finish it in FAST_MS. settle() = finish it right now (before Undo, a hint, Restart…).
+function speedUp() {
+  if (anim) anim.speed = Math.max(anim.speed, ((1 - anim.t) * anim.D) / FAST_MS);
+}
+function settle() {
+  if (!anim) return;
+  anim.t = 1;
+  drawPour(anim);
+  finishPour();
 }
 function shake(i) {
   haptic("tap");
@@ -161,15 +264,17 @@ function advanceHint() {
     s.hint = null;
     return render();
   }
-  h.level++;
-  if (h.level === 3) {
+  if (h.level === 2) { // "Show me": the pour plays, then the card says so (unless that pour finished the level)
     const [a, b] = h.move;
-    s.picked = a;
-    tap(b);
-    if (!s.solved) s.hint = h; // keep the card up on "Show me" (unless that pour finished the level)
-    render();
+    startPour(a, b, () => {
+      if (s.solved) return;
+      h.level = 3;
+      s.hint = h;
+      render();
+    });
     return;
   }
+  h.level++;
   render();
 }
 function hintText(h) {
@@ -200,11 +305,8 @@ function render() {
     const cells = [];
     for (let i = r * perRow; i < Math.min(n, (r + 1) * perRow); i++) {
       const t = s.tubes[i];
-      // Runs of one colour draw as one block of liquid; a fresh pour fills in from the bottom.
-      const runs = [];
-      t.forEach((c, k) => (k && t[k - 1] === c ? runs[runs.length - 1].n++ : runs.push({ c, n: 1, at: k })));
-      const fresh = s.poured?.tube === i ? s.poured.from : Infinity;
-      const liquid = runs.map((run) => `<span class="run${run.at + run.n > fresh ? " in" : ""}" style="height:${run.n * UNIT - 2}px;background:${COLORS[run.c]}"></span>`).join("");
+      // One column of liquid, bottom first, a thin line between units.
+      const liquid = `<span class="liquid">${t.map((c) => `<span class="u" style="height:${UNIT}px;background-color:${COLORS[c]}"></span>`).join("")}</span>`;
       const cls = [i === s.picked ? "up" : "", i === ringA && h.level < 3 ? "ring" : "", i === ringB ? "target" : "",
         intro ? "intro" : "", won && t.length ? "won" : ""].filter(Boolean).join(" ");
       const d = intro ? (s.introWait + 0.1 + i * 0.05).toFixed(2) : (i * 0.11).toFixed(2);
@@ -263,6 +365,7 @@ const fmt = (ms) => {
 };
 
 function undo() {
+  settle();
   if (!undoStack.length || s.solved) return;
   haptic("tap");
   s.tubes = undoStack.pop();
@@ -272,6 +375,23 @@ function undo() {
   render();
 }
 
+// While a pour plays, a tap anywhere speeds it up and does nothing else; the dock and hint buttons finish it first.
+const FINISH_FIRST = "#undoBtn, #hintBtn, #hintNext, #hintClose, #restartBtn, #settingsBtn, #backBtn, #rulesBtn, #timer, #picker";
+let swallow = false;
+document.addEventListener("pointerdown", (e) => {
+  swallow = false;
+  if (!anim || e.target.closest(FINISH_FIRST)) return;
+  swallow = true;
+  speedUp();
+}, true);
+document.addEventListener("click", (e) => {
+  if (e.target.closest(FINISH_FIRST)) return settle();
+  if (swallow || anim) {
+    swallow = false;
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}, true);
 $("board").addEventListener("click", (e) => {
   const b = e.target.closest(".tube");
   if (b) tap(Number(b.dataset.i));
@@ -297,6 +417,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 function pause() {
+  settle();
   if (s.solved || s.pausedAt) return;
   s.pausedAt = Date.now();
   render();

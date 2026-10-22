@@ -7,10 +7,13 @@ export function openGame(game, query) {
   if (inApp) post({ type: "open", page: game, query });
   else location.href = `${game}.html${query}`;
 }
+// Leaving a game saves it first: every game page saves on "pagehide", so send one before going.
 export function goHome() {
+  dispatchEvent(new Event("pagehide"));
   if (inApp) post({ type: "close" });
   else location.href = "home.html";
 }
+globalThis.sbLeave = goHome; // the app's glass back button calls this
 // Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle.
 export function haptic(kind = "tap") {
   if (inApp) post({ type: "haptic", kind });

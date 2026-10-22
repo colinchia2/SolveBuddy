@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="common.css">
 <style>
   /* Block Drop only (Colin, 10/22): the well on the left, Next and the scores beside it, the same dock as the puzzles. */
-  .screen { height: 844px; }
+  .screen { height: 844px; touch-action: none; } /* the whole play area takes swipes, never scrolls */
   .stage { display: flex; gap: 12px; justify-content: center; padding-top: 6px; }
   .well { position: relative; display: grid; grid-template-columns: repeat(10, 26px); grid-auto-rows: 26px;
     border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--board);
@@ -17,8 +17,7 @@
     touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; } /* a finger drag moves the piece, never the page */
   .b { width: 26px; height: 26px; box-shadow: inset -1px -1px 0 rgba(42,33,27,0.06); }
   /* A block: pastel fill, a darker edge and a soft top light, so pieces read clearly. */
-  .b.on { background: var(--c); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 62%, #2A211B), inset 0 3px 0 rgba(255,255,255,0.55); border-radius: 4px; }
-  .b.ghost { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--c) 70%, #2A211B); border-radius: 4px; opacity: 0.55; }
+  /* Blocks and the ghost get their colours inline from blocks.js (plain colours, so iPhone always repaints them). */
   .b.intro { animation: sbCell .3s var(--d) cubic-bezier(0.3,1.3,0.5,1) both; }
   .flash { position: absolute; left: 0; right: 0; height: 26px; pointer-events: none; background: #fff;
     animation: bdFlash .32s ease-out both; }
@@ -33,7 +32,15 @@
   .panel b.pop { animation: sbBump .35s ease; }
   .next { display: grid; grid-template-columns: repeat(4, 15px); grid-auto-rows: 15px; gap: 1px; padding: 4px 0 2px; }
   .next .b { width: 15px; height: 15px; box-shadow: none; }
-  .next .b.on { border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 62%, #2A211B), inset 0 2px 0 rgba(255,255,255,0.55); }
+  /* Save piece: tap to swap; dimmed once used until the piece sets (one swap per piece). */
+  .panel.save { border: 1px solid rgba(255,255,255,0.85); font: inherit; color: inherit; padding: 8px 6px 10px; margin: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .panel.save:active { transform: scale(0.96); }
+  .panel.save.used { opacity: 0.45; }
+  .panel.save .hint { font-size: 10px; font-weight: 600; color: var(--muted); }
+  .panel.save:not(.empty) .hint { display: none; }
+  .panel.save.empty .next { display: none; }
+  .panel.save.nope { animation: bdNope .3s ease; }
+  @keyframes bdNope { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
   .tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
   .tool.drop-tool { color: var(--brand-dark); }
   .tool:active { background: rgba(255,255,255,0.85); }
@@ -56,12 +63,13 @@
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-      <p class="tip">Tap: turn · Swipe: move · Flick down: drop</p>
+      <p class="tip">Tap: turn · Swipe: move · Swipe up: drop</p>
     </div>
 
     <div class="stage">
       <div class="well" id="well" aria-label="Block Drop well"></div>
       <div class="side">
+        <button class="panel glass save empty" id="saveBtn" aria-label="Save this piece for later"><small>Save</small><div class="next" id="hold"></div><span class="hint">Tap to save</span></button>
         <div class="panel glass"><small>Next</small><div class="next" id="next"></div></div>
         <div class="panel glass"><small>Score</small><b id="score">0</b></div>
         <div class="panel glass"><small>Lines</small><b id="lines">0</b></div>
@@ -82,7 +90,8 @@
     <section class="sheet" role="dialog" aria-label="How to play Block Drop">
       <div class="sheet-top"><h2>How to play</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
       <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linejoin="round"><path d="M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z"/></svg></span><span>Blocks fall one at a time. Fill a <strong>whole row</strong> to clear it and score.</span></div>
-      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg></span><span><strong>Tap</strong> the well to turn. <strong>Swipe</strong> left or right to move, drag down to speed up, <strong>flick down</strong> to drop.</span></div>
+      <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg></span><span><strong>Tap</strong> to turn. <strong>Swipe</strong> left or right to move, drag down to speed up, <strong>swipe up</strong> (or flick down) to drop.</span></div>
+      <div class="row"><span class="ico" style="background:#ECE2F7"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6A45B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10H7z M4 4l3 3 M20 20l-3-3"/></svg></span><span><strong>Save</strong> a piece for later: tap Save to swap. Once per piece, until it lands.</span></div>
       <div class="row"><span class="ico" style="background:#D7EEEA"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F6F73" stroke-width="2" stroke-linecap="round"><path d="M4 20V10 M10 20V4 M16 20v-7 M22 20H2"/></svg></span><span>More rows at once score more. Every 10 rows is a new level, and blocks fall <strong>faster</strong>.</span></div>
       <div class="row"><span class="ico" style="background:#FBE3D6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C24E2A" stroke-width="2" stroke-linecap="round"><path d="M12 4v10 M12 18v.01"/></svg></span><span>The game ends when the blocks reach the top.</span></div>
       <button class="dark" data-close>Got it</button>

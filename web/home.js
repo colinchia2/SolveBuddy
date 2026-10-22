@@ -202,8 +202,29 @@ $("rules").onclick = (e) => {
 headerLogo($("logoBtn"));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("home"));
 smoothClose();
-globalThis.sbRefresh = render; // the app calls this when you come back from a game (you stay on the pack you were in)
+// The app calls sbRefresh when you come back from a game (you stay on the pack you were in). The game's save can reach
+// this page a moment later (Colin 10/22: Resume showed up late), so keep looking for 2 seconds and redraw when it lands.
+const STATE_KEYS = ["solvebuddy.saved", "solvebuddy.solves", "solvebuddy.blocks"];
+const stateNow = () => STATE_KEYS.map((k) => { try { return localStorage.getItem(k); } catch { return null; } }).join("|");
+let drawn = "";
+function fresh() {
+  const now = stateNow();
+  if (now === drawn) return;
+  drawn = now;
+  render();
+}
+let watching = 0;
+globalThis.sbRefresh = () => {
+  drawn = "";
+  fresh();
+  clearInterval(watching);
+  const until = Date.now() + 2000;
+  watching = setInterval(() => (Date.now() > until ? clearInterval(watching) : fresh()), 100);
+};
+addEventListener("storage", fresh);
+addEventListener("pageshow", fresh); // the browser's back button
 render();
+drawn = stateNow();
 
 // The app's opening animation lands its logo exactly on this one, so tell it where it is. Ours shows once it lands
 // (the app calls sbLanded), or after a few seconds whatever happens.

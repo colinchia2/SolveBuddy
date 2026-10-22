@@ -37,6 +37,8 @@ export type State = {
   piece: Piece | null;
   bag: number[]; // pieces still to come from the current bag
   next: number;
+  hold: number | null; // the saved piece (Colin, 10/22: "save piece"), or null
+  canHold: boolean; // one save per piece: false after a swap until a piece sets
   score: number;
   lines: number;
   level: number;
@@ -66,7 +68,7 @@ function takeFromBag(s: State, rand: () => number): number {
 
 export function newGame(rand: () => number = Math.random): State {
   const s: State = { board: Array.from({ length: H }, () => Array(W).fill(0)), piece: null, bag: [], next: 0,
-    score: 0, lines: 0, level: 1, over: false };
+    hold: null, canHold: true, score: 0, lines: 0, level: 1, over: false };
   s.next = takeFromBag(s, rand);
   spawn(s, rand);
   return s;
@@ -76,9 +78,25 @@ export function newGame(rand: () => number = Math.random): State {
 export function spawn(s: State, rand: () => number = Math.random) {
   const t = s.next;
   s.next = takeFromBag(s, rand);
+  enter(s, t);
+}
+// Piece t comes in at the top middle (a new piece, or the saved one swapped back in).
+function enter(s: State, t: number) {
   const p: Piece = { t, r: 0, x: t === 1 ? 4 : 3, y: t === 0 ? -1 : 0 };
   if (!fits(s.board, p)) { s.over = true; s.piece = null; return; }
   s.piece = p;
+}
+
+// Save piece: put the falling piece aside and bring in the saved one (or the next piece, the first time).
+// Once per piece: after a swap, a piece has to set before you can swap again.
+export function holdPiece(s: State, rand: () => number = Math.random): boolean {
+  if (!s.piece || !s.canHold || s.over) return false;
+  const t = s.piece.t, back = s.hold;
+  s.hold = t;
+  s.canHold = false;
+  if (back == null) spawn(s, rand);
+  else enter(s, back);
+  return true;
 }
 
 export function move(s: State, dx: number, dy = 0): boolean {
@@ -134,6 +152,7 @@ export function lock(s: State, rand: () => number = Math.random): LockResult {
     s.level = level;
   }
   s.piece = null;
+  s.canHold = true; // a piece set: you may save again
   if (above && !res.rows.length) { s.over = true; return res; }
   spawn(s, rand);
   return res;
