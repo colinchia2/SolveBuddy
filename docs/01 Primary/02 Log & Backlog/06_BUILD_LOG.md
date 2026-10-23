@@ -2,6 +2,45 @@
 
 Newest first.
 
+## 2026-10-23 — Nonogram + two-finger zoom (backlog C; not pushed, needs a phone test)
+- Built from `docs/design/zoom_nonogram_mockup.html` + Colin's 10/23 decisions and comments.
+- **Engine** `engine/nonogram/`: `line.ts` (line solver: what every arrangement of a clue shares), `solve.ts` (line logic
+  to a standstill + an answer counter that guesses, so "one answer" is checked separately), `hint.ts` (a wrong filled
+  square first, wrong × never trusted; then ONE row or column: Empty line / Line done / Fits exactly / Overlap / Out of
+  reach / Every fit, each with a plain "why"; filling steps before ×-only steps).
+- **Packs** (`scripts/nonogram_make_packs.ts`): 5×5 Easy (Heart, Tree, House, Boat, Cat), 10×10 Medium (Fish, Mushroom,
+  Umbrella, Apple, Rocket), 15×15 Hard (Sailboat, Teacup, Butterfly, Snail, Whale). Every puzzle a named picture with a
+  colour, exactly one answer, solvable one line at a time.
+- **Page** `web/nonogram.html/js`: tap fill → × → clear; drag: first square decides (fill / clear / ×), locks to its row
+  or column, fills every square between; haptics light per square, firm ("thud") when a row/column becomes complete
+  and right, win buzz; finished clues grey; your row/column lights up; thick lines every 5; Hint (Nudge / Explain with
+  striped squares / Show me), Undo (one per drag), Restart, Settings (timer, show mistakes), pause, timer.
+  Finish: zooms to fit, × and grid lines melt, the picture sweeps into its colour; Solved card says "A heart!" with the
+  picture as the medal (`celebrate()` takes `heading` + `medal`; no name = the usual card).
+- **Zoom** `web/zoom.js` (touch events in the page, no app change): Star Battle 10×10+ (Double, Triple, big imports)
+  and Nonogram 15×15 only. One finger always plays; two fingers pinch and slide; past fit it gives a little and
+  springs back with a small bounce; Fit control (tiny map + zoom + Fit) only while zoomed, with "Two fingers to move ·
+  pinch to zoom out" under it; at fit the tip says "Pinch with two fingers to zoom" (first 3 boards, until you've zoomed
+  twice); two-finger double-tap = fit; zoom saved with the puzzle, a new puzzle starts at fit; the board holds every
+  touch move (no page scroll). Nonogram's clue strips stay pinned and show only the visible rows/columns.
+- **Library:** Nonogram is the 5th tile with "New" for 7 days from first seen (slate-blue icon from the mockup); its
+  pack page rows 5×5 / 10×10 / 15×15 with the last solved picture as thumb and "zoom" only on 15×15; Packs tab block
+  and Stats come from `GAMES` (bridge.js).
+- **App shell finding:** the app only opens game pages in its own list (`App.js` GAMES) and only downloads its 8 known
+  pages, so a new `nonogram.html` can't open on the phone without an app change. Workaround (no app change): the
+  built `app/starbattle.html` also carries Nonogram and becomes it with `?game=nonogram` (`scripts/build_site.ts`,
+  `bridge.js` HOSTED + `pageGame()`). Next time the app shell changes anyway: add "nonogram" to App.js GAMES and
+  `pull-pages.mjs`, then drop HOSTED. The viewport/touch side needed nothing.
+- Bugs caught by the new page test: Star Battle redraws its cells, which detached the touched cell mid-pinch (fix:
+  redraw after the fingers lift, `zoom.whenFree`); a frozen getter meant zoom was never saved.
+- Checks: `checks/nonogram.ts` (line solver vs brute force on 3000 random lines; every pack puzzle one answer + line
+  logic; Hint alone solves all 15 with every step right and explained; wrong fill flagged first; no-name puzzle plays)
+  in `run_all.ts` (48 PASS); `pages_smoke.mjs` +23 (tap cycle, row-locked drag with one light buzz per square, firm
+  buzz on a finished row, grey clues, hint text, picture card, plain card; zoom only on the right boards; real
+  simulated touches: pinch, two-finger move, one finger marks while zoomed, a second finger cancels a drag, spring
+  back, Fit, two-finger double-tap, no page scroll, zoom remembered; Star Battle 12×12 zoom; the app's hosted page;
+  Library tile/New/pack rows, Packs, Stats) = 66 PASS.
+
 ## 2026-10-23 — Thermo bulb and tube are one shape
 - Colin (phone screenshot, Thermo Easy #1): each thermometer looked like two pieces; where the tube ran into the
   bulb it showed through, darker. Cause: the tube and the bulb each had their own 55% see-through, so the overlap

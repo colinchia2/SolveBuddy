@@ -2,7 +2,14 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (save point 2026-10-23, from the Buddy Family chat)
+## Right now (2026-10-23, late)
+- **Built, committed, NOT pushed: Nonogram + two-finger zoom (backlog C).** 15 picture puzzles (5×5 / 10×10 / 15×15),
+  trustworthy one-line hints, picture finish ("A heart!"); zoom on Star Battle 10×10+ and Nonogram 15×15
+  (`web/zoom.js`). Build log 2026-10-23 "Nonogram + two-finger zoom". **Next:** Colin's phone test, then push.
+- **App note:** the app only opens pages it lists, so in the app Nonogram rides inside `app/starbattle.html`
+  (`?game=nonogram`, `bridge.js` HOSTED). At the next app-shell change, add "nonogram" to App.js GAMES + pull-pages.
+
+### Earlier: save point 2026-10-23, from the Buddy Family chat
 - **Shipped 10/23 (live):** haptics (Sudoku select/drag ticks, Star Battle per-cell drag taps; star stays the firmer
   thud, Colin agreed), the **calmer screens** redesign (Library, pick-a-pack, one pack, Packs tab as blocks, Import as
   blocks; approved mockup `docs/design/calmer_screens_mockup.html`), Killer/Thermo no longer "coming soon", and the
@@ -31,7 +38,7 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   1. This section, then "Key rules" and "How to ship" below.
   2. `../02 Log & Backlog/06_BUILD_LOG.md`: the 10/22 entries.
   3. `../02 Log & Backlog/08_BACKLOG.md`: "Next".
-  4. Code map: `web/` (pages; `bridge.js` = GAMES, saves, haptics, imports), `engine/<game>/` (rules, hints,
+  4. Code map: `web/` (pages; `bridge.js` = GAMES, saves, haptics, imports; `zoom.js` = two-finger zoom), `engine/<game>/` (rules, hints,
      makers), `checks/run_all.ts` + `checks/pages_smoke.mjs` (hidden-browser page test).
 
 ## How to ship (SolveBuddy)
