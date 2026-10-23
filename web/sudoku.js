@@ -167,6 +167,7 @@ function press(n) {
 function erase() {
   const ks = pickedOpen();
   if (!ks.length) return;
+  haptic("tap");
   change(() => {
     for (const k of ks) {
       delete s.entries[k];
@@ -414,6 +415,7 @@ $("board").addEventListener("pointerdown", (e) => {
   const r = Number(b.dataset.r), c = Number(b.dataset.c);
   if (e.ctrlKey || e.metaKey || e.shiftKey) s.picked.add(key(r, c)), (s.sel = [r, c]);
   else selectOnly(r, c);
+  haptic("pick"); // selecting = the lightest tick; placing a number is the firmer "tap" (Colin, 10/23)
   drag = { last: [r, c] };
   render();
 });
@@ -426,7 +428,11 @@ document.addEventListener("pointermove", (e) => {
   if (r === r0 && c === c0) return;
   // A fast swipe can skip cells between two moves, so pick every cell on the straight line in between.
   const steps = Math.max(Math.abs(r - r0), Math.abs(c - c0));
-  for (let i = 1; i <= steps; i++) s.picked.add(key(Math.round(r0 + ((r - r0) * i) / steps), Math.round(c0 + ((c - c0) * i) / steps)));
+  for (let i = 1; i <= steps; i++) {
+    const k = key(Math.round(r0 + ((r - r0) * i) / steps), Math.round(c0 + ((c - c0) * i) / steps));
+    if (!s.picked.has(k)) haptic("pick"); // a tick for each cell the drag adds
+    s.picked.add(k);
+  }
   drag.last = [r, c];
   s.sel = [r, c];
   render();

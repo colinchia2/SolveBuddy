@@ -83,6 +83,72 @@ for (const h of [844, 750]) {
   await ctx.close();
 }
 
+// Haptics (Colin, 10/23), with a stubbed app bridge that records every buzz: Sudoku (classic, Killer, Thermo) ticks
+// "pick" when you select a cell (one per cell a drag adds) and "tap" when a number or note goes in; Star Battle taps
+// once per x (a star stays the firmer "thud"), and once per cell a drag marks. One action = one buzz, never two.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.__buzz = [];
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+  });
+  const p = await ctx.newPage();
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // Shared in-page helpers: centre-of-cell pointer events, and "take what buzzed since last time".
+  const helpers = () => {
+    window.__cell = (r, c) => document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+    window.__pt = (el) => { const b = el.getBoundingClientRect(); return { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true }; };
+    window.__take = () => { const o = window.__buzz; window.__buzz = []; return o; };
+    // cells as [r, c], looked up fresh at each step: every render rebuilds the board
+    window.__drag = (cells) => {
+      const first = window.__cell(...cells[0]);
+      first.dispatchEvent(new PointerEvent("pointerdown", window.__pt(first)));
+      for (const rc of cells.slice(1)) document.dispatchEvent(new PointerEvent("pointermove", window.__pt(window.__cell(...rc))));
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    };
+  };
+  for (const v of ["easy", "killer", "thermo"]) {
+    await p.goto(`${BASE}sudoku.html?pack=${v}&p=1`);
+    await p.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+    await p.reload();
+    await p.waitForTimeout(2000); // the board's intro finishes
+    await p.evaluate(helpers);
+    const got = await p.evaluate(() => {
+      const open = [...document.querySelectorAll(".cell")].find((el) => !/[1-9]/.test(el.textContent));
+      const r = Number(open.dataset.r), c = Number(open.dataset.c), dir = c <= 5 ? 1 : -1;
+      const out = {};
+      window.__take();
+      window.__drag([[r, c]]); out.select = window.__take();
+      document.querySelector('[data-n="5"]').click(); out.place = window.__take();
+      document.querySelector('.seg[data-mode="corner"]').click(); window.__take();
+      document.querySelector('[data-n="3"]').click(); out.note = window.__take();
+      document.querySelector('.seg[data-mode="normal"]').click(); window.__take();
+      window.__drag([0, 1, 2, 3].map((i) => [r, c + i * dir])); out.drag = window.__take();
+      return out;
+    });
+    check(`Sudoku ${v} haptics: select ${got.select}, number ${got.place}, note ${got.note}, drag over 4 cells ${got.drag}`,
+      same(got.select, ["pick"]) && same(got.place, ["tap"]) && same(got.note, ["tap"]) && same(got.drag, ["pick", "pick", "pick", "pick"]));
+  }
+  await p.goto(`${BASE}starbattle.html?pack=easy&p=1`);
+  await p.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await p.reload();
+  await p.waitForTimeout(2000);
+  await p.evaluate(helpers);
+  const sb = await p.evaluate(() => {
+    const out = {};
+    window.__take();
+    window.__drag([[0, 0]]); out.cross = window.__take();
+    window.__drag([[0, 0]]); out.star = window.__take();
+    window.__drag([0, 1, 2, 3].map((c) => [7, c])); out.drag = window.__take();
+    window.__drag([0, 1, 2, 3].map((c) => [7, c])); out.wipe = window.__take();
+    return out;
+  });
+  check(`Star Battle haptics: x ${sb.cross}, star ${sb.star}, drag marking 4 cells ${sb.drag}, drag wiping them ${sb.wipe}`,
+    same(sb.cross, ["tap"]) && same(sb.star, ["thud"]) && same(sb.drag, ["tap", "tap", "tap", "tap"]) && same(sb.wipe, ["tap", "tap", "tap", "tap"]));
+  await ctx.close();
+}
+
 // Killer and Thermo Sudoku (10/22): the cages / thermometers draw, the first hint is a variant one, and Killer #1
 // and Thermo #1 are solved by Hint presses alone, to the Solved! card.
 // Expert (10/22): Killer Expert #1 too, where the 45 rule shows up.

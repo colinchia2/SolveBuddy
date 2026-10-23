@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-10-23 — Haptics on cell selection and drag marking
+- Sudoku (classic, Killer, Thermo): selecting a cell = the selection tick ("pick", the lightest), one per cell a drag
+  adds; a number, a note or Erase = the light "tap". Select and place are separate taps, so never two at once.
+- Star Battle: a drag now taps once for each cell it marks or clears (before: nothing). Tapping a cell unchanged:
+  × = "tap", star = "thud" (family standard: a star is a big mark).
+- Water Sort (pick up, pour) and Block Drop (each piece lands) already buzzed; left as they are.
+- No haptics on/off setting exists; all go through `haptic()` in `web/bridge.js`. No app shell change.
+- `checks/pages_smoke.mjs`: stubbed app bridge counts every buzz on select / number / note / drag (all 3 Sudokus) and
+  ×, star, drag-mark, drag-wipe (Star Battle); fails on the old code. run_all 47 PASS, pages smoke 34 PASS.
+- Not pushed yet.
+
 ## 2026-10-22 (final) — Hints used on the Solved card; pop-ups above the board
 - Hints count in thirds: each step (Nudge, Explain, Show me) adds 1/3 in Star Battle, Sudoku and Water Sort. The
   Solved card shows "1.33 hints used" (or "No hints"); the solve log keeps 2 decimals, saves keep exact thirds.

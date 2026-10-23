@@ -430,8 +430,10 @@ function paint(r, c) {
   const k = key(r, c);
   if (drag.cells.has(k)) return;
   drag.cells.add(k);
+  const was = s.marks[k];
   if (drag.mode === "paint" && !s.marks[k]) s.marks[k] = CROSS;
   if (drag.mode === "wipe" && s.marks[k] === CROSS) delete s.marks[k];
+  if (s.marks[k] !== was) haptic("tap"); // a tap for each cell the drag marks or clears (Colin, 10/23)
   s.hint = null;
   render();
 }
