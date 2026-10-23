@@ -1,43 +1,45 @@
-// Packs tab: every pack on this phone with how far you are, and what's coming. Tap a pack to play its next puzzle.
-import { GAMES, inApp, loadPack, openGame, post, solvedIn } from "./bridge.js";
-import { $, LOOK, gameIcon, headerLogo, tabs } from "./screens.js";
+// Packs tab (calmer screens, Colin 10/23): every pack on this phone, grouped by game, as 2-wide blocks. Each pack is
+// named once with the levels it holds underneath (Sudoku Starter = one 40-puzzle block, Easy · Medium · Hard ·
+// Expert). Names, counts and progress come from the real pack data. Tap a block to open that pack on Library.
+import { GAMES, inApp, loadPack, openPack, post, solvedIn } from "./bridge.js";
+import { $, LOOK, esc, gameIcon, headerLogo, ring, setParts, tabs } from "./screens.js";
 
-const packs = [];
+const sizes = {}; // "sudoku/easy" → { n, size }
 for (const [g, game] of Object.entries(GAMES))
-  for (const [k, file, label] of game.packs) {
+  for (const [k, file] of game.packs) {
     const f = await loadPack(file);
-    // A game with more than one pack names it (Star Battle: "Starter – Double · Expert").
-    const set = game.sets.length > 1 ? game.sets.find((s) => s.levels.includes(k)).name : "";
-    packs.push({ g, k, label: set && set !== label ? `${set} · ${label}` : label, size: f.sizeLabel ?? `${f.size}×${f.size}`, n: f.puzzles.length });
+    sizes[`${g}/${k}`] = { n: f.puzzles.length, size: f.size };
   }
+const label = (g, k) => GAMES[g].packs.find(([key]) => key === k)[2];
 
-// Ideas on the list (backlog), shown as "Soon" only. No dates promised.
-const SOON = [
-  ["Killer Sudoku", "9×9 · cages that add up", LOOK.sudoku],
-  ["Thermo Sudoku", "9×9 · numbers climb the thermometer", LOOK.sudoku],
-];
-const CHECK = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F6B4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="On this phone"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>`;
+// One block per pack (a "set" in bridge.js), with its levels and its board size when the game's packs differ in size.
+function blocks() {
+  return Object.entries(GAMES).map(([g, game]) => {
+    const boards = new Set(game.sets.flatMap((s) => s.levels.map((k) => sizes[`${g}/${k}`].size)));
+    return { g, name: game.name, packs: game.sets.map((s, i) => {
+      const own = [...new Set(s.levels.map((k) => sizes[`${g}/${k}`].size))];
+      const levels = s.note ?? s.levels.map((k) => label(g, k)).join(" · ");
+      return { i, name: setParts(s.name).short, full: s.name,
+        levels: boards.size > 1 && own.length === 1 && own[0] ? `${own[0]}×${own[0]} · ${levels}` : levels,
+        n: s.levels.reduce((t, k) => t + sizes[`${g}/${k}`].n, 0),
+        done: s.levels.reduce((t, k) => t + solvedIn(g, k).size, 0) };
+    }) };
+  });
+}
 
 function render() {
-  $("count").textContent = packs.length;
-  $("mine").innerHTML = packs.map(({ g, k, label, size, n }) => {
-    const done = solvedIn(g, k).size;
-    return `<button class="card-glass" data-g="${g}" data-k="${k}" aria-label="Play ${GAMES[g].name} ${label}">
-      <span class="line">${gameIcon(LOOK[g], 44, 24)}<span class="grow"><b>${GAMES[g].name} · ${label}</b><small>${size} · ${n} puzzle${n === 1 ? "" : "s"}</small></span>${CHECK}</span>
-      <span class="prog"><span class="track"><span class="fill" style="display:block;width:${Math.round((done / n) * 100)}%"></span></span>${done} / ${n}</span>
-    </button>`;
-  }).join("");
-  document.querySelectorAll("[data-g]").forEach((b) => (b.onclick = () => {
-    const { g, k } = b.dataset;
-    const { n } = packs.find((p) => p.g === g && p.k === k);
-    const done = solvedIn(g, k);
-    let p = 1;
-    while (p <= n && done.has(p)) p++;
-    openGame(g, `?pack=${k}&p=${p > n ? 1 : p}`);
-  }));
-  $("soon").innerHTML = SOON.map(([name, note, look]) =>
-    `<div class="card-glass"><span class="line">${gameIcon(look, 44, 24)}<span class="grow"><b>${name}</b><small>${note}</small></span><span class="soon">Soon</span></span></div>`).join("");
+  $("games").innerHTML = blocks().map(({ g, name, packs }) => `<section class="c-group" data-game="${g}">
+      <h2 class="c-ghead game">${gameIcon(LOOK[g], 26, 15)}${esc(name)}</h2>
+      <div class="btiles">${packs.map((p) => `<button class="btile" data-g="${g}" data-set="${p.i}" aria-label="Open ${esc(name)} ${esc(p.full)} pack, ${p.n} puzzles, ${p.done} done">
+        <span class="top"><span class="n">${esc(p.name)}</span><span class="c">${p.n}</span></span>
+        <span class="c">${esc(p.levels)}</span>
+        <span class="p">${ring(p.done, p.n, 14)}${p.done}/${p.n} done</span></button>`).join("")}</div>
+    </section>`).join("");
 }
+$("games").onclick = (e) => {
+  const b = e.target.closest("[data-set]");
+  if (b) openPack(b.dataset.g, Number(b.dataset.set));
+};
 
 // The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));

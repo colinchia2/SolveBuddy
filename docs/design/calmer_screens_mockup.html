@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SolveBuddy Calmer Screens</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup only (10/23). Colours, fonts and icons are SolveBuddy's own, copied from web/common.css + screens.css. */
+:root {
+  --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52;
+  --brand: #2F6FD6; --brand-dark: #1F57B5; --brand-soft: #DCEAFE;
+  --hair: rgba(42,33,27,0.08);
+  --s: 0.78;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #ECE8E2; color: var(--ink); font-family: Inter, system-ui, sans-serif; }
+body { padding: 28px 16px 64px; }
+.doc { max-width: 980px; margin: 0 auto; }
+.doc > header h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.01em; }
+.doc > header p { margin: 8px 0 0; color: var(--body); font-size: 15px; line-height: 1.5; max-width: 62ch; }
+.switch { position: sticky; top: 8px; z-index: 20; display: none; margin: 18px auto 0; width: max-content; padding: 4px; border-radius: 12px;
+  background: rgba(255,255,255,0.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 4px 14px rgba(30,30,30,0.1); }
+.switch button { border: 0; background: none; font: 600 14px Inter, sans-serif; color: var(--body); padding: 8px 18px; border-radius: 9px; cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+section.screen-pair { margin-top: 44px; }
+section.screen-pair > h2 { margin: 0 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 22px; }
+section.screen-pair > h2 span { color: var(--muted); font-weight: 700; margin-right: 6px; }
+.pair { display: flex; gap: 28px; justify-content: center; align-items: flex-start; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.tag.calm { color: var(--brand-dark); }
+.frame { width: calc(390px * var(--s)); height: calc(844px * var(--s)); border-radius: calc(46px * var(--s)); overflow: hidden;
+  box-shadow: 0 0 0 calc(9px * var(--s)) #1d1b19, 0 18px 50px rgba(30,30,30,0.22); background: var(--bg); }
+.phone { width: 390px; height: 844px; transform: scale(var(--s)); transform-origin: 0 0; position: relative; overflow: hidden; background: var(--bg);
+  font-size: 15px; line-height: 1.4; }
+.notes { margin: 6px 0 0; padding: 0 0 0 18px; max-width: calc(390px * var(--s) + 20px); color: var(--body); font-size: 14px; line-height: 1.45; }
+.notes li + li { margin-top: 5px; }
+.col.today .notes-spacer { display: none; }
+
+@media (max-width: 760px) {
+  .switch { display: flex; }
+  .pair { gap: 0; }
+  body[data-show="today"] .col.calm, body[data-show="calm"] .col.today { display: none; }
+}
+
+/* ---------- inside the phones ---------- */
+.phone .glow { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(50px); pointer-events: none; }
+.sbar { position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px 0 44px; z-index: 6;
+  font: 600 17px Inter, sans-serif; }
+.sbar .island { position: absolute; left: 50%; top: 11px; width: 124px; height: 36px; margin-left: -62px; border-radius: 20px; background: #000; }
+.sbar .right { display: flex; gap: 6px; align-items: center; }
+.sbar .bat { width: 27px; height: 13px; border-radius: 4px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+.pg { position: absolute; inset: 0; padding: 66px 16px 110px; display: flex; flex-direction: column; overflow: hidden; }
+.tabs { position: absolute; left: 24px; right: 24px; bottom: 22px; height: 66px; padding: 6px; border-radius: 34px; z-index: 6;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: rgba(255,255,255,0.72);
+  -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%); border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 12px 32px rgba(30,30,30,0.12); }
+.tabs span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 28px; font-size: 11px; font-weight: 600; color: var(--ink); }
+.tabs span.on { background: rgba(42,33,27,0.07); color: var(--brand); }
+.face { width: 40px; height: 40px; display: block; flex: none; }
+.ico { display: grid; place-items: center; flex: none; }
+.bars { display: inline-flex; gap: 2px; align-items: flex-end; }
+.bars i { width: 5px; border-radius: 2px; background: rgba(42,33,27,0.18); }
+.bars i.on { background: var(--brand); }
+.track { display: block; height: 5px; border-radius: 3px; background: rgba(42,33,27,0.08); }
+.track .fill { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
+.streak { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 10px; margin-left: auto;
+  background: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.8); }
+
+/* TODAY: faithful to the live CSS. */
+.t-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -2px 0 0 -2px; }
+.t-brand .wm { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
+.t-home { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.t-ask { margin: 0; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.01em; }
+.t-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.t-tile { display: flex; flex-direction: column; gap: 10px; padding: 16px; min-height: 148px; border-radius: 16px; background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 8px 22px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.95); }
+.t-tile.soon { opacity: 0.55; }
+.t-tile .n { font-weight: 700; font-size: 17px; display: block; }
+.t-tile .c { font-size: 13px; color: var(--muted); }
+.t-sq { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9); }
+.t-head { display: flex; align-items: center; gap: 12px; }
+.t-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.t-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 25px; line-height: 1.1; letter-spacing: -0.01em; }
+.t-title span { font-size: 13px; color: var(--muted); }
+.t-label { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 16px 0 10px; }
+.t-pack, .t-more { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; }
+.t-pack { background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(30,30,30,0.06); margin-bottom: 10px; }
+.t-more { padding: 14px; background: rgba(255,255,255,0.45); border: 1px dashed rgba(47,111,214,0.4); margin-top: 6px; }
+.t-art { width: 56px; height: 56px; flex: none; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
+  background: #FBE3D6; color: #C24E2A; }
+.t-art b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; }
+.t-art small { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; }
+.t-ptext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.t-ptext b { font-size: 16px; }
+.t-ptext small { font-size: 13px; color: var(--muted); }
+.t-ptext em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--body); }
+.t-moreico { width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
+.t-level { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.t-lhead { display: flex; align-items: center; gap: 10px; }
+.t-lhead h2 { margin: 0; flex: 1; font-size: 17px; font-weight: 700; }
+.t-lhead > span:last-child { font-size: 13px; font-weight: 600; color: var(--body); }
+.t-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.t-pt { position: relative; aspect-ratio: 1; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 4px 12px rgba(30,30,30,0.05); }
+.t-pt b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; line-height: 1; }
+.t-pt small { font-size: 10px; font-weight: 700; color: var(--muted); }
+.t-pt.solved { background: var(--brand-soft); border-color: rgba(47,111,214,0.25); color: var(--brand-dark); }
+.t-star { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); border: 2px solid var(--bg); display: grid; place-items: center; }
+.t-legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin: 16px 0 12px; }
+.t-legend span { display: flex; align-items: center; gap: 5px; }
+.t-legend i { width: 12px; height: 12px; border-radius: 4px; }
+.t-lead { margin: 14px 0 0; color: var(--body); }
+.t-sec { margin: 16px 0 10px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.t-card { padding: 14px; border-radius: 14px; display: flex; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.45); border: 1px solid rgba(255,255,255,0.85);
+  box-shadow: 0 8px 22px rgba(30,30,30,0.06), inset 0 1px 0 rgba(255,255,255,0.95); margin-bottom: 10px; }
+.t-line { display: flex; align-items: center; gap: 12px; }
+.t-line .g { flex: 1; display: flex; flex-direction: column; }
+.t-line .g b { font-weight: 600; font-size: 15px; }
+.t-line .g small { font-size: 13px; color: var(--muted); }
+.t-prog { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+.t-prog .track { flex: 1; height: 6px; }
+.t-bring { margin-top: 16px; padding: 18px; border-radius: 18px; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 22px rgba(30,30,30,0.06); }
+.t-bring b { font-size: 17px; font-weight: 700; }
+.t-bring small { font-size: 13px; color: var(--muted); }
+.t-cam { width: 52px; height: 52px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
+.primary { min-height: 52px; border-radius: 14px; background: var(--brand); color: #fff; font: 700 15px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.t-rowhead { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 10px; }
+.t-sort { display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.9); background: rgba(255,255,255,0.5);
+  font-size: 13px; font-weight: 600; }
+.t-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.t-chip { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(42,33,27,0.14); background: rgba(255,255,255,0.6); font-size: 13px; font-weight: 600; display: flex; align-items: center; }
+.t-chip.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.t-day { font-size: 13px; font-weight: 700; color: var(--body); margin: 16px 0 8px; }
+.t-imp { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 4px 12px rgba(30,30,30,0.05); margin-bottom: 8px; }
+.t-imp .g { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.t-imp .g b { font-size: 15px; }
+.t-imp .g small { font-size: 12px; color: var(--muted); }
+.t-state { flex: none; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: rgba(42,33,27,0.07); color: var(--body); }
+.t-state.progress { background: #FFF1D6; color: #7A4E00; }
+.t-state.solved { background: var(--brand-soft); color: var(--brand-dark); }
+
+/* CALMER: one surface per list, hairlines instead of boxes, smaller type, more air. */
+.c-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -2px 0 0 -2px; }
+.c-brand .wm { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
+.c-brand .streak { background: none; border: 0; padding: 0 4px; color: var(--body); }
+.c-ask { margin: 26px 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; color: var(--body); }
+.c-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.c-tile { display: flex; align-items: center; gap: 11px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.c-tile .n { display: block; font-weight: 600; font-size: 15px; line-height: 1.2; }
+.c-tile .c { font-size: 12px; color: var(--muted); }
+.c-soon { margin-top: 28px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.c-soon b { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+.c-nav { display: flex; justify-content: space-between; align-items: center; margin: -4px -10px 0; }
+.c-iconbtn { width: 44px; height: 44px; display: grid; place-items: center; }
+.c-title { margin-top: 8px; }
+.c-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; }
+.c-title span { display: block; margin-top: 3px; font-size: 13px; color: var(--muted); }
+.c-group { margin-top: 26px; }
+.c-ghead { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.c-ghead .r { margin-left: auto; font-weight: 500; }
+.c-ghead.game { color: var(--ink); font-size: 15px; font-weight: 700; }
+.c-list { border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.c-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 52px; }
+.c-row + .c-row { border-top: 1px solid var(--hair); }
+.c-row.tight { min-height: 44px; padding: 10px 14px; }
+.c-row .g { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.c-row .g b { font-weight: 600; font-size: 15px; }
+.c-row .g small { font-size: 12px; color: var(--muted); }
+.c-row .cnt { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+.c-link { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 10px 2px; font-size: 14px; font-weight: 600; color: var(--brand-dark); }
+.c-level { margin-top: 24px; }
+.c-lhead { display: flex; align-items: center; gap: 8px; margin: 0 2px 10px; }
+.c-lhead b { font-size: 15px; font-weight: 600; flex: 1; }
+.c-lhead span { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.c-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.c-pt { height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: rgba(255,255,255,0.6); }
+.c-pt b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 16px; line-height: 1; }
+.c-pt small { font-size: 10px; font-weight: 600; color: var(--brand); }
+.c-pt.solved { background: var(--brand-soft); color: var(--brand-dark); }
+.c-key { display: flex; gap: 14px; margin-top: 18px; font-size: 12px; color: var(--muted); }
+.c-key span { display: flex; align-items: center; gap: 5px; }
+.c-key i { width: 10px; height: 10px; border-radius: 3px; }
+.c-lead { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.c-new { margin-top: 22px; min-height: 48px; font-size: 15px; }
+.c-under { margin: 8px 2px 0; font-size: 13px; color: var(--muted); text-align: center; }
+.c-tools { display: flex; align-items: center; gap: 6px; margin: 30px 2px 8px; }
+.c-tools > b { flex: 1; font-size: 13px; font-weight: 600; color: var(--muted); }
+.c-pill { display: flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 600; color: var(--body); padding: 6px 8px; border-radius: 8px; }
+.c-day { font-size: 12px; color: var(--muted); margin: 0 2px 6px; }
+.c-state { font-size: 12px; font-weight: 600; color: var(--muted); }
+.c-state.progress { color: #9A6200; }
+.c-state.solved { color: var(--brand); }
+/* Block tiles (v2): packs and imports as 2-wide blocks, like the Library. */
+.c-btiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.c-btile { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.c-btile .top { display: flex; align-items: center; justify-content: space-between; }
+.c-btile .n { font-weight: 600; font-size: 15px; line-height: 1.2; }
+.c-btile .c { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.c-btile .p { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body data-show="calm">
+<div class="doc">
+  <header>
+    <h1>SolveBuddy, calmer</h1>
+    <p>Five screens, as they are today and a calmer version. Same colours, fonts, logo and bottom bar. Nothing you use is gone: it's smaller, quieter, and each screen has one clear job. Mockup only, nothing is built.</p>
+  </header>
+  <div class="switch" role="group" aria-label="Which version">
+    <button data-show="today" aria-pressed="false">Today</button>
+    <button data-show="calm" aria-pressed="true">Calmer</button>
+  </div>
+  <div id="screens"></div>
+</div>
+
+<script>
+// ---------- shared bits (paths copied from web/screens.js and web/home.js) ----------
+const FACE = `<svg class="face" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="45" fill="#4D96FF"/>
+<g fill="#FFFFFF" stroke="#5D4E37" stroke-width="3" stroke-linejoin="round"><path d="M33 22 A8 8 0 0 1 38 36.2 L37 41 H29 L28 36.2 A8 8 0 0 1 33 22 Z"/><path d="M67 22 A8 8 0 0 1 72 36.2 L71 41 H63 L62 36.2 A8 8 0 0 1 67 22 Z"/></g>
+<path d="M29.5 45 H36.5 M30.5 49 H35.5 M63.5 45 H70.5 M64.5 49 H69.5" stroke="#5D4E37" stroke-width="3" stroke-linecap="round"/>
+<path d="M25 57 Q50 85 75 57" stroke="#5D4E37" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
+const LOOK = {
+  starbattle: { bg: "#FBE3D6", ink: "#C24E2A", path: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z" },
+  sudoku: { bg: "#D7EEEA", ink: "#1F6F73", path: "M4 4h16v16H4z M4 9.3h16 M4 14.7h16 M9.3 4v16 M14.7 4v16" },
+  watersort: { bg: "#ECE2F7", ink: "#6A45B0", path: "M6 3v14a3 3 0 0 0 6 0V3 M5 3h8 M6 11h6 M15 8v9a2.5 2.5 0 0 0 5 0V8 M14.5 8h6" },
+  blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z" },
+  binairo: { bg: "#FBE3D6", ink: "#C24E2A", path: "M3 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0 M12 12a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0" },
+  shikaku: { bg: "#F8DDE5", ink: "#A8325A", path: "M3 3h8v11H3z M13 3h8v6h-8z M13 11h8v10h-8z M3 16h8v5H3z" },
+  five: { bg: "#DCEAFE", ink: "#1F57B5", path: "M2 8h5.5v8H2z M9.25 8h5.5v8h-5.5z M16.5 8H22v8h-5.5z" },
+  groups: { bg: "#DDEFD9", ink: "#2F6B4A", path: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z" },
+};
+const gico = (k, box, icon) => `<span class="ico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${LOOK[k].bg}">
+<svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${LOOK[k].ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${LOOK[k].path}"/></svg></span>`;
+const svg = (d, s = 22, c = "#2A211B", w = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+const I = {
+  back: (s = 22) => svg("M19 12H5 M11 6l-6 6 6 6", s),
+  help: (s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,
+  chev: (s = 18, c = "#6B5D52") => svg("M9 6l6 6-6 6", s, c),
+  down: (c = "#1F57B5", s = 20) => svg("M12 3v12 M7 10l5 5 5-5 M4 19h16", s, c),
+  star: (s, f) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${f}" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg>`,
+  cam: (c = "#1F57B5", s = 26) => svg("M4 8h3l2-3h6l2 3h3v12H4z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0", s, c),
+  plus: (c = "#fff") => svg("M12 5v14 M5 12h14", 18, c, 2.4),
+  check: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2F6B4A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>`,
+  phone: svg("M7 2h10v20H7z M11 18h2", 15, "currentColor", 2.2),
+  arrowDown: (c = "#4E433A") => svg("M12 5v14 M6 13l6 6 6-6", 14, c, 2.2),
+  caret: (c = "#4E433A") => svg("M6 9l6 6 6-6", 14, c, 2.2),
+  flame: `<svg width="16" height="16" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>`,
+  play: (s, f) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${f}" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>`,
+};
+const TAB = { home: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z", packs: "M21 8l-9-5-9 5 9 5z M3 8v8l9 5 9-5V8 M12 13v8",
+  stats: "M4 20V10 M10 20V4 M16 20v-7 M22 20H2", import: "M4 8h3l2-3h6l2 3h3v12H4z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0" };
+const tabs = (on) => `<nav class="tabs">${[["home", "Library"], ["packs", "Packs"], ["stats", "Stats"], ["import", "Import"]].map(([k, l]) =>
+  `<span class="${k === on ? "on" : ""}">${svg(TAB[k], 24, k === on ? "#2F6FD6" : "#2A211B", 1.9)}${l}</span>`).join("")}</nav>`;
+const sbar = `<div class="sbar"><span>9:48</span><span class="island"></span><span class="right">
+  <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#2A211B"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#2A211B"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#2A211B"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#2A211B"/></svg>
+  <span class="bat">88</span></span></div>`;
+const glows = `<div class="glow" style="top:-80px;right:-90px;background:#DCE9F2;opacity:.55"></div><div class="glow" style="top:380px;left:-120px;background:#BFE3D8;opacity:.5"></div>`;
+const phone = (inner, tab) => `<div class="frame"><div class="phone">${glows}${sbar}<div class="pg">${inner}</div>${tab ? tabs(tab) : ""}</div></div>`;
+const bars = (n, h = [8, 12, 16, 20]) => `<span class="bars">${h.map((px, i) => `<i style="height:${px}px" class="${i < n ? "on" : ""}"></i>`).join("")}</span>`;
+const track = (d, n) => `<span class="track"><span class="fill" style="width:${Math.round((d / n) * 100)}%"></span></span>`;
+// A small progress ring: the calmer screens show progress as this plus "5/20", instead of a full-width bar and a sentence.
+const ring = (d, n, s = 18) => { const r = 7, c = 2 * Math.PI * r, f = c * (d / n);
+  return `<svg width="${s}" height="${s}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="${r}" fill="none" stroke="rgba(42,33,27,0.12)" stroke-width="2.5"/>
+  ${d ? `<circle cx="9" cy="9" r="${r}" fill="none" stroke="#2F6FD6" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${f} ${c}" transform="rotate(-90 9 9)"/>` : ""}</svg>`; };
+
+// ---------- 1. Library ----------
+const libGames = [["starbattle", "Star Battle", "40 puzzles"], ["sudoku", "Sudoku", "62 puzzles"], ["watersort", "Water Sort", "30 levels"], ["blocks", "Block Drop", "Endless"]];
+const libSoon = [["binairo", "Binairo"], ["shikaku", "Shikaku"], ["five", "Five Letters"], ["groups", "Groups"]];
+const libToday = phone(`
+  <header class="t-brand">${FACE}<span class="wm">SolveBuddy</span><span class="streak">${I.flame}3 days</span></header>
+  <section class="t-home"><h2 class="t-ask">What are we solving?</h2>
+    <div class="t-tiles">${libGames.map(([k, n, c]) => `<div class="t-tile">${gico(k, 56, 30)}<span><span class="n">${n}</span><span class="c">${c}</span></span></div>`).join("")}
+    ${libSoon.map(([k, n]) => `<div class="t-tile soon">${gico(k, 56, 30)}<span><span class="n">${n}</span><span class="c">Coming soon</span></span></div>`).join("")}</div>
+  </section>`, "home");
+const libCalm = phone(`
+  <header class="c-brand">${FACE}<span class="wm">SolveBuddy</span><span class="streak">${I.flame}3 days</span></header>
+  <h2 class="c-ask">What are we solving?</h2>
+  <div class="c-tiles">${libGames.map(([k, n, c]) => `<div class="c-tile">${gico(k, 38, 21)}<span><span class="n">${n}</span><span class="c">${c}</span></span></div>`).join("")}</div>
+  <p class="c-soon"><b>Coming soon</b>${libSoon.map(([, n]) => n).join(" · ")}</p>`, "home");
+
+// ---------- 2. Star Battle (pick a pack) ----------
+const sbPacks = [["Starter – Single", "Single", "Easy 10 · Expert 10", "8×8 · Easy, Expert", 5, 20], ["Starter – Double", "Double", "Expert 10", "10×10 · Expert", 2, 10], ["Starter – Triple", "Triple", "Hard 10", "12×12 · Hard", 0, 10]];
+const sbToday = phone(`
+  <header class="t-head"><span class="t-sq">${I.back()}</span>${gico("starbattle", 44, 26)}
+    <div class="t-title"><h1>Star Battle</h1><span>3 packs · 7 of 40 done</span></div><span class="t-sq">${I.help()}</span></header>
+  <div class="t-label">Select a pack</div>
+  ${sbPacks.map(([name, , lv, , d, n]) => `<div class="t-pack"><span class="t-art"><b>${n}</b><small>PUZZLES</small></span>
+    <span class="t-ptext"><b>${name}</b><small>${lv}</small><em>${d} of ${n} done</em>${track(d, n)}</span>${I.chev()}</div>`).join("")}
+  <div class="t-more"><span class="t-moreico">${I.down()}</span><span class="t-ptext"><b>Get more Star Battle packs</b><small>Download a pack, then play it offline</small></span>${I.chev()}</div>`, "home");
+const sbCalm = phone(`
+  <div class="c-nav"><span class="c-iconbtn">${I.back()}</span><span class="c-iconbtn">${I.help(21)}</span></div>
+  <div class="c-title"><h1>Star Battle</h1><span>7 of 40 done</span></div>
+  <div class="c-group"><div class="c-ghead">Starter</div>
+    <div class="c-list">${sbPacks.map(([, short, , lv, d, n]) => `<div class="c-row"><span class="g"><b>${short}</b><small>${lv}</small></span>
+      <span class="cnt">${ring(d, n)}${d}/${n}</span>${I.chev(16, "#A99A8D")}</div>`).join("")}</div></div>
+  <div class="c-link">${I.down("#1F57B5", 18)}Get more Star Battle packs</div>`, "home");
+
+// ---------- 3. One pack ----------
+const easy = [["1", "0:44"], ["2", "1:31"], ["3", "0:51"], ["4"], ["5", "0:50"], ["6"], ["7"], ["8"], ["9"], ["10"]];
+const expert = [["1", "3:09"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"], ["8"], ["9"], ["10"]];
+const tGrid = (list) => `<div class="t-grid">${list.map(([n, t]) => t
+  ? `<div class="t-pt solved"><b>${n}</b><small style="color:#1F57B5">${t}</small><span class="t-star">${I.star(12, "#fff")}</span></div>`
+  : `<div class="t-pt"><b>${n}</b></div>`).join("")}</div>`;
+const cGrid = (list) => `<div class="c-grid">${list.map(([n, t]) => t
+  ? `<div class="c-pt solved"><b>${n}</b><small>${t}</small></div>` : `<div class="c-pt"><b>${n}</b></div>`).join("")}</div>`;
+const packToday = phone(`
+  <header class="t-head" style="align-items:center"><span class="t-sq">${I.back()}</span>
+    <div class="t-title"><h1 style="font-size:25px">Starter – Single pack</h1><span>Star Battle · 5 of 20 done</span></div><span class="t-sq">${I.help()}</span></header>
+  <section class="t-level"><div class="t-lhead">${bars(1)}<h2>Easy</h2><span>4 of 10</span></div>${track(4, 10).replace('class="track"', 'class="track" style="height:6px"')}${tGrid(easy)}</section>
+  <section class="t-level"><div class="t-lhead">${bars(4)}<h2>Expert</h2><span>1 of 10</span></div>${track(1, 10).replace('class="track"', 'class="track" style="height:6px"')}${tGrid(expert)}</section>
+  <div class="t-legend"><span><i style="background:#DCEAFE;border:1px solid rgba(47,111,214,.3)"></i>Solved</span><span><i style="background:#fff;border:2px solid #2F6FD6"></i>Resume</span><span><i style="background:rgba(255,255,255,.7);border:1px solid rgba(42,33,27,.15)"></i>New: tap to start</span></div>
+  <div class="t-more" style="margin-top:0"><span class="t-moreico">${I.down()}</span><span class="t-ptext"><b>More Star Battle packs</b><small>Download a pack, then play it offline</small></span>${I.chev()}</div>`, "home");
+const packCalm = phone(`
+  <div class="c-nav"><span class="c-iconbtn">${I.back()}</span><span class="c-iconbtn">${I.help(21)}</span></div>
+  <div class="c-title"><h1>Single</h1><span>Star Battle · Starter · 5 of 20 done</span></div>
+  <section class="c-level"><div class="c-lhead">${bars(1, [6, 9, 12, 15])}<b>Easy</b><span>4/10</span></div>${cGrid(easy)}</section>
+  <section class="c-level"><div class="c-lhead">${bars(4, [6, 9, 12, 15])}<b>Expert</b><span>1/10</span></div>${cGrid(expert)}</section>
+  <div class="c-key"><span><i style="background:#DCEAFE"></i>Solved, best time</span><span><i style="border:2px solid #2F6FD6"></i>In progress</span></div>
+  <div class="c-link">${I.down("#1F57B5", 18)}More Star Battle packs</div>`, "home");
+
+// ---------- 4. Packs tab ----------
+const packsAll = [
+  ["sudoku", "Sudoku", "9×9", [["Starter · Easy", 0, 10], ["Starter · Medium", 0, 10], ["Starter · Hard", 0, 10], ["Starter · Expert", 0, 10], ["Trick tests", 0, 6], ["Killer · Easy", 0, 5], ["Killer · Expert", 0, 5], ["Thermo · Easy", 0, 5], ["Thermo · Expert", 0, 1]]],
+  ["starbattle", "Star Battle", "", [["Single · Easy", 4, 10], ["Single · Expert", 1, 10], ["Double · Expert", 2, 10], ["Triple · Hard", 0, 10]]],
+  ["watersort", "Water Sort", "", [["Starter · Easy", 0, 10], ["Starter · Medium", 0, 10], ["Starter · Hard", 0, 10]]],
+];
+const packsToday = phone(`
+  <header class="t-brand">${FACE}<span class="wm" style="font-size:24px">Packs</span></header>
+  <p class="t-lead">Everything here works offline, hints too.</p>
+  <div class="t-sec">${I.phone}On this phone · 16</div>
+  ${packsAll[0][3].slice(0, 6).map(([l, d, n]) => `<div class="t-card"><span class="t-line">${gico("sudoku", 44, 24)}<span class="g"><b>Sudoku · ${l}</b><small>9×9 · ${n} puzzles</small></span>${I.check}</span>
+    <span class="t-prog">${track(d, n)}${d} / ${n}</span></div>`).join("")}`, "packs");
+// v2 (Colin 10/23): one block per pack, named once, with the levels it includes listed underneath.
+const packBlocks = [
+  ["sudoku", "Sudoku", [["Starter", "Easy · Medium · Hard · Expert", 0, 40], ["Trick tests", "One trick each", 0, 6], ["Killer", "Easy · Expert", 0, 10], ["Thermo", "Easy · Expert", 0, 6]]],
+  ["starbattle", "Star Battle", [["Single", "8×8 · Easy · Expert", 5, 20], ["Double", "10×10 · Expert", 2, 10], ["Triple", "12×12 · Hard", 0, 10]]],
+  ["watersort", "Water Sort", [["Starter", "Easy · Medium · Hard", 0, 30]]],
+];
+const packsCalm = phone(`
+  <header class="c-brand">${FACE}<span class="wm">Packs</span></header>
+  <p class="c-lead" style="margin-top:6px">All on this phone. They work offline, hints too.</p>
+  ${packBlocks.map(([k, name, packs]) => `<div class="c-group" style="margin-top:20px"><div class="c-ghead game">${gico(k, 26, 15)}${name}</div>
+    <div class="c-btiles">${packs.map(([l, lv, d, n]) => `<div class="c-btile"><div class="top"><span class="n">${l}</span><span class="c">${n}</span></div>
+      <span class="c">${lv}</span><span class="p">${ring(d, n, 14)}${d}/${n} done</span></div>`).join("")}</div></div>`).join("")}`, "packs");
+
+// ---------- 5. Import tab ----------
+// Sample: the 4 Star Battles Claude added from screenshots on 10/22 (states made up to show each look).
+const imps = [["Star Battle 5×5 · 1 star", "1:40 PM · 3 of 5 stars", "progress", "In progress"], ["Star Battle 10×10 · 2 stars", "1:38 PM · solved in 6:12", "solved", "Solved"],
+  ["Star Battle 10×10 · 2 stars", "1:37 PM · from your screenshot", "new", "New"], ["Star Battle 10×10 · 2 stars", "1:37 PM · from your screenshot", "new", "New"]];
+const impToday = phone(`
+  <header class="t-brand">${FACE}<span class="wm">Import</span></header>
+  <div class="t-bring"><span class="t-line"><span class="t-cam">${I.cam()}</span><span class="g"><b>Bring in a puzzle</b><small>Snap one you're stuck on. Keep playing here, or get a hint from right where you are.</small></span></span>
+    <span class="primary">${I.plus()}New import</span></div>
+  <div class="t-rowhead"><span class="t-label" style="margin:0">Your imports · 4</span><span class="t-sort">Day added: newest${I.arrowDown()}</span></div>
+  <div class="t-chips"><span class="t-chip on">All</span><span class="t-chip">Star Battle</span><span class="t-chip">Sudoku</span><span class="t-chip">Water Sort</span></div>
+  <div class="t-day">Yesterday</div>
+  ${imps.map(([t, s, st, w]) => `<div class="t-imp">${gico("starbattle", 44, 22)}<span class="g"><b>${t}</b><small>Added ${s}</small></span><span class="t-state ${st}">${w}</span></div>`).join("")}`, "import");
+const impCalm = phone(`
+  <header class="c-brand">${FACE}<span class="wm">Import</span></header>
+  <span class="primary c-new">${I.cam("#fff", 20)}New import</span>
+  <p class="c-under">Snap a puzzle you're stuck on, then play it here or get a hint.</p>
+  <div class="c-tools"><b>Your imports · 4</b><span class="c-pill">All games${I.caret()}</span><span class="c-pill">Newest${I.arrowDown()}</span></div>
+  <div class="c-day">Yesterday</div>
+  <div class="c-btiles">${imps.map(([t, s, st, w]) => { const [game, rest] = t.split(" · ").length > 2 ? [t.split(" · ")[0].replace(/ \d.*/, ""), t.slice(t.indexOf(" ", 12) + 1)] : [t.replace(/ \d.*/, ""), t.slice(t.search(/\d/))];
+    return `<div class="c-btile"><div class="top">${gico("starbattle", 30, 16)}<span class="c-state ${st}">${w}</span></div>
+      <span class="n">${game}</span><span class="c">${rest}</span><span class="c">${s.split(" · ")[0]}</span></div>`; }).join("")}</div>`, "import");
+
+// ---------- page ----------
+const SCREENS = [
+  ["Library", libToday, libCalm, [
+    "Game tiles are half the height: a smaller icon, with the name and count side by side. No glassy edges.",
+    "The four \"coming soon\" games become one quiet line at the bottom, so the four you can play stand out.",
+    "\"What are we solving?\" is smaller and sits under the logo. The streak stays, without its box."]],
+  ["Star Battle: pick a pack", sbToday, sbCalm, [
+    "One list with thin lines between packs, not three big cards. \"Starter\" is said once, so rows just say Single, Double, Triple.",
+    "The \"20 PUZZLES\" badge, the \"Select a pack\" label and the repeat game icon go. Progress is a small ring plus \"5/20\".",
+    "Back and help are plain icons. Get more packs is a quiet blue link that goes to the same place."]],
+  ["One pack", packToday, packCalm, [
+    "Puzzle squares are shorter (50 instead of 66 high). Solved ones stay blue with your best time, but lose the star badge.",
+    "The title fits on one line (\"Single\"). Each level shows \"4/10\" next to its name instead of a second bar.",
+    "The key shrinks to the two states that need explaining. A plain number is a new puzzle. More packs is a link."]],
+  ["Packs tab", packsToday, packsCalm, [
+    "Each pack is one block, named once: Sudoku Starter is one 40-puzzle block, not four. The levels it includes sit underneath.",
+    "Blocks two wide under each game, like the Library. Trick tests 6, Killer 10, Thermo 6.",
+    "The green tick on every pack goes, since everything here is on the phone. Tapping a block opens the pack."]],
+  ["Import tab", impToday, impCalm, [
+    "The big \"Bring in a puzzle\" card becomes one blue New import button with a one-line explainer.",
+    "Your imports are blocks two wide, like the Library: game, size, the time added, and a small coloured word (New, In progress, Solved).",
+    "Sort and the game filter share one small row (\"All games\" opens the same four choices). Example states are made up to show each look."]],
+];
+document.getElementById("screens").innerHTML = SCREENS.map(([name, today, calm, notes], i) => `
+  <section class="screen-pair"><h2><span>${i + 1}</span>${name}</h2>
+    <div class="pair">
+      <div class="col today"><span class="tag">Today</span>${today}</div>
+      <div class="col calm"><span class="tag calm">Calmer</span>${calm}<ul class="notes">${notes.map((n) => `<li>${n}</li>`).join("")}</ul></div>
+    </div></section>`).join("");
+
+// Fit the phones: two side by side on a wide screen, one at a time (with the Today / Calmer switch) on a phone.
+function fit() {
+  const w = document.querySelector(".doc").clientWidth;
+  const s = w > 760 ? Math.min(0.82, (w - 28) / 2 / 390) : Math.min(0.92, (w - 8) / 390);
+  document.documentElement.style.setProperty("--s", s.toFixed(3));
+}
+addEventListener("resize", fit); fit();
+document.querySelectorAll(".switch button").forEach((b) => (b.onclick = () => {
+  document.body.dataset.show = b.dataset.show;
+  document.querySelectorAll(".switch button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+}));
+</script>
+</body>
+</html>

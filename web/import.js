@@ -17,10 +17,11 @@ const GAME_NAMES = { starbattle: "Star Battle", sudoku: "Sudoku", watersort: "Wa
 const STAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z" fill="#2A211B"/></svg>`;
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
-  cam: (c) => `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>`,
-  plus: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>`,
-  down: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
-  up: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`,
+  cam: (c, s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/></svg>`,
+  caret: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4E433A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
+  down: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4E433A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M6 13l6 6 6-6"/></svg>`,
+  up: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4E433A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5 M6 11l6-6 6 6"/></svg>`,
+  tick: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F6FD6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>`,
   dots: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>`,
   next: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg>`,
   chat: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>`,
@@ -59,32 +60,60 @@ function rowNote(it, s) {
   if (s.state === "solved") return `Added ${time} · solved in ${fmt(s.ms)}`;
   return `Added ${time} · ${from}`;
 }
+// The block's size line: "10×10 · 2 stars", "9×9 · Classic", "14 tubes".
+function itemShape(it) {
+  if (it.game === "sudoku") return "9×9 · Classic";
+  if (it.game === "watersort") return `${it.tubes.length} tubes`;
+  return `${it.size}×${it.size} · ${it.stars} star${it.stars === 1 ? "" : "s"}`;
+}
+const FILTERS = [["all", "All games"], ["starbattle", "Star Battle"], ["sudoku", "Sudoku"], ["watersort", "Water Sort"]];
+const STATE_WORD = { new: "New", progress: "In progress", solved: "Solved" };
+// Calmer screens (Colin 10/23): a New import button with one line under it, then your imports as 2-wide blocks under
+// their day, with the game filter and the sort in one small row.
 function renderList() {
   const items = allImports(bundled).filter((x) => view.game === "all" || x.game === view.game);
   const total = allImports(bundled).length;
   const groups = groupByDay(items, view.newest);
+  const shown = FILTERS.find(([g]) => g === view.game)[1];
   let i = 0;
-  return `<div class="bring">
-      <span class="line"><span class="cam" aria-hidden="true">${ICON.cam("#1F57B5")}</span>
-        <span class="grow"><b>Bring in a puzzle</b><small>Snap one you're stuck on. Keep playing here, or get a hint from right where you are.</small></span></span>
-      <button class="primary" data-act="new">${ICON.plus}New import</button>
-    </div>
-    <div class="row-head"><span class="label">Your imports · ${total}</span>
-      <button class="sort" data-act="sort" aria-label="Sort by day added, ${view.newest ? "newest" : "oldest"} first">Day added: ${view.newest ? "newest" : "oldest"}${view.newest ? ICON.down : ICON.up}</button></div>
-    <div class="chips">${[["all", "All"], ["starbattle", "Star Battle"], ["sudoku", "Sudoku"], ["watersort", "Water Sort"]].map(([g, name]) =>
-      `<button class="fchip" data-filter="${g}" aria-pressed="${view.game === g}">${name}</button>`).join("")}</div>
-    ${groups.length ? groups.map((g) => `<div class="day"><span>${esc(g.day)}</span>${g.items.map((it) => {
-      const s = itemState(it);
-      return `<div class="imp" style="--i:${i++}">
-        <button class="imp-open" data-open="${esc(it.id)}" aria-label="Open ${esc(it.name || GAME_NAMES[it.game])}">
-          ${gameIcon(LOOK[it.game], 44, 22)}
-          <span class="imp-text"><b>${esc(itemTitle(it))}</b><small>${esc(rowNote(it, s))}</small></span>
-          <span class="state ${s.state}">${s.state === "progress" ? "In progress" : s.state === "solved" ? "Solved" : "New"}</span>
+  return `<div class="imp-list">
+    <button class="primary c-new" data-act="new">${ICON.cam("#fff", 20)}New import</button>
+    <p class="c-under">Snap one you're stuck on, then play it here or get a hint.</p>
+    <div class="c-tools"><b>Your imports · ${total}</b>
+      <button class="c-pill" data-act="filter" aria-label="Show ${shown}">${shown}${ICON.caret}</button>
+      <button class="c-pill" data-act="sort" aria-label="Sort by day added, ${view.newest ? "newest" : "oldest"} first">${view.newest ? "Newest" : "Oldest"}${view.newest ? ICON.down : ICON.up}</button></div>
+    ${groups.length ? groups.map((g) => `<div class="day"><span>${esc(g.day)}</span><div class="btiles">${g.items.map((it) => {
+      const st = itemState(it);
+      return `<div class="btile imp" style="--i:${i++}">
+        <button class="imp-open" data-open="${esc(it.id)}" aria-label="Open ${esc(itemTitle(it))}, ${STATE_WORD[st.state]}, ${esc(rowNote(it, st))}">
+          <span class="top">${gameIcon(LOOK[it.game], 30, 16)}<span class="state ${st.state}">${STATE_WORD[st.state]}</span></span>
+          <span class="n">${GAME_NAMES[it.game]}</span><span class="c">${esc(itemShape(it))}</span>
+          <span class="c">${new Date(it.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</span>
         </button>
-        ${it.source === "hand" ? `<button class="more" data-more="${esc(it.id)}" aria-label="More options">${ICON.dots}</button>` : `<span style="width:6px"></span>`}
+        ${it.source === "hand" ? `<button class="more" data-more="${esc(it.id)}" aria-label="More options">${ICON.dots}</button>` : ""}
       </div>`;
-    }).join("")}</div>`).join("")
-    : `<div class="card-glass empty">${total ? "None of those yet." : "Nothing imported yet. Tap New import to bring in your first puzzle."}</div>`}`;
+    }).join("")}</div></div>`).join("")
+    : `<div class="empty">${total ? "None of those yet." : "Nothing imported yet. Tap New import to bring in your first puzzle."}</div>`}
+  </div>`;
+}
+
+// "All games" opens the four choices in a small sheet.
+function openFilter() {
+  haptic("pick");
+  $("menu").querySelector(".sheet").innerHTML = `<div class="sheet-top"><h2>Show</h2>
+      <button class="x" data-act="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
+    <div class="card">${FILTERS.map(([g, name]) => `<button class="menu-row" data-filter="${g}" aria-pressed="${view.game === g}">
+      ${g === "all" ? `<span class="gico" style="width:30px;height:30px"></span>` : gameIcon(LOOK[g], 30, 16)}<span><b>${name}</b></span>${view.game === g ? ICON.tick : ""}</button>`).join("")}</div>`;
+  $("menu").hidden = false;
+  $("menu").onclick = (e) => {
+    const b = e.target === $("menu") ? null : e.target.closest("button");
+    if (e.target === $("menu") || b?.dataset.act === "close") return ($("menu").hidden = true);
+    if (!b?.dataset.filter) return;
+    view.game = b.dataset.filter;
+    haptic("tap");
+    $("menu").hidden = true;
+    render();
+  };
 }
 
 // ---------- New import ----------
@@ -348,7 +377,7 @@ $("view").addEventListener("click", (e) => {
   else if (act === "pop") waterPop();
   else if (act === "list" || act === "type" || act === "photo") go(act);
   else if (act === "sort") { view.newest = !view.newest; haptic("tap"); render(); }
-  else if (b.dataset.filter) { view.game = b.dataset.filter; haptic("tap"); render(); }
+  else if (act === "filter") openFilter();
   else if (b.dataset.open) {
     const it = allImports(bundled).find((x) => x.id === b.dataset.open);
     haptic("thud");

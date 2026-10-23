@@ -13,13 +13,14 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 .brandbar { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -12px 0 0 -4px; }
 /* The header stays put while the page scrolls under it (Colin 10/22), over a frosted strip that runs up under the clock. */
 .brandbar { position: sticky; top: calc(var(--safetop, 0px) + 12px); z-index: 5; }
+html:not(.app) .brandbar { top: -12px; } /* in a browser .page scrolls, and sticky counts from its padding: stay in place */
 .brandbar::before { content: ""; position: absolute; z-index: -1; left: -20px; right: -20px; top: calc(-12px - var(--safetop, 0px)); bottom: 0;
   background: rgba(246,244,241,0.88); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
   -webkit-mask-image: linear-gradient(#000 calc(100% - 10px), transparent); mask-image: linear-gradient(#000 calc(100% - 10px), transparent); pointer-events: none; }
 .logo-btn { width: 44px; height: 44px; flex: none; border: 0; background: none; padding: 2px; margin: 0; display: block; color: var(--ink); }
 .logo { width: 40px; height: 40px; display: block; overflow: visible; }
 .brandbar .wordmark { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
-.streak { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 10px; }
+.streak { margin-left: auto; display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; padding: 0 4px; color: var(--body); } /* no box (Colin 10/23) */
 /* The "hello" (Buddy standard §2, same as TasteBuddy's WigglyLogo): 650ms, linear between evenly spaced keyframes.
    The face wiggles, the right eye winks, the smile drops 7.5% of the box (7.5 of the 100 viewBox) and stretches 125%. */
 @keyframes sbHello { 0% { transform: none; } 20% { transform: rotate(-14deg) scale(1.12); } 40% { transform: rotate(12deg) scale(1.12); }
@@ -31,22 +32,19 @@ html.app .page { padding-bottom: calc(var(--tabbar, 96px) + 16px); }
 .logo.hello .eye-r { animation: sbWink 0.65s linear; }
 .logo.hello .smile { animation: sbSmile 0.65s linear; }
 
-/* Game tiles. */
-.ask { margin: 0; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; letter-spacing: -0.01em; }
-/* "What are we solving?" stays with the header while the games scroll under it (Colin, 10/22). */
-.home-main .ask { position: sticky; top: calc(var(--safetop, 0px) + 60px); z-index: 4; padding-bottom: 6px; }
-.home-main .ask::before { content: ""; position: absolute; z-index: -1; left: -20px; right: -20px; top: -24px; bottom: -4px;
-  background: rgba(246,244,241,0.88); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
-  -webkit-mask-image: linear-gradient(#000 calc(100% - 12px), transparent); mask-image: linear-gradient(#000 calc(100% - 12px), transparent); pointer-events: none; }
-.home-main { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; min-height: 148px; border-radius: 16px; text-align: left;
-  background: rgba(255,255,255,0.38); -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 8px 22px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.95); }
-.tile:active { transform: scale(0.98); }
-.tile[disabled] { cursor: default; opacity: 0.55; transform: none; }
-.tile .name { font-weight: 700; font-size: 17px; }
-.tile .count { font-size: 13px; color: var(--muted); }
+/* Library (calmer screens, Colin 10/23): half-height game tiles (icon beside the name and count), a smaller question
+   under the logo, and the coming-soon games as one quiet line. */
+.ask { margin: 10px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; color: var(--body); }
+.home-main { display: flex; flex-direction: column; gap: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tile { display: flex; align-items: center; gap: 11px; padding: 12px; min-height: 62px; border: 0; border-radius: 14px; text-align: left; color: var(--ink);
+  background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.tile:active, .btile:active, .c-row:active { transform: scale(0.98); }
+.tile > span:last-child { min-width: 0; }
+.tile .name { display: block; font-weight: 600; font-size: 15px; line-height: 1.2; }
+.tile .count { display: block; font-size: 12px; color: var(--muted); }
+.soon-line { margin: 14px 2px 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.soon-line b { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; }
 .gico { display: grid; place-items: center; flex: none; }
 
 .label { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
@@ -106,49 +104,59 @@ html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on scre
 @keyframes sbTileIn { 0% { opacity: 0; transform: scale(0.6); } 70% { opacity: 1; transform: scale(1.06); } 100% { opacity: 1; transform: none; } }
 .gameview { display: flex; flex-direction: column; gap: 16px; }
 .gameview.enter { animation: sbSlideIn 0.3s cubic-bezier(0.33,1,0.68,1) both; }
+/* The Import tab's step headers (back, title, step). */
 .gp-head { display: flex; align-items: center; gap: 12px; }
 .gp-head .sq { flex: none; }
 .gp-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .gp-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 25px; line-height: 1.1; letter-spacing: -0.01em; }
 .gp-title span { font-size: 13px; color: var(--muted); }
-.gp-packs { display: flex; flex-direction: column; gap: 10px; margin-top: -6px; }
-.pack-card, .more-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; text-align: left; width: 100%; color: var(--ink); }
-.pack-card { background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 6px 18px rgba(30,30,30,0.06);
-  animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.06s) cubic-bezier(0.3,1.3,0.5,1) both; }
-.more-card { padding: 14px; background: rgba(255,255,255,0.45); border: 1px dashed rgba(47,111,214,0.4); }
-.pack-art { width: 56px; height: 56px; flex: none; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
-.pack-art b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 18px; }
-.pack-art small { font-size: 9px; font-weight: 700; letter-spacing: 0.04em; }
-.pack-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.pack-text b { font-size: 16px; }
-.pack-text small { font-size: 13px; color: var(--muted); }
-.pack-text em { font-style: normal; font-size: 12px; font-weight: 600; color: var(--body); }
 .track { display: block; height: 5px; border-radius: 3px; background: rgba(42,33,27,0.08); }
 .track .fill { display: block; height: 100%; border-radius: 3px; background: var(--brand); }
-.pack-done { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--brand); display: grid; place-items: center; }
-.more-ico { width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
-.gp-level { display: flex; flex-direction: column; gap: 10px; }
-.gp-level-head { display: flex; align-items: center; gap: 10px; }
-.gp-level-head h2 { margin: 0; flex: 1; font-size: 17px; font-weight: 700; }
-.gp-level-head > span:last-child { font-size: 13px; font-weight: 600; color: var(--body); }
-.gp-bar .track { height: 6px; }
-.gp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
-.ptile { position: relative; aspect-ratio: 1; border-radius: 16px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  color: var(--ink); background: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 4px 12px rgba(30,30,30,0.05);
-  animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.035s) cubic-bezier(0.3,1.3,0.5,1) both; }
-.ptile b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; line-height: 1; }
-.ptile small { max-width: 100%; padding: 0 4px; font-size: 10px; font-weight: 700; line-height: 1.15; text-align: center; color: var(--muted); } /* wraps if it's long (Resume #12) */
-.ptile.solved { background: var(--brand-soft); border-color: rgba(47,111,214,0.25); color: var(--brand-dark); }
-.ptile.progress { background: #fff; border: 2.5px solid var(--brand); box-shadow: 0 6px 16px rgba(47,111,214,0.2); }
-.ptile.progress small { color: var(--brand); }
-.ptile-star { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); border: 2px solid var(--bg);
-  display: grid; place-items: center; }
-.gp-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.gp-legend span { display: flex; align-items: center; gap: 5px; }
-.gp-legend i { width: 12px; height: 12px; border-radius: 4px; }
-.gp-legend i.solved { background: var(--brand-soft); border: 1px solid rgba(47,111,214,0.3); }
-.gp-legend i.progress { background: #fff; border: 2px solid var(--brand); }
-.gp-legend i.new { background: rgba(255,255,255,0.7); border: 1px solid rgba(42,33,27,0.15); }
+/* Pick a pack and one pack (calmer screens, Colin 10/23): plain back and help icons, a title with "N of M done", one
+   soft list with hairlines, small rings with "5/20", and Get more packs as a quiet blue link. */
+.c-nav { display: flex; justify-content: space-between; align-items: center; margin: -12px -10px -8px; }
+.iconbtn { width: 44px; height: 44px; padding: 0; border: 0; background: none; display: grid; place-items: center; }
+.c-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; }
+.c-title span { display: block; margin-top: 3px; font-size: 13px; color: var(--muted); }
+.c-group { display: flex; flex-direction: column; }
+.c-group + .c-group { margin-top: 4px; }
+.c-ghead { display: flex; align-items: center; gap: 8px; margin: 10px 2px 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.c-ghead.game { margin-top: 4px; color: var(--ink); font-size: 15px; font-weight: 700; }
+.c-list { border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); overflow: hidden; }
+.c-row { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 52px; border: 0; background: none; text-align: left; color: var(--ink);
+  animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.06s) cubic-bezier(0.3,1.3,0.5,1) both; }
+.c-row + .c-row { border-top: 1px solid rgba(42,33,27,0.08); }
+.c-row .g { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.c-row .g b { font-weight: 600; font-size: 15px; }
+.c-row .g small { font-size: 12px; color: var(--muted); }
+.cnt { flex: none; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ring { display: block; flex: none; }
+.c-link { align-self: flex-start; display: flex; align-items: center; gap: 8px; min-height: 44px; margin-top: -2px; padding: 0 2px; border: 0; background: none;
+  font: 600 14px Inter, sans-serif; color: var(--brand-dark); }
+.gp-level { display: flex; flex-direction: column; margin-top: 8px; }
+.gp-level-head { display: flex; align-items: center; gap: 8px; margin: 0 2px 10px; }
+.gp-level-head b { flex: 1; font-size: 15px; font-weight: 600; }
+.gp-level-head > span:last-child { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gp-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.ptile { position: relative; height: 50px; border: 0; border-radius: 12px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  color: var(--ink); background: rgba(255,255,255,0.6); animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.035s) cubic-bezier(0.3,1.3,0.5,1) both; }
+.ptile b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 16px; line-height: 1; }
+.ptile small { max-width: 100%; padding: 0 2px; font-size: 12px; font-weight: 600; line-height: 1.1; color: var(--brand); }
+.ptile.solved { background: var(--brand-soft); color: var(--brand-dark); }
+.ptile.progress { background: #fff; box-shadow: inset 0 0 0 2px var(--brand); }
+.gp-key { display: flex; gap: 14px; margin-top: 2px; font-size: 12px; color: var(--muted); }
+.gp-key span { display: flex; align-items: center; gap: 5px; }
+.gp-key i { width: 10px; height: 10px; border-radius: 3px; }
+.gp-key i.solved { background: var(--brand-soft); }
+.gp-key i.progress { box-shadow: inset 0 0 0 2px var(--brand); }
+/* Block tiles (Packs tab, Import tab): 2 wide, like the Library. */
+.btiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.btile { position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px; min-height: 44px; border: 0; border-radius: 14px; text-align: left;
+  color: var(--ink); background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); font: inherit; }
+.btile .top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.btile .n { font-weight: 600; font-size: 15px; line-height: 1.2; }
+.btile .c { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.btile .p { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* The tap pop-up: a little picture of the puzzle, its state, then the two choices. */
 .tile-top { display: flex; gap: 14px; align-items: center; }
 .tile-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -184,3 +192,7 @@ html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on scre
 .tile-main { min-height: 54px; border-radius: 14px; border: 0; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif;
   display: flex; align-items: center; justify-content: center; gap: 8px; }
 .tile-restart { display: flex; align-items: center; justify-content: center; gap: 8px; }
+/* Packs tab (calmer screens, Colin 10/23). */
+.lead.calm { margin-top: -10px; font-size: 13px; color: var(--muted); }
+.pk-games { display: flex; flex-direction: column; gap: 14px; margin-top: 4px; }
+.pk-games .c-ghead.game { margin: 0 2px 10px; }

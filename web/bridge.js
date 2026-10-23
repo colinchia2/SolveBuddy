@@ -23,6 +23,14 @@ function whereLeft() {
   const times = solves().filter((e) => e.g === g && e.pack === pack && e.p === p).map((e) => e.ms);
   return { g, pack, p, saved, state: saved ? "progress" : times.length ? "solved" : "new", ms: times.length ? Math.min(...times) : 0 };
 }
+// The Packs tab opens a pack on Library's pack page (calmer screens, Colin 10/23). In the app the tabs are separate
+// pages sharing storage: leave a note for Library (read when it comes on screen), then switch tabs. No app change.
+export const OPEN_PACK_KEY = "solvebuddy.openPack";
+export function openPack(g, set) {
+  if (!inApp) return void (location.href = `home.html?g=${g}&set=${set}`);
+  try { localStorage.setItem(OPEN_PACK_KEY, JSON.stringify({ g, set, at: Date.now() })); } catch {}
+  post({ type: "tab", name: "Library" });
+}
 globalThis.sbLeave = goHome; // the app's glass back button calls this
 // Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle.
 export function haptic(kind = "tap") {

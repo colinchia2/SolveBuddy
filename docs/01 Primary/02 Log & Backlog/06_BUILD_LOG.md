@@ -2,6 +2,30 @@
 
 Newest first.
 
+## 2026-10-23 — Calmer screens (Library, pick a pack, one pack, Packs tab, Import tab)
+- Built from `docs/design/calmer_screens_mockup.html` (Colin approved 10/23: "looks way better, do it"); it now
+  supersedes the older handoff mockups for these five screens.
+- **Library:** half-height tiles (38 icon, name + count beside it), smaller "What are we solving?" under the logo,
+  streak without its box, the 4 unbuilt games as one quiet "Coming soon" line (never lists a playable game).
+- **Pick a pack (every game):** plain back/help icons, title + "N of M done", one soft hairline list per pack family
+  ("Starter – Single" → heading Starter, row Single; Sudoku's own packs under "Packs"), size + levels under each row,
+  a small ring + "5/20", chevron; Get more packs = a quiet blue link (same place as before).
+- **One pack:** short title ("Single", "Killer"), small bars + "4/10" per level (no bar), 50-high squares, solved =
+  blue with best time and no star badge, in progress = blue outline + "Resume", key down to Solved / In progress.
+- **Packs tab:** grouped by game, 2-wide blocks, one per pack named once with its levels underneath (Sudoku Starter
+  = one 40 block; Trick tests 6, Killer 10, Thermo 6; Star Battle Single 20 / Double 10 / Triple 10; Water Sort
+  Starter 30), all from the real pack data. No green ticks. **Fixed:** Killer and Thermo were still under "Coming
+  soon"; that section is gone. Tapping a block opens that pack on Library (`openPack` in bridge.js: in the app a
+  note in shared storage + switch tab, Library opens it on sbRefresh; no app shell change).
+- **Import tab:** blue New import button + one line under it; "Your imports · N" with "All games" (opens a small
+  sheet with the same four choices) and "Newest/Oldest" in one row; imports as 2-wide blocks under their day
+  (icon + New / In progress / Solved, game, size/stars, time added; "…" Delete on hand-built ones kept).
+- Browser preview only: the sticky header no longer sits 24px low over the next line (`html:not(.app) .brandbar`).
+- `checks/pages_smoke.mjs`: Star Battle list under Starter, one-pack page, Packs blocks match the pack files (Sudoku
+  Starter one 40 block), nothing playable is "coming soon", block opens the pack (browser and app), import blocks +
+  filter + sort. run_all 47 PASS (the Sudoku variants hint-speed check flaked once; passed alone and on rerun),
+  pages smoke 42 PASS. Not pushed yet.
+
 ## 2026-10-23 — Haptics on cell selection and drag marking
 - Sudoku (classic, Killer, Thermo): selecting a cell = the selection tick ("pick", the lightest), one per cell a drag
   adds; a number, a note or Erase = the light "tap". Select and place are separate taps, so never two at once.

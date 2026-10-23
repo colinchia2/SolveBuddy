@@ -17,13 +17,117 @@ for (const p of ["home", "packs", "stats", "import", "sudoku", "starbattle", "wa
   check(`${p} page opens with no errors`, !errors.some((e) => e.includes(`/${p}.html`)));
 }
 
-// Home → Star Battle shows the 3 packs.
+// Home → Star Battle shows the 3 packs, as one list under "Starter" (calmer screens, Colin 10/23).
 await page.goto(`${BASE}home.html`);
 await page.waitForTimeout(600);
 await page.click('[data-game="starbattle"]');
 await page.waitForTimeout(400);
-const packs = await page.$$eval(".pack-card .pack-text > b", (els) => els.map((e) => e.textContent));
-check(`Star Battle shows 3 packs (${packs.join(", ")})`, packs.length === 3 && packs.includes("Starter – Triple"));
+const packs = await page.evaluate(() => ({ head: [...document.querySelectorAll(".c-ghead")].map((e) => e.textContent),
+  rows: [...document.querySelectorAll(".c-row .g > b")].map((e) => e.textContent), more: !!document.querySelector('.c-link[data-act="more"]') }));
+check(`Star Battle shows 3 packs under ${packs.head.join(", ")} (${packs.rows.join(", ")}), Get more packs link`,
+  packs.rows.join() === "Single,Double,Triple" && packs.head.join() === "Starter" && packs.more);
+// One pack: the short name, solved tiles with no star badge, the key down to two.
+await page.click('.c-row[data-set="0"]');
+await page.waitForTimeout(400);
+const one = await page.evaluate(() => ({ title: document.querySelector(".c-title h1").textContent, tiles: document.querySelectorAll(".ptile").length,
+  badges: document.querySelectorAll(".ptile-star").length, key: [...document.querySelectorAll(".gp-key span")].map((e) => e.textContent) }));
+check(`one pack: "${one.title}", ${one.tiles} puzzles, key ${one.key.join(" / ")}`,
+  one.title === "Single" && one.tiles === 20 && one.badges === 0 && one.key.join() === "Solved, best time,In progress");
+
+// Packs tab (Colin 10/23): one block per pack family, named once, totals from the real pack files; nothing that's
+// playable is listed as coming soon (it once listed Killer and Thermo); tapping a block opens that pack.
+await page.goto(`${BASE}packs.html`);
+await page.waitForTimeout(800);
+const tab = await page.evaluate(async () => {
+  const { GAMES, loadPack } = await import("./bridge.js");
+  const want = {};
+  for (const [g, game] of Object.entries(GAMES)) for (const [i, s] of game.sets.entries()) {
+    let n = 0;
+    for (const k of s.levels) n += (await loadPack(game.packs.find(([key]) => key === k)[1])).puzzles.length;
+    want[`${g}/${i}`] = n;
+  }
+  const got = {};
+  for (const b of document.querySelectorAll(".btile[data-set]")) got[`${b.dataset.g}/${b.dataset.set}`] = Number(b.querySelector(".top .c").textContent);
+  const block = (g, name) => [...document.querySelectorAll(`.btile[data-g="${g}"]`)].find((b) => b.querySelector(".n").textContent === name);
+  const starter = block("sudoku", "Starter");
+  return { want, got, starterN: starter && Number(starter.querySelector(".top .c").textContent),
+    starterLv: starter?.querySelectorAll(".c")[1].textContent, sudokuBlocks: document.querySelectorAll('.btile[data-g="sudoku"]').length,
+    ticks: document.querySelectorAll('[aria-label="On this phone"]').length, text: document.querySelector(".page").innerText };
+});
+check(`Packs tab: a block per pack with the real totals (${JSON.stringify(tab.got)})`, JSON.stringify(tab.got) === JSON.stringify(tab.want));
+check(`Packs tab: Sudoku Starter is ONE block of ${tab.starterN} (${tab.starterLv}), ${tab.sudokuBlocks} Sudoku blocks`,
+  tab.starterN === 40 && tab.starterLv === "Easy · Medium · Hard · Expert" && tab.sudokuBlocks === 4 && tab.ticks === 0);
+const soon = await page.evaluate(async () => {
+  const { GAMES } = await import("./bridge.js");
+  return { packsSoon: /coming soon|\bsoon\b/i.test(document.querySelector(".page").innerText),
+    names: [...Object.values(GAMES).map((g) => g.name), ...Object.values(GAMES).flatMap((g) => g.sets.map((s) => s.name.split(" – ").pop())), "Killer Sudoku", "Thermo Sudoku", "Block Drop"] };
+});
+await page.goto(`${BASE}home.html`);
+await page.waitForTimeout(600);
+const homeSoon = await page.$eval("#soon", (e) => e.innerText.replace(/^Coming soon\s*/, ""));
+const clash = soon.names.filter((n) => homeSoon.split(" · ").includes(n));
+check(`nothing playable is "coming soon" (Packs tab lists none; Library: ${homeSoon})`, !soon.packsSoon && clash.length === 0 && homeSoon.length > 0);
+await page.goto(`${BASE}packs.html`);
+await page.waitForTimeout(600);
+await page.click('.btile[data-g="sudoku"][data-set="2"]');
+await page.waitForTimeout(900);
+const opened = await page.evaluate(() => ({ url: location.pathname, title: document.querySelector("#view:not([hidden]) .c-title h1")?.textContent,
+  levels: [...document.querySelectorAll(".gp-level-head b")].map((e) => e.textContent) }));
+check(`tapping the Killer block opens that pack (${opened.title}: ${opened.levels.join(", ")})`,
+  opened.url.endsWith("/home.html") && opened.title === "Killer" && opened.levels.join() === "Easy,Expert");
+
+// In the app the tabs are separate pages: Packs leaves a note and switches tabs; Library opens the pack when it comes
+// on screen (the app calls sbRefresh), with no app change.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.__sent = [];
+    window.ReactNativeWebView = { postMessage: (m) => window.__sent.push(JSON.parse(m)) };
+  });
+  const p = await ctx.newPage();
+  await p.goto(`${BASE}packs.html`);
+  await p.waitForTimeout(800);
+  await p.click('.btile[data-g="starbattle"][data-set="1"]');
+  const sent = await p.evaluate(() => window.__sent.filter((m) => m.type === "tab"));
+  await p.goto(`${BASE}home.html`); // same storage, as the Library tab's page
+  await p.waitForTimeout(800);
+  await p.evaluate(() => window.sbRefresh());
+  await p.waitForTimeout(300);
+  const title = await p.evaluate(() => document.querySelector("#view:not([hidden]) .c-title h1")?.textContent);
+  check(`in the app, a Packs block switches to Library (${sent.map((m) => m.name)}) and opens the pack there (${title})`,
+    sent.length === 1 && sent[0].name === "Library" && title === "Double");
+  await ctx.close();
+}
+
+// Import tab (Colin 10/23): imports as 2-wide blocks under their day; the game filter (a small sheet) and sort still work.
+await page.goto(`${BASE}import.html`);
+await page.waitForTimeout(900);
+const imp = await page.evaluate(async () => {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const ids = () => [...document.querySelectorAll(".btiles .imp-open")].map((b) => b.dataset.open);
+  const out = { tiles: ids().length, cols: getComputedStyle(document.querySelector(".btiles")).gridTemplateColumns.split(" ").length,
+    days: document.querySelectorAll(".day > span").length, words: [...document.querySelectorAll(".imp .state")].map((e) => e.textContent) };
+  const first = ids();
+  document.querySelector('[data-act="sort"]').click(); await wait(50);
+  out.sorted = ids().join() === [...first].reverse().join() || first.length < 2;
+  out.sortLabel = document.querySelector('[data-act="sort"]').textContent.trim();
+  document.querySelector('[data-act="sort"]').click(); await wait(50);
+  document.querySelector('[data-act="filter"]').click(); await wait(50);
+  out.choices = [...document.querySelectorAll("#menu [data-filter]")].map((b) => b.textContent.trim());
+  document.querySelector('#menu [data-filter="sudoku"]').click(); await wait(300);
+  out.sudoku = ids().length;
+  out.label = document.querySelector('[data-act="filter"]').textContent.trim();
+  document.querySelector('[data-act="filter"]').click(); await wait(50);
+  document.querySelector('#menu [data-filter="all"]').click(); await wait(300);
+  out.back = ids().length;
+  return out;
+});
+check(`Import: ${imp.tiles} imports as ${imp.cols}-wide blocks under ${imp.days} day heading(s) (${[...new Set(imp.words)].join(", ")})`,
+  imp.tiles >= 4 && imp.cols === 2 && imp.days >= 1 && imp.words.every((w) => ["New", "In progress", "Solved"].includes(w)));
+check(`Import: sort flips the order (${imp.sortLabel}); filter offers ${imp.choices.join(" / ")}, Sudoku shows ${imp.sudoku} (${imp.label}), All shows ${imp.back}`,
+  imp.sorted && imp.sortLabel === "Oldest" && imp.choices.join() === "All games,Star Battle,Sudoku,Water Sort" && imp.label === "Sudoku" && imp.back === imp.tiles
+  && imp.sudoku < imp.tiles);
 
 // Triple #1 solved by Hint presses alone.
 await page.goto(`${BASE}starbattle.html?pack=triple&p=1`);

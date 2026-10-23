@@ -10,32 +10,29 @@
 <link rel="stylesheet" href="screens.css">
 <style>
   /* Import tab (approved mockups, canvas row "Import a puzzle", Colin 10/22). */
-  .bring { padding: 18px; border-radius: 18px; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,0.55);
-    border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 8px 22px rgba(30,30,30,0.07), inset 0 1px 0 #fff; }
-  .bring .line b { font-size: 17px; font-weight: 700; }
-  .cam { width: 52px; height: 52px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
+  /* List (calmer screens, Colin 10/23): New import button, one line under it, filter + sort in one row, 2-wide blocks. */
+  .imp-list { display: flex; flex-direction: column; }
   .primary { min-height: 52px; border-radius: 14px; border: none; background: var(--brand); color: #fff; font: 700 15px Inter, sans-serif;
     display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
   .primary[disabled] { background: rgba(42,33,27,0.12); color: var(--muted); }
+  .primary.c-new { min-height: 48px; margin-top: 6px; }
+  .c-under { margin: 8px 2px 0; font-size: 13px; color: var(--muted); text-align: center; }
+  .cam { width: 52px; height: 52px; flex: none; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; }
   .plain { min-height: 52px; border-radius: 14px; border: 1px solid rgba(42,33,27,0.18); background: #fff; color: var(--ink); font: 600 15px Inter, sans-serif; width: 100%; }
-  .row-head { display: flex; align-items: center; justify-content: space-between; }
-  .sort { display: flex; align-items: center; gap: 4px; min-height: 36px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.9);
-    background: rgba(255,255,255,0.6); font: 600 13px Inter, sans-serif; color: var(--ink); }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .fchip { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(42,33,27,0.14); background: rgba(255,255,255,0.6);
-    color: var(--ink); font: 600 13px Inter, sans-serif; }
-  .fchip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: #fff; }
-  .day { display: flex; flex-direction: column; gap: 8px; }
-  .day > span { font-size: 13px; font-weight: 700; color: var(--body); }
-  .imp { display: flex; align-items: center; gap: 12px; padding: 10px 6px 10px 12px; border-radius: 14px; background: rgba(255,255,255,0.5);
-    border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 4px 12px rgba(30,30,30,0.05); animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.05s) cubic-bezier(0.3,1.3,0.5,1) both; }
-  .imp-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; border: none; background: none; text-align: left; color: var(--ink); }
-  .imp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .imp-text b { font-size: 15px; }
-  .imp-text small { font-size: 12px; color: var(--muted); }
-  .state { flex: none; font-size: 12px; font-weight: 700; padding: 4px 9px; border-radius: 999px; background: rgba(42,33,27,0.07); color: var(--body); }
-  .state.progress { background: #FFF1D6; color: #7A4E00; }
-  .state.solved { background: var(--brand-soft); color: var(--brand-dark); }
+  .c-tools { display: flex; align-items: center; gap: 2px; margin: 18px 0 2px 2px; }
+  .c-tools > b { flex: 1; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .c-pill { display: flex; align-items: center; gap: 3px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: none;
+    font: 600 13px Inter, sans-serif; color: var(--body); }
+  .day { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .day > span { font-size: 12px; color: var(--muted); margin: 0 2px; }
+  .btile.imp { padding: 0; animation: sbTileIn 0.35s calc(0.05s + var(--i) * 0.05s) cubic-bezier(0.3,1.3,0.5,1) both; }
+  .imp-open { width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 12px; border: none; background: none;
+    text-align: left; color: var(--ink); font: inherit; }
+  .state { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .state.progress { color: #9A6200; }
+  .state.solved { color: var(--brand); }
+  .imp .more { position: absolute; right: 0; bottom: 0; width: 44px; height: 44px; }
+  .menu-row[aria-pressed="true"] b { color: var(--brand-dark); }
   .more { width: 36px; height: 44px; flex: none; border: none; background: none; padding: 0; display: grid; place-items: center; color: var(--muted); }
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
   .steps i { height: 4px; border-radius: 2px; background: rgba(42,33,27,0.12); }

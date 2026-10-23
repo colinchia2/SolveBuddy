@@ -57,7 +57,22 @@ export const LOOK = {
 export const gameIcon = (look, box, icon) => `<span class="gico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${look.bg}" aria-hidden="true">
 <svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${look.ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${look.path}"/></svg></span>`;
 
-export const FLAME = `<svg width="16" height="16" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>`;
+// A small progress ring (calmer screens, Colin 10/23): shown with "5/20" instead of a full-width bar and a sentence.
+export function ring(done, n, size = 18) {
+  const r = 7, c = 2 * Math.PI * r, f = c * (done / Math.max(1, n));
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="${r}" fill="none" stroke="rgba(42,33,27,0.12)" stroke-width="2.5"/>${done
+    ? `<circle cx="9" cy="9" r="${r}" fill="none" stroke="#2F6FD6" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${f.toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 9 9)"/>` : ""}</svg>`;
+}
+// A pack's name split into its family and its own short name: "Starter – Single" → { group: "Starter", short: "Single" }.
+// A name with no family ("Killer") has group "".
+export function setParts(name) {
+  const i = name.indexOf(" – ");
+  return i < 0 ? { group: "", short: name } : { group: name.slice(0, i), short: name.slice(i + 3) };
+}
+export const CHEVRON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A99A8D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+export const DOWNLOAD = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 10l5 5 5-5 M4 19h16"/></svg>`;
+
+export const FLAME =`<svg width="16" height="16" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>`;
 const TAB_ICONS = {
   home: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z",
   packs: "M21 8l-9-5-9 5 9 5z M3 8v8l9 5 9-5V8 M12 13v8",
