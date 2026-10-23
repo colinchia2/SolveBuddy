@@ -3,10 +3,17 @@
 export const inApp = !!globalThis.SOLVEBUDDY_APP;
 export const post = (msg) => globalThis.ReactNativeWebView?.postMessage(JSON.stringify(msg));
 
+// Games the phone app doesn't know as pages yet ride inside one it does (the app opens only the game pages built into
+// it, App.js GAMES). The app's offline starbattle page carries Nonogram too and switches on ?game=nonogram
+// (scripts/build_site.ts). Once the app lists "nonogram" itself, drop it from here.
+export const HOSTED = { nonogram: "starbattle" };
 export function openGame(game, query) {
-  if (inApp) post({ type: "open", page: game, query });
+  if (inApp && HOSTED[game]) post({ type: "open", page: HOSTED[game], query: `?game=${game}${query ? `&${query.replace(/^\?/, "")}` : ""}` });
+  else if (inApp) post({ type: "open", page: game, query });
   else location.href = `${game}.html${query}`;
 }
+// Which game this page is: ?game= (a hosted game in the app), else the page's own name.
+export const pageGame = () => new URLSearchParams(location.search).get("game") ?? location.pathname.match(/(\w+)\.html$/)?.[1];
 // Leaving a game saves it first: every game page saves on "pagehide", so send one before going.
 export function goHome() {
   dispatchEvent(new Event("pagehide"));
@@ -16,7 +23,7 @@ export function goHome() {
 // The puzzle you're leaving and how you left it. Home shows this tile from it straight away, because the save itself
 // can reach Home's copy of storage a moment later (Colin 10/22: a tile must never show the wrong state).
 function whereLeft() {
-  const g = location.pathname.match(/(\w+)\.html$/)?.[1];
+  const g = pageGame();
   const q = new URLSearchParams(location.search), pack = q.get("pack"), p = Number(q.get("p"));
   if (!g || !pack || !p) return null;
   const saved = savedGame(g, pack, p);
@@ -65,6 +72,10 @@ export const GAMES = {
   watersort: { name: "Water Sort", packs: [
     ["easy", "watersort-easy.json", "Easy"], ["medium", "watersort-medium.json", "Medium"], ["hard", "watersort-hard.json", "Hard"]],
     sets: [{ name: "Starter", levels: ["easy", "medium", "hard"] }] },
+  // Nonogram (Colin 10/23): size is the level; every puzzle is a picture. 15×15 zooms.
+  nonogram: { name: "Nonogram", packs: [
+    ["easy", "nonogram5-easy.json", "Easy"], ["medium", "nonogram10-medium.json", "Medium"], ["hard", "nonogram15-hard.json", "Hard"]],
+    sets: [{ name: "5×5", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "15×15", levels: ["hard"] }] },
 };
 // Block Drop (Colin, 10/22) is endless, with no packs: its tile opens the game, and it keeps its own best scores.
 export const BLOCKS_KEY = "solvebuddy.blocks";

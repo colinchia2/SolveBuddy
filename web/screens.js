@@ -53,7 +53,24 @@ export const LOOK = {
   sudoku: { bg: "#D7EEEA", ink: "#1F6F73", path: "M4 4h16v16H4z M4 9.3h16 M4 14.7h16 M9.3 4v16 M14.7 4v16", size: "9×9" },
   watersort: { bg: "#ECE2F7", ink: "#6A45B0", path: "M6 3v14a3 3 0 0 0 6 0V3 M5 3h8 M6 11h6 M15 8v9a2.5 2.5 0 0 0 5 0V8 M14.5 8h6", size: "Tubes" },
   blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z", size: "Endless" },
+  // Nonogram (Colin 10/23): a grid with a filled corner block and a clue tick, in its own slate blue.
+  nonogram: { bg: "#E2E6F4", ink: "#3D4C8F", path: "M4 4h16v16H4z M4 12h16 M12 4v16 M6.5 6.5h3v3h-3z M14.5 14.5h3v3h-3z", size: "5–15" },
 };
+// A solved Nonogram picture, small (pack rows, the Resume sheet): the filled squares in the puzzle's colour.
+export function nonoPicture(sol, size, color) {
+  const n = sol.length, u = size / n;
+  let o = "";
+  sol.forEach((row, r) => [...row].forEach((v, c) => { if (v === "X") o += `<rect x="${(c * u).toFixed(2)}" y="${(r * u).toFixed(2)}" width="${(u + 0.05).toFixed(2)}" height="${(u + 0.05).toFixed(2)}" fill="${color}"/>`; }));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block;background:#FFFDF9">${o}</svg>`;
+}
+// "New" on a game's Library tile for 7 days from the first time this phone showed it (Colin 10/23).
+const SEEN_KEY = "solvebuddy.firstSeen";
+export function isNew(id, days = 7, now = Date.now()) {
+  let seen = {};
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch {}
+  if (!seen[id]) { seen[id] = now; try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch {} }
+  return now - seen[id] < days * 86400000;
+}
 export const gameIcon = (look, box, icon) => `<span class="gico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${look.bg}" aria-hidden="true">
 <svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${look.ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${look.path}"/></svg></span>`;
 

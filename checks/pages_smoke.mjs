@@ -11,7 +11,7 @@ page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
 let failed = 0;
 const check = (name, ok) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) failed++; };
 
-for (const p of ["home", "packs", "stats", "import", "sudoku", "starbattle", "watersort", "blocks"]) {
+for (const p of ["home", "packs", "stats", "import", "sudoku", "starbattle", "watersort", "blocks", "nonogram"]) {
   await page.goto(`${BASE}${p}.html`);
   await page.waitForTimeout(800);
   check(`${p} page opens with no errors`, !errors.some((e) => e.includes(`/${p}.html`)));
@@ -320,6 +320,304 @@ const used = await page.evaluate(async () => {
   return $("won")?.innerText.match(/[\d.]+ hints? used/)?.[0] ?? "";
 });
 check(`the Solved card shows hints used (${used})`, /^\d+(\.\d+)? hints? used$/.test(used));
+
+const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Nonogram (Colin 10/23): tap cycle, drag locked to a line with one light buzz per square, a firmer buzz when a row
+// is complete and right, finished clues grey out, one Undo per drag, hints explain a row or column, and the finish
+// names the picture ("A heart!") with the picture as the medal. App bridge stubbed to record every buzz.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.__buzz = [];
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+  });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  await p.goto(`${BASE}nonogram.html?pack=easy&p=1`);
+  await p.waitForTimeout(1200);
+  await p.evaluate(() => localStorage.clear());
+  await p.reload();
+  await p.waitForTimeout(1500);
+  const nn = await p.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const cell = (r, c) => document.querySelector(`.nc[data-r="${r}"][data-c="${c}"]`);
+    const at = (r, c) => { const b = cell(r, c).getBoundingClientRect(); return { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true }; };
+    const take = () => { const o = window.__buzz; window.__buzz = []; return o; };
+    // A drag through cells [r, c]; a "wobble" point can sit off the line.
+    const drag = (cells) => {
+      cell(...cells[0]).dispatchEvent(new PointerEvent("pointerdown", at(...cells[0])));
+      for (const rc of cells.slice(1)) document.dispatchEvent(new PointerEvent("pointermove", at(...rc)));
+      document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    };
+    const state = (r, c) => (cell(r, c).classList.contains("f") ? "fill" : cell(r, c).querySelector(".xm") ? "x" : "blank");
+    const out = {};
+    take();
+    out.cycle = [];
+    for (let i = 0; i < 3; i++) { drag([[4, 0]]); out.cycle.push(state(4, 0)); }
+    out.cycleBuzz = take();
+    // Heart row 2 (index 1) is 5: drag (1,0) → (1,1) → a wobble into row 3 at column 2: locks to row 2.
+    drag([[1, 0], [1, 1], [2, 2]]);
+    out.dragged = [state(1, 0), state(1, 1), state(1, 2), state(2, 2)];
+    out.dragBuzz = take();
+    document.getElementById("undoBtn").click(); take();
+    out.afterUndo = [state(1, 0), state(1, 1), state(1, 2)];
+    // The whole row: four light taps, then a firmer one as it becomes complete and right; its clue greys out.
+    drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]);
+    out.rowBuzz = take();
+    out.rowGrey = document.querySelector('.rc[data-r="1"]').classList.contains("done");
+    out.otherGrey = document.querySelector('.rc[data-r="2"]').classList.contains("done");
+    // Hint: names a row or column, then explains why with its technique.
+    document.getElementById("hintBtn").click(); await wait(50);
+    out.nudge = document.getElementById("hintTitle").textContent;
+    document.getElementById("hintNext").click(); await wait(50);
+    out.chip = document.getElementById("hintChip").textContent;
+    out.why = document.getElementById("hintBody").textContent;
+    document.getElementById("hintClose").click(); await wait(50);
+    // Hints alone finish it; the finish is the picture.
+    // (the card slides out for a moment after closing, so go by the game's own hint state)
+    for (let i = 0; i < 60 && !document.getElementById("won"); i++) {
+      if (!window.sbNono.state().hint) { document.getElementById("hintBtn").click(); await wait(20); }
+      for (let g = 0; g < 4 && window.sbNono.state().hint; g++) document.getElementById("hintNext").click();
+    }
+    await wait(2600);
+    const won = document.getElementById("won");
+    out.heading = won?.querySelector("h2")?.textContent;
+    out.medal = !!won?.querySelector(".disc.pic svg rect");
+    out.boardWon = document.getElementById("board").classList.contains("won");
+    out.winBuzz = take().includes("success");
+    return out;
+  });
+  check(`Nonogram tap cycles fill → × → clear (${nn.cycle.join(" → ")}), one light buzz each (${nn.cycleBuzz})`,
+    same(nn.cycle, ["fill", "x", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
+  check(`Nonogram drag locks to its row (${nn.dragged.join(", ")}), one light buzz per square (${nn.dragBuzz}), one Undo takes it all back (${nn.afterUndo})`,
+    same(nn.dragged, ["fill", "fill", "fill", "blank"]) && same(nn.dragBuzz, ["tap", "tap", "tap"]) && same(nn.afterUndo, ["blank", "blank", "blank"]));
+  check(`Nonogram row complete and right: firmer buzz (${nn.rowBuzz}), its clue greys (${nn.rowGrey}, unfinished row ${nn.otherGrey})`,
+    same(nn.rowBuzz, ["tap", "tap", "tap", "tap", "thud"]) && nn.rowGrey && !nn.otherGrey);
+  check(`Nonogram hint: "${nn.nudge}" → ${nn.chip}: "${nn.why.slice(0, 60)}…"`, /^Look at (row|column) \d+/.test(nn.nudge) && nn.chip.length > 0 && nn.why.length > 20);
+  check(`Nonogram solved by hints: the picture card says "${nn.heading}" with the picture as the medal, colour sweep on, win buzz`,
+    nn.heading === "A heart!" && nn.medal && nn.boardWon && nn.winBuzz);
+  // A puzzle with no picture name gets the usual card (future imports).
+  const plainCard = await p.evaluate(async () => {
+    const { celebrate } = await import("./celebrate.js");
+    celebrate({ title: "Imported", level: "Easy", facts: { ms: 1000, hints: 0, best: false }, hasNext: false, onNext: () => {}, delay: 0,
+      heading: undefined, medal: undefined }); // what nonogram.js passes when a puzzle has no name
+    await new Promise((r) => setTimeout(r, 50));
+    return { h: document.querySelector("#won h2").textContent, disc: !!document.querySelector("#won .disc:not(.pic) svg") };
+  });
+  check(`a puzzle with no picture name gets the usual card ("${plainCard.h}", star disc)`, plainCard.h === "Solved!" && plainCard.disc);
+  await ctx.close();
+}
+
+// Two-finger zoom (Colin 10/23), with real touches (Chrome's touch input, as a finger would): only on Star Battle
+// 10×10+ and Nonogram 15×15; pinch zooms, two fingers move, one finger still marks while zoomed; past fit it springs
+// back; Fit and two-finger double-tap go back to fit; the tips say what to do; the page never scrolls under the board.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.ReactNativeWebView = { postMessage: () => {} };
+    window.__moves = [];
+    document.addEventListener("touchmove", (e) => window.__moves.push(e.defaultPrevented), { passive: true });
+  });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const cdp = await ctx.newCDPSession(p);
+  const touch = (type, pts) => cdp.send("Input.dispatchTouchEvent", { type, touchPoints: pts.map(([x, y], id) => ({ x, y, id })) });
+  // Two fingers from a/b to a2/b2 in steps.
+  const two = async (a, b, a2, b2, steps = 8) => {
+    await touch("touchStart", [a, b]);
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps, l = (u, v) => [u[0] + (v[0] - u[0]) * t, u[1] + (v[1] - u[1]) * t];
+      await touch("touchMove", [l(a, a2), l(b, b2)]);
+    }
+    await touch("touchEnd", []);
+  };
+  const zoomable = async (url) => {
+    await p.goto(`${BASE}${url}`);
+    await p.waitForTimeout(1200);
+    return p.evaluate(() => !!document.querySelector(".zoomable"));
+  };
+  await p.goto(`${BASE}home.html`);
+  await p.waitForTimeout(800);
+  await p.evaluate(() => localStorage.clear());
+  const where = {};
+  for (const u of ["nonogram.html?pack=easy&p=1", "nonogram.html?pack=medium&p=1", "nonogram.html?pack=hard&p=1",
+    "starbattle.html?pack=easy&p=1", "starbattle.html?pack=double&p=1", "starbattle.html?pack=triple&p=1", "sudoku.html?pack=easy&p=1"]) where[u] = await zoomable(u);
+  const want = [false, false, true, false, true, true, false];
+  check(`zoom only on Star Battle 10×10+ and Nonogram 15×15 (${Object.values(where).map((v) => (v ? "zoom" : "-")).join(" ")})`, same2(Object.values(where), want));
+
+  // Nonogram 15×15: the pinch tip at fit, then pinch out.
+  await p.goto(`${BASE}nonogram.html?pack=hard&p=1`);
+  await p.waitForTimeout(1200);
+  await p.evaluate(() => { localStorage.removeItem("solvebuddy.zoomTips"); localStorage.removeItem("solvebuddy.saved"); });
+  await p.reload();
+  await p.waitForTimeout(1500);
+  const box = await p.evaluate(() => { const r = document.querySelector(".ngwrap").getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  const mid = [box.x + box.w / 2, box.y + box.h / 2];
+  const fitTip = await p.evaluate(() => ({ tip: document.getElementById("tip").textContent, ctl: !document.getElementById("zoomCtl").hidden }));
+  const scroll0 = await p.evaluate(() => [scrollY, document.querySelector(".screen").scrollTop]);
+  await two([mid[0] - 30, mid[1] - 30], [mid[0] + 30, mid[1] + 30], [mid[0] - 80, mid[1] - 80], [mid[0] + 80, mid[1] + 80]);
+  await p.waitForTimeout(500);
+  const z1 = await p.evaluate(() => ({ ...window.sbNono.view(), ctl: !document.getElementById("zoomCtl").hidden, cap: document.querySelector(".zcap").innerText,
+    capShown: !document.querySelector(".zcap").hidden, tipHidden: document.getElementById("tip").hidden, fits: [...document.querySelectorAll(".nc.f")].length }));
+  check(`15×15 at fit says "${fitTip.tip}" with no Fit control (${!fitTip.ctl})`, fitTip.tip === "Pinch with two fingers to zoom" && !fitTip.ctl);
+  check(`two-finger pinch zooms (${z1.z.toFixed(2)}×) without marking (${z1.fits} filled); Fit control + "${z1.cap}" shown`,
+    z1.z > 1.6 && z1.fits === 0 && z1.ctl && z1.capShown && z1.cap === "Two fingers to move · pinch to zoom out" && z1.tipHidden);
+  // Two fingers slide: the board moves, the zoom stays.
+  await two([mid[0] - 40, mid[1]], [mid[0] + 40, mid[1]], [mid[0] - 100, mid[1] - 70], [mid[0] - 20, mid[1] - 70]);
+  await p.waitForTimeout(500);
+  const z2 = await p.evaluate(() => window.sbNono.view());
+  check(`two-finger slide moves the board (x ${z1.x.toFixed(0)} → ${z2.x.toFixed(0)}, y ${z1.y.toFixed(0)} → ${z2.y.toFixed(0)}) at the same zoom`,
+    z2.x > z1.x + 30 && z2.y > z1.y + 30 && Math.abs(z2.z - z1.z) < 0.05);
+  // Zoomed in, one finger still plays: tap a square, then drag along a row.
+  const cellAt = (r, c) => p.evaluate(([r, c]) => { const b = document.querySelector(`.nc[data-r="${r}"][data-c="${c}"]`).getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }, [r, c]);
+  const vis = await p.evaluate(() => { const w = document.querySelector(".ngwrap").getBoundingClientRect();
+    const ok = [...document.querySelectorAll(".nc")].filter((e) => { const b = e.getBoundingClientRect(); return b.left > w.left + 4 && b.right < w.right - 4 && b.top > w.top + 4 && b.bottom < w.bottom - 4; });
+    return ok.map((e) => [Number(e.dataset.r), Number(e.dataset.c)]); });
+  const [r0, c0] = vis[0];
+  const tapAt = await cellAt(r0, c0);
+  await touch("touchStart", [tapAt]); await touch("touchEnd", []);
+  await p.waitForTimeout(150);
+  const a = await cellAt(r0 + 1, c0), b2 = await cellAt(r0 + 1, c0 + 2);
+  await touch("touchStart", [a]);
+  for (let i = 1; i <= 6; i++) await touch("touchMove", [[a[0] + ((b2[0] - a[0]) * i) / 6, a[1] + 3]]);
+  await touch("touchEnd", []);
+  await p.waitForTimeout(150);
+  const marked = await p.evaluate(([r, c]) => ({ tap: document.querySelector(`.nc[data-r="${r}"][data-c="${c}"]`).classList.contains("f"),
+    row: [0, 1, 2].map((i) => document.querySelector(`.nc[data-r="${r + 1}"][data-c="${c + i}"]`).classList.contains("f")), z: window.sbNono.view().z }), [r0, c0]);
+  check(`zoomed in (${marked.z.toFixed(1)}×), one finger still marks: tap fills (${marked.tap}), drag fills a row (${marked.row})`, marked.tap && marked.row.every(Boolean) && marked.z > 1.5);
+  // A one-finger drag that a second finger joins doesn't count.
+  const before = await p.evaluate(() => document.querySelectorAll(".nc.f").length);
+  const d0 = await cellAt(r0 + 2, c0), d1 = await cellAt(r0 + 2, c0 + 2);
+  await touch("touchStart", [d0]);
+  for (let i = 1; i <= 4; i++) await touch("touchMove", [[d0[0] + ((d1[0] - d0[0]) * i) / 4, d0[1]]]);
+  await touch("touchMove", [d1, [d1[0] + 60, d1[1] + 60]]);
+  await touch("touchEnd", []);
+  await p.waitForTimeout(500);
+  const after = await p.evaluate(() => document.querySelectorAll(".nc.f").length);
+  check(`a second finger cancels the first finger's drag (${before} filled before, ${after} after)`, after === before);
+  // Fit button.
+  await p.click(".zfit");
+  await p.waitForTimeout(600);
+  const zf = await p.evaluate(() => ({ ...window.sbNono.view(), ctl: !document.getElementById("zoomCtl").hidden }));
+  check(`Fit goes back to the whole board (${zf.z.toFixed(2)}×, x ${zf.x.toFixed(0)}, control hidden ${!zf.ctl})`, Math.abs(zf.z - 1) < 0.01 && Math.abs(zf.x) < 1 && !zf.ctl);
+  // Pinch in past fit: smaller than fit while the fingers are down, springs back to fit after.
+  await touch("touchStart", [[mid[0] - 90, mid[1] - 90], [mid[0] + 90, mid[1] + 90]]);
+  for (let i = 1; i <= 8; i++) { const d = 90 - i * 9; await touch("touchMove", [[mid[0] - d, mid[1] - d], [mid[0] + d, mid[1] + d]]); }
+  const squeezed = await p.evaluate(() => window.sbNono.view().z);
+  await touch("touchEnd", []);
+  await p.waitForTimeout(600);
+  const back = await p.evaluate(() => window.sbNono.view().z);
+  check(`pinching past fit gives a little (${squeezed.toFixed(2)}×) and springs back to fit (${back.toFixed(2)}×)`, squeezed < 0.97 && Math.abs(back - 1) < 0.01);
+  // Two-finger double-tap = fit.
+  await two([mid[0] - 30, mid[1] - 30], [mid[0] + 30, mid[1] + 30], [mid[0] - 80, mid[1] - 80], [mid[0] + 80, mid[1] + 80]);
+  await p.waitForTimeout(500);
+  const zin = await p.evaluate(() => window.sbNono.view().z);
+  for (let i = 0; i < 2; i++) { await touch("touchStart", [[mid[0] - 30, mid[1]], [mid[0] + 30, mid[1]]]); await touch("touchEnd", []); await p.waitForTimeout(80); }
+  await p.waitForTimeout(600);
+  const zdt = await p.evaluate(() => window.sbNono.view().z);
+  check(`two-finger double-tap goes back to fit (${zin.toFixed(2)}× → ${zdt.toFixed(2)}×)`, zin > 1.5 && Math.abs(zdt - 1) < 0.01);
+  const sc = await p.evaluate(() => ({ s: [scrollY, document.querySelector(".screen").scrollTop], moves: window.__moves }));
+  check(`no page scroll while touching the board (scroll ${scroll0} → ${sc.s}; ${sc.moves.filter(Boolean).length} of ${sc.moves.length} touch moves held by the board)`,
+    same2(scroll0, sc.s) && sc.moves.length > 20 && sc.moves.every(Boolean));
+  // The zoom is remembered for this puzzle (saved with it) and a new puzzle starts at fit.
+  await two([mid[0] - 30, mid[1] - 30], [mid[0] + 30, mid[1] + 30], [mid[0] - 80, mid[1] - 80], [mid[0] + 80, mid[1] + 80]);
+  await p.waitForTimeout(800);
+  await p.reload();
+  await p.waitForTimeout(1500);
+  const kept = await p.evaluate(() => window.sbNono.view().z);
+  await p.goto(`${BASE}nonogram.html?pack=hard&p=2`);
+  await p.waitForTimeout(1500);
+  const fresh = await p.evaluate(() => window.sbNono.view().z);
+  check(`zoom remembered on this puzzle (${kept.toFixed(2)}×), a new puzzle starts at fit (${fresh.toFixed(2)}×)`, kept > 1.5 && Math.abs(fresh - 1) < 0.01);
+
+  // Star Battle 12×12: pinch zooms (the board's transform), and one finger still marks × while zoomed.
+  await p.goto(`${BASE}starbattle.html?pack=triple&p=1`);
+  await p.waitForTimeout(1500);
+  await p.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await p.reload();
+  await p.waitForTimeout(2000);
+  const sb = await p.evaluate(() => { const r = document.getElementById("zview").getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await two([sb[0] - 30, sb[1] - 30], [sb[0] + 30, sb[1] + 30], [sb[0] - 90, sb[1] - 90], [sb[0] + 90, sb[1] + 90]);
+  await p.waitForTimeout(500);
+  const sbz = await p.evaluate(() => ({ t: document.getElementById("board").style.transform, ctl: !document.getElementById("zoomCtl").hidden,
+    count: document.getElementById("zcount").textContent, marks: document.querySelectorAll(".cell .xm, .cell svg").length }));
+  const sbCell = await p.evaluate(() => { const w = document.getElementById("zview").getBoundingClientRect();
+    const c = [...document.querySelectorAll(".cell")].find((e) => { const b = e.getBoundingClientRect(); return b.left > w.left + 5 && b.top > w.top + 5 && b.right < w.right - 5 && b.bottom < w.bottom - 5; });
+    const b = c.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, r: c.dataset.r, c: c.dataset.c }; });
+  await touch("touchStart", [[sbCell.x, sbCell.y]]); await touch("touchEnd", []);
+  await p.waitForTimeout(150);
+  const sbMarked = await p.evaluate(({ r, c }) => !!document.querySelector(`.cell[data-r="${r}"][data-c="${c}"] .xm`), sbCell);
+  check(`Star Battle 12×12: pinch zooms (${sbz.t}), Fit control shows, count moves under the board ("${sbz.count}"), no marks from the pinch (${sbz.marks}), one finger marks × (${sbMarked})`,
+    /scale\((1\.[5-9]|2)/.test(sbz.t) && sbz.ctl && sbz.count.endsWith("stars") && sbz.marks === 0 && sbMarked);
+  await ctx.close();
+}
+
+// In the phone app, Nonogram opens inside the app's own Star Battle page (the app opens only pages it knows): the
+// built app/starbattle.html becomes Nonogram with ?game=nonogram, and is still Star Battle without it.
+{
+  const { pathToFileURL } = await import("node:url");
+  const { join } = await import("node:path");
+  const file = pathToFileURL(join(import.meta.dirname, "..", "_site", "app", "starbattle.html")).href;
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const sent = [];
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.__sent = [];
+    window.ReactNativeWebView = { postMessage: (m) => window.__sent.push(JSON.parse(m)) };
+  });
+  const p = await ctx.newPage();
+  const errs = [];
+  p.on("pageerror", (e) => errs.push(e.message));
+  await p.goto(`${file}?game=nonogram&pack=hard&p=1`);
+  await p.waitForTimeout(1500);
+  const asNono = await p.evaluate(() => ({ title: document.querySelector(".title b")?.textContent, cells: document.querySelectorAll(".nc").length, url: location.search }));
+  await p.goto(`${file}?pack=easy&p=1`);
+  await p.waitForTimeout(1500);
+  const asSb = await p.evaluate(() => ({ title: document.querySelector(".title b")?.textContent, cells: document.querySelectorAll(".cell").length }));
+  // Library in the app asks to open the hosted page.
+  await p.goto(`${BASE}home.html`);
+  await p.waitForTimeout(800);
+  const open = await p.evaluate(async () => { const { openGame } = await import("./bridge.js"); openGame("nonogram", "?pack=easy&p=2"); return window.__sent.at(-1); });
+  check(`app: starbattle page becomes Nonogram with ?game=nonogram (${asNono.title}, ${asNono.cells} squares, ${asNono.url}), stays Star Battle without (${asSb.title}, ${asSb.cells}); Library opens ${open.page}${open.query}; no errors (${errs.length})`,
+    asNono.title === "Nonogram" && asNono.cells === 225 && asNono.url.includes("game=nonogram") && asSb.title === "Star Battle" && asSb.cells === 64
+    && open.page === "starbattle" && open.query === "?game=nonogram&pack=easy&p=2" && errs.length === 0);
+  if (errs.length) console.log(errs.join("\n"));
+  await ctx.close();
+}
+
+// Library: Nonogram is a fifth tile with "New" (7 days from first seen); its pack page lists 5×5 / 10×10 / 15×15 with
+// a picture thumb each and "zoom" only on 15×15; the Packs tab has its block; Stats lists it.
+{
+  await page.goto(`${BASE}home.html`);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.firstSeen"));
+  await page.reload();
+  await page.waitForTimeout(700);
+  const lib = await page.evaluate(async () => {
+    const tiles = [...document.querySelectorAll(".tile")].map((t) => t.dataset.game);
+    const isNewNow = !!document.querySelector('.tile[data-game="nonogram"] .newdot');
+    const { isNew } = await import("./screens.js");
+    const later = isNew("nonogram", 7, Date.now() + 8 * 86400000);
+    document.querySelector('.tile[data-game="nonogram"]').click();
+    await new Promise((r) => setTimeout(r, 400));
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), zoom: !!r.querySelector(".zchip") }));
+    return { tiles, isNewNow, later, rows };
+  });
+  check(`Library: Nonogram is tile 5 of ${lib.tiles.length} (${lib.tiles.join(", ")}), "New" now (${lib.isNewNow}) and gone after 7 days (${!lib.later})`,
+    lib.tiles[4] === "nonogram" && lib.isNewNow && !lib.later);
+  check(`Nonogram packs: ${lib.rows.map((r) => `${r.name}${r.zoom ? " (zoom)" : ""}`).join(", ")}, each with a thumb`,
+    lib.rows.map((r) => r.name).join() === "5×5,10×10,15×15" && lib.rows.every((r) => r.thumb) && lib.rows.map((r) => r.zoom).join() === "false,false,true");
+  await page.goto(`${BASE}packs.html`);
+  await page.waitForTimeout(700);
+  const blk = await page.evaluate(() => [...document.querySelectorAll('.btile[data-g="nonogram"]')].map((b) => `${b.querySelector(".n").textContent}: ${b.querySelectorAll(".c")[1].textContent}`));
+  await page.goto(`${BASE}stats.html`);
+  await page.waitForTimeout(500);
+  const stat = await page.evaluate(() => document.getElementById("games").innerText.includes("Nonogram"));
+  check(`Packs tab Nonogram block (${blk.join(" / ")}); Stats lists Nonogram (${stat})`, blk.length === 3 && blk[0] === "5×5: Easy" && stat);
+}
 
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));

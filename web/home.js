@@ -3,7 +3,7 @@
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
 import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { boardPreview } from "./preview.js";
-import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, ring, setParts, streaks, tabs } from "./screens.js";
+import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, isNew, nonoPicture, ring, setParts, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
 for (const [g, game] of Object.entries(GAMES))
@@ -16,11 +16,21 @@ const TILES = [
   { id: "sudoku", rules: "Every row, column and box holds each number once." },
   { id: "watersort", rules: "Tap a tube, then another, to pour its top colour across. You can only pour onto the same colour or into an empty tube, and only if there's room. Finish when every tube holds one colour." },
   { id: "blocks", rules: "Blocks fall one at a time. Move and turn them so they fill whole rows: a full row clears and scores. It gets faster as you go. The game ends when the blocks reach the top." },
+  { id: "nonogram", rules: "The numbers beside each row and above each column say how many squares are filled, in order, with a gap between each group. Tap to fill, tap again for ×. Fill them all and a picture appears. 15×15 zooms with two fingers." },
 ];
 // Games on the list but not built yet: one quiet line under the tiles (calmer screens, Colin 10/23). Never a game
 // that's playable (the page test checks).
 const SOON = ["Binairo", "Shikaku", "Five Letters", "Groups"].filter((n) => !Object.values(GAMES).some((g) => g.name === n));
 const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4, "thermo-expert": 4 };
+// Nonogram's pack rows (Colin 10/23): the last picture you solved in that pack, or an empty grid of its size.
+function nonoThumb(k) {
+  const last = solves().filter((e) => e.g === "nonogram" && e.pack === k).sort((a, b) => b.at - a.at)[0];
+  const pz = last && data[`nonogram/${k}`].puzzles[last.p - 1];
+  if (pz) return nonoPicture(pz.solution, 30, pz.color ?? "#2A211B");
+  const n = data[`nonogram/${k}`].size;
+  return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
+}
+const PINCH_CHIP = `<span class="zchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l5 5 M5 5h4 M5 5v4 M19 19l-5-5 M19 19h-4 M19 19v-4"/></svg>zoom</span>`;
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
   help: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,
@@ -62,7 +72,9 @@ function render() {
   const { current } = streaks();
   $("streak").hidden = current < 1;
   $("streak").innerHTML = `${FLAME}${current} day${current === 1 ? "" : "s"}`;
-  $("tiles").innerHTML = TILES.map((t) => t.id === "blocks"
+  $("tiles").innerHTML = TILES.map((t) => t.id === "nonogram"
+    ? `<button class="tile${isNew("nonogram") ? " new" : ""}" data-game="nonogram" aria-label="Open Nonogram">${isNew("nonogram") ? `<span class="newdot">New</span>` : ""}${gameIcon(LOOK.nonogram, 38, 21)}<span><span class="name">Nonogram</span><span class="count">${total("nonogram")} puzzles</span></span></button>`
+    : t.id === "blocks"
     ? `<button class="tile" data-game="blocks" aria-label="Play Block Drop">${gameIcon(LOOK.blocks, 38, 21)}<span><span class="name">Block Drop</span><span class="count">${blockScores().best ? `Best ${blockScores().best.toLocaleString()}` : "Endless"}</span></span></button>`
     : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 38, 21)}<span><span class="name">${GAMES[t.id].name}</span><span class="count">${total(t.id)} ${t.id === "watersort" ? "levels" : "puzzles"}</span></span></button>`).join("");
   $("soon").hidden = !SOON.length;
@@ -109,10 +121,18 @@ function renderView(moved) {
       ${groups.map(({ group, rows }) => `<div class="c-group"><div class="c-ghead">${esc(group || "Packs")}</div>
         <div class="c-list">${rows.map(({ s, i, short }) => {
           const n = setSize(g, s), d = setDone(g, s);
+          if (g === "nonogram") { // thumb = last solved picture; size is the level; only 15×15 zooms
+            const k = s.levels[0];
+            return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
+              <span class="nthumb">${nonoThumb(k)}</span>
+              <span class="g"><b>${esc(short)}</b><small class="nsub">${bars(LEVEL_BARS[k], [5, 7, 9, 11])}${esc(label(g, k))} · ${n} puzzles${data[`${g}/${k}`].size >= 15 ? ` · ${PINCH_CHIP}` : ""}</small></span>
+              <span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
+          }
           const sub = [setBoard(g, s), s.note ?? s.levels.map((k) => label(g, k)).join(", ")].filter(Boolean).join(" · ");
           return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
             <span class="g"><b>${esc(short)}</b><small>${esc(sub)}</small></span><span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
         }).join("")}</div></div>`).join("")}
+      ${g === "nonogram" ? `<p class="c-lead">Size is the level: bigger pictures, longer clues. Each row shows the last picture you solved in it.</p>` : ""}
       ${moreLink(`Get more ${game.name} packs`)}`;
   } else {
     const s = game.sets[at.set];
@@ -162,6 +182,7 @@ function tapTile(g, k, p, state) {
   const title = setName === label(g, k) ? `${setName} #${p}` : `${setName} · ${label(g, k)} #${p}`;
   const note = state === "solved" ? `Your best time: ${fmt(t.ms)}`
     : g === "watersort" ? `${fmt(saved.ms ?? 0)} so far · ${saved.moves ?? 0} moves`
+    : g === "nonogram" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 1).length} squares filled`
     : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of ${puzzle.regions.length * (data[`${g}/${k}`].stars ?? 1)} stars`
     : `${fmt(saved.ms ?? 0)} so far · ${puzzle.givens.flat().filter(Boolean).length + Object.keys(saved.entries ?? {}).length} of 81 filled`;
   $("tile").querySelector(".sheet").innerHTML = `

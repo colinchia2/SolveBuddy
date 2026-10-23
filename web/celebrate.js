@@ -19,7 +19,9 @@ export function solveFacts(game, pack, ms, hints) {
 }
 
 // The card rises after the board's own win wave (delay ms). Returns nothing; buttons call back.
-export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000 }) {
+// heading + medal (Nonogram, Colin 10/23): a solved picture says its name ("A heart!") and shows itself as the medal;
+// without them it's the usual "Solved!" and blue star disc.
+export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, heading = "Solved!", medal = "" }) {
   document.getElementById("won")?.remove();
   const { current } = streaks(); // the solve is already logged, so today counts
   const fills = ["#2F6FD6", "#FFC94D", "#C24E2A", "#4D96FF", "#FFC94D"];
@@ -41,9 +43,9 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000 }
     <section class="won-card" role="dialog" aria-label="Solved">
       <div class="medal">
         <span class="ring"></span>${burst}
-        <span class="disc">${star(46, "#fff")}</span>
+        ${medal ? `<span class="disc pic">${medal}</span>` : `<span class="disc">${star(46, "#fff")}</span>`}
       </div>
-      <div class="won-in" style="--at:.5s"><h2>Solved!</h2><p>You finished ${title} in <b>${fmt(facts.ms)}</b></p></div>
+      <div class="won-in" style="--at:.5s"><h2>${heading}</h2><p>You finished ${title} in <b>${fmt(facts.ms)}</b></p></div>
       ${badges ? `<div class="badges">${badges}</div>` : ""}
       ${hasNext ? `<button class="won-next won-in" style="--at:1.1s" data-act="next">Next puzzle<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>` : ""}
       <div class="two won-in" style="--at:1.2s">

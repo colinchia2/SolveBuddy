@@ -37,7 +37,8 @@ cpSync(join(ROOT, "packs"), join(OUT, "packs"), { recursive: true });
 const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f, JSON.parse(readFileSync(join(ROOT, "packs", f), "utf8"))]));
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
-for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import"]) {
+const built: Record<string, { html: string; code: string }> = {};
+for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")
@@ -46,6 +47,35 @@ for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort
       () => `<script>window.SB_PACKS=${noClose(JSON.stringify(packs))}</script><script type="module">${noClose(code)}</script>`);
   if (html.includes(`src="${page}.js"`) || /href="\w+\.css"/.test(html)) throw new Error(`app/${page}.html: couldn't inline`);
   writeFileSync(join(OUT, "app", `${page}.html`), html);
+  built[page] = { html, code };
+}
+
+// A game the phone app doesn't know as a page yet rides inside one it does (bridge.js HOSTED): the app opens only the
+// game pages built into it (App.js GAMES), so the app's starbattle page also carries Nonogram and becomes it when
+// opened with ?game=nonogram. No app change; once the app lists "nonogram", this can go.
+for (const [guest, host] of [["nonogram", "starbattle"]]) {
+  const g = built[guest].html, h = built[host].html;
+  const styles = (g.slice(0, g.indexOf("</head>")).match(/<style>[\s\S]*?<\/style>/g) ?? []).join("");
+  const body = g.slice(g.indexOf("<body>") + 6, g.indexOf("<script>window.SB_PACKS="));
+  const title = g.match(/<title>(.*?)<\/title>/)![1];
+  const tail = h.indexOf("<script type=\"module\">");
+  if (!styles || !body.includes('class="phone"') || tail < 0) throw new Error(`app/${host}.html: couldn't host ${guest}`);
+  const asText = (id: string, code: string) => `<script type="text/plain" id="${id}">${noClose(code)}</script>`;
+  const swap = `<script>(function () {
+  var d = document, guest = new URLSearchParams(location.search).get("game") === "${guest}";
+  var code = d.getElementById(guest ? "sbCode-${guest}" : "sbCode-${host}").textContent;
+  if (guest) {
+    d.querySelectorAll("head style").forEach(function (s) { s.remove(); });
+    d.head.appendChild(d.getElementById("sbHostStyles").content.cloneNode(true));
+    d.body.replaceChildren(d.getElementById("sbHostBody").content.cloneNode(true));
+    d.title = ${JSON.stringify(title)};
+  }
+  var s = d.createElement("script"); s.type = "module"; s.textContent = code; d.body.appendChild(s);
+})();</script>`;
+  const hosted = h.slice(0, tail).replace("</head>", `<script>if (new URLSearchParams(location.search).get("game") === "${guest}") document.documentElement.classList.add("hosted")</script><style>html.hosted body { visibility: hidden; }</style></head>`)
+    + `<template id="sbHostStyles">${styles}</template><template id="sbHostBody">${body}</template>`
+    + asText(`sbCode-${host}`, built[host].code) + asText(`sbCode-${guest}`, built[guest].code) + swap + "\n</body>\n</html>\n";
+  writeFileSync(join(OUT, "app", `${host}.html`), hosted);
 }
 
 // The site's front door opens Home.

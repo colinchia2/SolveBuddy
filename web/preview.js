@@ -29,6 +29,18 @@ export function boardPreview(g, puzzle, board) {
     }
     return `<div class="pv pv-su">${cells.join("")}</div>`;
   }
+  if (g === "nonogram") {
+    // Solved: the picture in its colour; in progress: your filled squares and × marks.
+    const n = puzzle.solution.length;
+    const marks = board?.marks ?? Object.fromEntries(puzzle.solution.flatMap((row, r) => [...row].map((v, c) => [`${r},${c}`, v === "X" ? 1 : 0])));
+    const fill = board ? "#2A211B" : puzzle.color ?? "#2A211B";
+    const cells = [];
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const m = marks[`${r},${c}`];
+      cells.push(`<i class="pv-c" style="${m === 1 ? `background:${fill}` : ""}">${m === 2 ? "×" : ""}</i>`);
+    }
+    return `<div class="pv pv-sb pv-nono" style="--n:${n}">${cells.join("")}</div>`;
+  }
   if (g === "watersort") {
     const tubes = board?.tubes ?? sortedTubes(puzzle.tubes);
     return `<div class="pv pv-ws">${tubes.map((t) => `<span class="pv-tube">${t.map((x) => `<i style="background:${WS_COLORS[x] ?? "#ccc"}"></i>`).join("")}</span>`).join("")}</div>`;

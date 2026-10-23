@@ -20,7 +20,7 @@ function blocks() {
       const own = [...new Set(s.levels.map((k) => sizes[`${g}/${k}`].size))];
       const levels = s.note ?? s.levels.map((k) => label(g, k)).join(" · ");
       return { i, name: setParts(s.name).short, full: s.name,
-        levels: boards.size > 1 && own.length === 1 && own[0] ? `${own[0]}×${own[0]} · ${levels}` : levels,
+        levels: boards.size > 1 && own.length === 1 && own[0] && s.name !== `${own[0]}×${own[0]}` ? `${own[0]}×${own[0]} · ${levels}` : levels,
         n: s.levels.reduce((t, k) => t + sizes[`${g}/${k}`].n, 0),
         done: s.levels.reduce((t, k) => t + solvedIn(g, k).size, 0) };
     }) };
