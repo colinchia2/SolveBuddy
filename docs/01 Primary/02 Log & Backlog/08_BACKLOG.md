@@ -3,6 +3,19 @@
 Top item = what's next.
 
 ## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
+**From Colin 10/23 (Buddy Family chat), in this order:**
+- **A. FIRST TALK on pick-up: is the app's whole structure right?** Colin finds Packs confusing: tapping a pack on
+  the Packs tab jumps to Library; "which ones do I have vs what am I downloading?". Talk first (where packs live,
+  Library vs Packs vs Get more), no building until he decides.
+- **B. Shikaku (Colin likes LinkedIn's "Patches" UI/UX):** every shape has a number (no blank "any" shapes), any
+  rectangle or square; the stretch animation as you drag a shape out; a clear error state (Patches: hatched red +
+  "this region can only contain 8 cells"); a celebratory finish animation that turns the solved grid into a graphic.
+  Screenshots were in the 10/23 chat. A full new game: mockup first.
+- **C. Nonogram:** Colin wants 15×15, so it needs pinch-zoom/pan on the grid. A full new game: mockup first.
+- **D. Stats tab** still uses the older glass cards; bring it in line with the 10/23 calmer screens.
+- **E. Check fails narrowly:** `sudoku_variants.ts` slowest Killer Expert hint ~520–530ms vs the 500ms limit (failed
+  even alone on 10/23). Engine untouched that day; look at speeding the hint up (or the limit) before the next variant work.
+
 1. **In-app photo reading** for imports: a small server holding a SolveBuddy Anthropic key (Colin makes the key and
    adds it; Claude never sees it). OPEN: which server — 10/21 decision was "no PythonAnywhere for SolveBuddy, ever",
    so likely a free Cloudflare Worker; ask Colin; ~1–3¢ a photo; the confirm screen already exists. Until then Colin sends

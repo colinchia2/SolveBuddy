@@ -2,7 +2,16 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (save point 2026-10-22, evening)
+## Right now (save point 2026-10-23, from the Buddy Family chat)
+- **Shipped 10/23 (live):** haptics (Sudoku select/drag ticks, Star Battle per-cell drag taps; star stays the firmer
+  thud, Colin agreed), the **calmer screens** redesign (Library, pick-a-pack, one pack, Packs tab as blocks, Import as
+  blocks; approved mockup `docs/design/calmer_screens_mockup.html`), Killer/Thermo no longer "coming soon", and the
+  header frost fades lower (not at the smile). Build log 2026-10-23.
+- **Next on pick-up:** backlog "Next", the 10/23 block at the top: **A. talk about the app's structure first**
+  (Packs vs Library is confusing), then Shikaku (Patches-style), Nonogram 15×15 with zoom, Stats tab, the Killer hint-speed check.
+- Older detail below (10/22) still holds.
+
+### Earlier: save point 2026-10-22, evening
 - **Live on Colin's phone** (app `C:\dev\SolveBuddyApp`, iOS build on runtime 513e3eaf…; pages from GitHub Pages):
   4 tabs (Library · Packs · Stats · Import), 4 games: Star Battle (Single 8×8 Easy 10 + Expert 10, Double 10×10
   Expert 10, Triple 12×12 Hard 10), Sudoku (Easy/Medium/Hard/Expert 10 each + 6 Trick tests; Killer Easy 5 + Expert 5; Thermo Easy 5 + Expert 1), Water Sort

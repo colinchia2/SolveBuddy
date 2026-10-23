@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-10-23 — Header frost fades lower
+- Colin (phone, Packs): scrolling, the header's frost faded right at the smile, so text showed through under the face.
+  `web/screens.css` `.brandbar::before` now runs 18 below the bar and fades over 20 (was 0 and 10). Checked with a
+  hidden-browser shot of Packs scrolled 30; `pages_smoke.mjs` 42 PASS.
+
 ## 2026-10-23 — Calmer screens (Library, pick a pack, one pack, Packs tab, Import tab)
 - Built from `docs/design/calmer_screens_mockup.html` (Colin approved 10/23: "looks way better, do it"); it now
   supersedes the older handoff mockups for these five screens.
