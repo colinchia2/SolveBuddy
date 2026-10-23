@@ -220,3 +220,23 @@ html.nativeback #backBtn { visibility: hidden; }
 .cell.won::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: rgba(255,214,102,0.7); animation: sbGlow .6s var(--d) ease both; }
 .cell.won svg { animation: sbStarPop .5s var(--d) cubic-bezier(0.3,1.4,0.5,1) both; }
 .cell.won.wave::after { background: rgba(77,150,255,0.4); }
+
+/* Two-finger zoom on the big boards (Colin 10/23, web/zoom.js): a tiny map of the board (blue box = what you see), the
+   zoom level and Fit, only while zoomed; under it, "Two fingers to move · pinch to zoom out". The tip line under the
+   board says "Pinch with two fingers to zoom" the first few times. */
+.zslot { position: relative; display: flex; align-items: center; }
+.zoomctl { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 6px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.zoomctl .zmap { display: block; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(42,33,27,0.25); overflow: hidden; }
+.zoomctl .zx { color: var(--muted); font-variant-numeric: tabular-nums; }
+.zfit { display: flex; align-items: center; gap: 4px; min-height: 30px; padding: 0 10px; border: 0; border-radius: 9px; background: var(--ink); color: #fff; font: 600 13px Inter, sans-serif; }
+.zcap { position: absolute; right: 2px; top: calc(100% + 6px); z-index: 3; display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-size: 12px; font-weight: 600; color: var(--brand-dark); pointer-events: none; }
+.tip { margin: 0; min-height: 18px; text-align: center; font-size: 13px; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+.tip.zoomtip { color: var(--brand-dark); font-weight: 600; }
+/* A zoomable board's window: it clips the board, carries its corners and shadow, and owns every touch on it. */
+.zview { position: relative; flex: none; }
+.zview.zoomable { overflow: hidden; border-radius: 10px; box-shadow: 0 12px 32px rgba(30,30,30,0.14); touch-action: none; overscroll-behavior: contain; }
+.zview.zoomable > .board { box-shadow: none; border-radius: 0; transform-origin: 0 0; }
+/* A solved picture as the medal (Nonogram): a white rounded square instead of the blue disc. */
+.medal .disc.pic { border-radius: 22px; background: #FFFDF9; box-shadow: 0 12px 28px rgba(194,78,42,0.3); overflow: hidden; }
+.medal .disc.pic svg { width: 100%; height: 100%; }

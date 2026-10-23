@@ -6,6 +6,7 @@ import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
 import { clearSaved, finalBoard, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
+import { makeZoom, second } from "./zoom.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -60,6 +61,19 @@ function flipSetting(name) {
   render();
 }
 
+// Two-finger zoom on 10×10 and up (Colin 10/23): Double, Triple, and imports that big. 8×8 and smaller stay as they are.
+const ZOOM_FROM = 10;
+let boardPx = 355; // the board's size at fit (set when a zoomable board loads)
+const zoom = makeZoom({
+  view: $("zview"), ctl: $("zoomCtl"), tip: $("tip"), zmax: 2.2,
+  geom: (z) => ({ ox: 0, oy: 0, visW: boardPx, visH: boardPx, w: boardPx * z, h: boardPx * z }),
+  apply: ({ z, x, y }) => { $("board").style.transform = z === 1 && !x && !y ? "" : `translate(${-x}px, ${-y}px) scale(${z})`; },
+  mapColors: () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => (s.marks[key(r, c)] === STAR ? "#2A211B"
+    : `color-mix(in srgb, ${COLORS[s.regions[r][c]]} 60%, #FFFDF9)`))),
+  onTwoFingers: () => cancelDrag(),
+  onZoomed: (on) => { $("count").parentElement.hidden = on; $("zcount").hidden = !on; },
+});
+
 let idx = importId ? 0 : Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 let s; // game state
 const undoStack = [];
@@ -78,6 +92,7 @@ function load(i, name = packName, first = false) {
   $("board").classList.toggle("big", N > 10);
   $("board").classList.toggle("small", N < 8);
   $("rulesStars").textContent = ["one star", "two stars", "three stars"][K - 1];
+  $("board").style.transform = "";
   s = { regions: withStars(p.regions, K), solution: p.solution, marks: {}, hint: null, started: Date.now(), elapsed: 0,
     solved: false, rules: false, settingsOpen: false, hinted: new Set() };
   // Pick up where you left off (Colin, 10/21). An import starts from the marks in its photo (or made by hand).
@@ -87,6 +102,14 @@ function load(i, name = packName, first = false) {
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0;
   } else if (name === "import") s.marks = { ...(p.marks ?? {}) };
+  // Zoom: on for big boards, at fit for a new puzzle, or where you left it on this one.
+  const big = N >= ZOOM_FROM;
+  $("zview").style.width = $("zview").style.height = "";
+  if (big) {
+    boardPx = 3 + 352; // the board's 3px top/left frame + 352px of cells
+    $("zview").style.width = $("zview").style.height = `${boardPx}px`;
+  }
+  zoom.reset(big, saved?.zoom);
   $("sub").textContent = name === "import" ? `Imported · ${N}×${N} · ${K} star${K === 1 ? "" : "s"}`
     : `${N}×${N}${MORE[K]} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";
@@ -156,6 +179,7 @@ function checkSolved() {
   s.solved = true;
   s.elapsed = Date.now() - s.started;
   s.winAt = Date.now(); // the stars pop row by row, then the Solved! card rises
+  zoom.fit(); // the whole board for the finish
   clearSaved("starbattle", packName, pid());
   saveFinal("starbattle", packName, pid(), { marks: { ...s.marks } });
   haptic("success");
@@ -318,6 +342,8 @@ function render() {
   }
   $("board").innerHTML = cells.join("");
   $("count").textContent = `${stars().length} / ${N * K} stars`;
+  $("zcount").textContent = `${stars().length} / ${N * K} stars`;
+  zoom.refreshMap();
   $("hintBtn").classList.toggle("pressed", !!h);
 
   $("hint").hidden = !h;
@@ -393,13 +419,14 @@ let drag = null; // { start: [r, c], cells: Set, mode: "paint" | "wipe" }
 const cellAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".cell");
 $("board").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cell");
-  if (!b || s.solved) return;
+  if (!b || s.solved || zoom.busy || second(e)) return; // two fingers zoom; only the first finger plays
   e.preventDefault();
   const r = Number(b.dataset.r), c = Number(b.dataset.c);
   drag = { start: [r, c], cells: new Set(), mode: s.marks[key(r, c)] === CROSS ? "wipe" : "paint", moved: false };
 });
 document.addEventListener("pointermove", (e) => {
-  if (!drag) return;
+  if (!drag || second(e)) return;
+  if (zoom.busy) return cancelDrag();
   const b = cellAt(e.clientX, e.clientY);
   if (!b) return;
   const r = Number(b.dataset.r), c = Number(b.dataset.c);
@@ -416,16 +443,24 @@ document.addEventListener("pointermove", (e) => {
   for (let i = 1; i <= steps; i++) paint(Math.round(r0 + ((r - r0) * i) / steps), Math.round(c0 + ((c - c0) * i) / steps));
   drag.last = [r, c];
 });
-document.addEventListener("pointerup", () => {
-  if (!drag) return;
+document.addEventListener("pointerup", (e) => {
+  if (!drag || second(e)) return;
   const d = drag;
   drag = null;
+  if (zoom.busy) return;
   if (!d.moved) return tap(...d.start);
   s.hint = null;
   s.hinted.clear();
   checkSolved();
   render();
 });
+// Two fingers came down: a drag the first finger started doesn't count.
+function cancelDrag() {
+  if (!drag) return;
+  if (drag.moved) s.marks = JSON.parse(undoStack.pop());
+  drag = null;
+  zoom.whenFree(render);
+}
 function paint(r, c) {
   const k = key(r, c);
   if (drag.cells.has(k)) return;
@@ -483,7 +518,8 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 // Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
 function persist() {
   if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0,
+    zoom: zoom.isOn() ? zoom.state() : null });
 }
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);
