@@ -11,7 +11,11 @@ Top item = what's next.
   rectangle or square; the stretch animation as you drag a shape out; a clear error state (Patches: hatched red +
   "this region can only contain 8 cells"); a celebratory finish animation that turns the solved grid into a graphic.
   Screenshots were in the 10/23 chat. A full new game: mockup first.
-- **C. Nonogram:** Colin wants 15×15, so it needs pinch-zoom/pan on the grid. A full new game: mockup first.
+- **C. Nonogram + zoom (mockup done 10/23: `docs/design/zoom_nonogram_mockup.html`, https://claude.ai/artifact/1aaPniXY2DQsFG7qnAVWPq):**
+  decided: one finger plays, two fingers zoom/move, springs back to fit; zoom ONLY on Star Battle 10×10+ and Nonogram 15×15
+  (not Sudoku); packs 5×5 Easy 5 · 10×10 Medium 5 · 15×15 Hard 5. Open questions for Colin before building: tap cycle
+  (fill → × → clear) vs a Fill/× switch; a colour + name per solved picture; the new slate-blue icon + "New" tag; zoom resets per puzzle.
+- **Thermo bulb** looks like one solid shape: done 10/23 (d3ccecb).
 - **D. Stats tab** still uses the older glass cards; bring it in line with the 10/23 calmer screens.
 - **E. Check fails narrowly:** `sudoku_variants.ts` slowest Killer Expert hint ~520–530ms vs the 500ms limit (failed
   even alone on 10/23). Engine untouched that day; look at speeding the hint up (or the limit) before the next variant work.
