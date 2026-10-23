@@ -294,6 +294,18 @@ const onTop = await page.evaluate(() => {
 });
 check("the rules sheet covers the Thermo board", onTop);
 
+// Each thermometer is ONE flat shape (Colin, 10/23): bulb and tube share a group that carries the see-through,
+// and neither part has its own alpha, so the tube never shows darker through the bulb.
+const thermoShape = await page.evaluate(() => {
+  const groups = [...document.querySelectorAll("svg.extra g.thermo")];
+  const parts = [...document.querySelectorAll("svg.extra polyline, svg.extra circle")];
+  const ownAlpha = (el) => ["opacity", "fill-opacity", "stroke-opacity"].some((a) => el.hasAttribute(a))
+    || Number(getComputedStyle(el).opacity) < 1 || Number(getComputedStyle(el).fillOpacity) < 1 || Number(getComputedStyle(el).strokeOpacity) < 1;
+  return { groups: groups.length, ok: groups.length > 0 && parts.every((p) => p.parentElement.matches("g.thermo") && !ownAlpha(p))
+    && groups.every((g) => g.querySelectorAll("polyline").length === 1 && g.querySelectorAll("circle").length === 1 && Number(g.getAttribute("opacity")) < 1) };
+});
+check(`each thermometer is one flat shape: opaque bulb + tube in one see-through group (${thermoShape.groups})`, thermoShape.ok);
+
 // Hints count in thirds and the Solved card says how many (Colin, 10/22).
 await page.goto(`${BASE}sudoku.html?pack=easy&p=1`);
 await page.waitForTimeout(1200);

@@ -255,9 +255,11 @@ function extraLayer() {
   const mid = (i) => edgeAt(i) + CELL / 2;
   for (const line of x.thermos ?? []) {
     const pts = line.map(([r, c]) => `${mid(c)},${mid(r)}`).join(" ");
-    parts.push(`<polyline points="${pts}" fill="none" stroke="#BDB6AD" stroke-opacity="0.55" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`);
+    // Bulb and tube are opaque inside one group, and the see-through is on the group: the thermometer reads as ONE
+    // flat shape, with no darker patch where the tube runs into the bulb (Colin, 10/23).
     const [br, bc] = line[0];
-    parts.push(`<circle cx="${mid(bc)}" cy="${mid(br)}" r="15" fill="#BDB6AD" fill-opacity="0.55"/>`);
+    parts.push(`<g class="thermo" opacity="0.55"><polyline points="${pts}" fill="none" stroke="#BDB6AD" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<circle cx="${mid(bc)}" cy="${mid(br)}" r="15" fill="#BDB6AD"/></g>`);
   }
   for (const cage of x.cages ?? []) {
     const inCage = (r, c) => cage.cells.some(([a, b]) => a === r && b === c);

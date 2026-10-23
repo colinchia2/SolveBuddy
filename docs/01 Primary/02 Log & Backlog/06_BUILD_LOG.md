@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-23 — Thermo bulb and tube are one shape
+- Colin (phone screenshot, Thermo Easy #1): each thermometer looked like two pieces; where the tube ran into the
+  bulb it showed through, darker. Cause: the tube and the bulb each had their own 55% see-through, so the overlap
+  was drawn twice. Fix (`web/sudoku.js` `extraLayer`): bulb and tube are opaque inside one `<g class="thermo">`
+  that carries the 55% opacity, so the whole thermometer is one flat colour and highlights still show under it.
+  The rules sheet has no thermometer drawing (only its text); the "rules sheet covers the board" check still passes.
+- New check in `pages_smoke.mjs`: every thermometer is one group with exactly one tube + one bulb, neither with its
+  own alpha, and the group is see-through. All PASS (run_all + pages_smoke); hidden-browser shot looked clean.
+  Not pushed yet.
+
 ## 2026-10-23 — Header frost fades lower
 - Colin (phone, Packs): scrolling, the header's frost faded right at the smile, so text showed through under the face.
   `web/screens.css` `.brandbar::before` now runs 18 below the bar and fades over 20 (was 0 and 10). Checked with a
