@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SolveBuddy Zoom and Nonogram</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Mockup only (10/23). Colours, fonts and icons are SolveBuddy's own, copied from web/common.css, screens.css and
+   docs/design/calmer_screens_mockup.html. Nothing here is built. */
+:root {
+  --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52;
+  --brand: #2F6FD6; --brand-dark: #1F57B5; --brand-soft: #DCEAFE;
+  --accent: #C24E2A; --accent-soft: #FBE3D6;
+  --board: #FFFDF9; --line: #E6DACD;
+  --hair: rgba(42,33,27,0.08);
+  --s: 0.78;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #ECE8E2; color: var(--ink); font-family: Inter, system-ui, sans-serif; }
+body { padding: 28px 16px 64px; }
+.doc { max-width: 980px; margin: 0 auto; }
+.doc > header h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 30px; letter-spacing: -0.01em; }
+.doc > header p { margin: 8px 0 0; color: var(--body); font-size: 15px; line-height: 1.5; max-width: 64ch; }
+
+/* The idea, in four lines */
+.rules { margin-top: 20px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.rule { padding: 14px; border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); display: flex; flex-direction: column; gap: 8px; }
+.rule b { font-size: 15px; font-weight: 700; }
+.rule span { font-size: 13px; color: var(--body); line-height: 1.45; }
+.rule .ri { width: 36px; height: 36px; border-radius: 10px; background: var(--brand-soft); display: grid; place-items: center; }
+
+/* Section switch: anchors on wide screens, one section at a time on a phone. */
+.switch { position: sticky; top: 8px; z-index: 20; display: flex; gap: 4px; margin: 22px auto 0; width: max-content; max-width: 100%; overflow-x: auto; padding: 4px; border-radius: 12px;
+  background: rgba(255,255,255,0.85); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); box-shadow: 0 4px 14px rgba(30,30,30,0.1); scrollbar-width: none; }
+.switch::-webkit-scrollbar { display: none; }
+.switch button { flex: none; border: 0; background: none; font: 600 13px Inter, sans-serif; color: var(--body); padding: 8px 12px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+.switch button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+section.sec { margin-top: 48px; scroll-margin-top: 70px; }
+section.sec > h2 { margin: 0 0 4px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 22px; }
+section.sec > h2 span { color: var(--muted); font-weight: 700; margin-right: 6px; }
+section.sec > .lede { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+.row { display: flex; gap: 32px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.tag.rec { color: var(--brand-dark); }
+.frame { width: calc(390px * var(--s)); height: calc(844px * var(--s)); border-radius: calc(46px * var(--s)); overflow: hidden; flex: none;
+  box-shadow: 0 0 0 calc(9px * var(--s)) #1d1b19, 0 18px 50px rgba(30,30,30,0.22); background: var(--bg); }
+.phone { width: 390px; height: 844px; transform: scale(var(--s)); transform-origin: 0 0; position: relative; overflow: hidden; background: var(--bg); font-size: 15px; line-height: 1.4; }
+.notes { margin: 0; padding: 0 0 0 18px; max-width: 340px; color: var(--body); font-size: 14px; line-height: 1.5; }
+.notes li + li { margin-top: 7px; }
+.notes b { color: var(--ink); }
+.side { display: flex; flex-direction: column; gap: 14px; max-width: 360px; padding-top: 26px; }
+.haptics { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 14px; background: rgba(255,255,255,0.6); }
+.haptics div { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--body); }
+.haptics i { flex: none; font-style: normal; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+.haptics i.light { background: var(--brand-soft); color: var(--brand-dark); }
+.haptics i.firm { background: var(--brand); color: #fff; }
+.haptics i.win { background: #FDF0D5; color: #7A4E00; }
+.compare { margin: 0; border-collapse: collapse; font-size: 13px; color: var(--body); width: 100%; }
+.compare th, .compare td { text-align: left; padding: 7px 8px; border-top: 1px solid var(--hair); vertical-align: top; }
+.compare th { font-size: 12px; color: var(--muted); font-weight: 700; }
+.compare td:first-child { color: var(--ink); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .rules { grid-template-columns: 1fr 1fr; }
+  body.one section.sec { display: none; }
+  body.one section.sec.on { display: block; }
+  .side { padding-top: 0; }
+}
+
+/* ---------- inside the phones ---------- */
+.phone .glow { position: absolute; width: 280px; height: 280px; border-radius: 50%; filter: blur(50px); pointer-events: none; }
+.sbar { position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; justify-content: space-between; padding: 0 30px 0 44px; z-index: 6; font: 600 17px Inter, sans-serif; }
+.sbar .island { position: absolute; left: 50%; top: 11px; width: 124px; height: 36px; margin-left: -62px; border-radius: 20px; background: #000; }
+.sbar .right { display: flex; gap: 6px; align-items: center; }
+.sbar .bat { width: 27px; height: 13px; border-radius: 4px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; display: grid; place-items: center; }
+.pg { position: absolute; inset: 0; padding: 66px 16px 110px; display: flex; flex-direction: column; overflow: hidden; }
+.game { position: absolute; inset: 0; padding: 62px 16px 34px; display: flex; flex-direction: column; gap: 12px; }
+.glass { background: rgba(255,255,255,0.3); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.75); box-shadow: 0 6px 18px rgba(30,30,30,0.07), inset 0 1px 0 rgba(255,255,255,0.9); }
+.ghead { display: flex; align-items: center; gap: 6px; }
+.sq { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.gtitle { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.gtitle b { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 21px; line-height: 1.1; }
+.gtitle span { font-size: 12px; color: var(--muted); }
+.info { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 34px; }
+.timer { display: flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; position: relative; }
+.dock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tool { height: 46px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.55); }
+.tool.hint { color: var(--brand-dark); }
+.boardwrap { border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,0.14); position: relative; line-height: 0; }
+.tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+/* Zoom control: a tiny map of the whole board (the blue box = what's on screen) + Fit. Only on big boards, only when zoomed. */
+.zoomctl { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 6px; border-radius: 12px; font-size: 13px; font-weight: 600; }
+.zoomctl .fit { display: flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 9px; background: var(--ink); color: #fff; font-size: 13px; }
+.zoomctl .x { color: var(--muted); font-variant-numeric: tabular-nums; }
+.count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
+/* Annotations (not part of the app): dark bubbles that name what you'd feel / see. */
+.note { position: absolute; z-index: 9; padding: 6px 10px; border-radius: 10px; background: var(--ink); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.3; white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(30,30,30,0.25); }
+.note.blue { background: var(--brand); }
+.note small { display: block; font-weight: 500; opacity: 0.8; }
+.finger { position: absolute; z-index: 8; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgba(47,111,214,0.22); border: 2px solid rgba(47,111,214,0.75);
+  box-shadow: 0 0 0 8px rgba(47,111,214,0.08); }
+.finger.grey { background: rgba(42,33,27,0.14); border-color: rgba(42,33,27,0.55); box-shadow: 0 0 0 8px rgba(42,33,27,0.05); }
+.spring { position: absolute; z-index: 8; }
+/* Solved */
+.won-scrim { position: absolute; inset: 0; z-index: 20; background: rgba(42,33,27,0.18); }
+.won-card { position: absolute; z-index: 21; left: 12px; right: 12px; bottom: 24px; padding: 60px 20px 20px; border-radius: 26px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  text-align: center; background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.95); box-shadow: 0 24px 60px rgba(30,30,30,0.25), inset 0 1px 0 #fff; }
+.medal { position: absolute; top: -48px; left: 50%; margin-left: -48px; width: 96px; height: 96px; border-radius: 22px; background: #fff; border: 5px solid #fff;
+  box-shadow: 0 12px 28px rgba(194,78,42,0.35); overflow: hidden; line-height: 0; }
+.won-card h2 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 32px; }
+.won-card p { margin: 0; color: var(--body); font-size: 16px; }
+.won-card p b { color: var(--ink); }
+.badges { display: flex; gap: 8px; }
+.badge { display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 10px; font-size: 13px; font-weight: 700; background: var(--brand-soft); color: var(--brand-dark); }
+.badge.gold { background: #FDF0D5; color: #7A4E00; }
+.won-next { width: 100%; min-height: 54px; border-radius: 14px; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+/* Calmer Library / pack screens (from calmer_screens_mockup.html) */
+.tabs { position: absolute; left: 24px; right: 24px; bottom: 22px; height: 66px; padding: 6px; border-radius: 34px; z-index: 6; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+  background: rgba(255,255,255,0.72); border: 1px solid rgba(255,255,255,0.9); box-shadow: 0 12px 32px rgba(30,30,30,0.12); }
+.tabs span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 28px; font-size: 11px; font-weight: 600; }
+.tabs span.on { background: rgba(42,33,27,0.07); color: var(--brand); }
+.face { width: 40px; height: 40px; display: block; flex: none; }
+.ico { display: grid; place-items: center; flex: none; }
+.c-brand { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -2px 0 0 -2px; }
+.c-brand .wm { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.01em; }
+.streak { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; margin-left: auto; padding: 0 4px; color: var(--body); }
+.c-ask { margin: 26px 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; color: var(--body); }
+.c-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.c-tile { position: relative; display: flex; align-items: center; gap: 11px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.c-tile .n { display: block; font-weight: 600; font-size: 15px; line-height: 1.2; }
+.c-tile .c { font-size: 12px; color: var(--muted); }
+.c-tile.new { box-shadow: 0 0 0 2px rgba(47,111,214,0.35); }
+.newdot { position: absolute; top: -7px; right: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--brand); color: #fff; }
+.c-soon { margin-top: 28px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.c-soon b { display: block; font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+.c-nav { display: flex; justify-content: space-between; align-items: center; margin: -4px -10px 0; }
+.c-iconbtn { width: 44px; height: 44px; display: grid; place-items: center; }
+.c-title { margin-top: 8px; }
+.c-title h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; line-height: 1.1; letter-spacing: -0.01em; }
+.c-title span { display: block; margin-top: 3px; font-size: 13px; color: var(--muted); }
+.c-group { margin-top: 26px; }
+.c-ghead { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.c-list { border-radius: 14px; background: rgba(255,255,255,0.6); box-shadow: 0 1px 2px rgba(30,30,30,0.04); }
+.c-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 60px; }
+.c-row + .c-row { border-top: 1px solid var(--hair); }
+.c-row .g { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.c-row .g b { font-weight: 600; font-size: 15px; }
+.c-row .g small { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.c-row .cnt { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+.bars { display: inline-flex; gap: 2px; align-items: flex-end; }
+.bars i { width: 4px; border-radius: 2px; background: rgba(42,33,27,0.18); }
+.bars i.on { background: var(--brand); }
+.zchip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--brand-dark); }
+.thumb { flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--board); box-shadow: inset 0 0 0 1px var(--hair); display: grid; place-items: center; }
+.c-lead { margin: 20px 2px 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.c-link { display: flex; align-items: center; gap: 8px; margin-top: 18px; padding: 10px 2px; font-size: 14px; font-weight: 600; color: var(--brand-dark); }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header>
+    <h1>Zoom, and Nonogram</h1>
+    <p>Two-finger zoom for the big boards, and Nonogram as a new game (5×5 to start, 15×15 is the point). Your decisions from 10/23 are in: zoom only on Star Battle 10×10 and up and Nonogram 15×15, the "one finger plays" model, and three Nonogram packs of 5. Mockup only, nothing is built.</p>
+    <div class="rules" id="rules"></div>
+  </header>
+  <nav class="switch" id="switch" aria-label="Sections"></nav>
+  <div id="secs"></div>
+</div>
+
+<script>
+// ---------- shared bits (paths copied from web/screens.js, web/home.js and the game pages) ----------
+const FACE = `<svg class="face" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="45" fill="#4D96FF"/>
+<g fill="#FFFFFF" stroke="#5D4E37" stroke-width="3" stroke-linejoin="round"><path d="M33 22 A8 8 0 0 1 38 36.2 L37 41 H29 L28 36.2 A8 8 0 0 1 33 22 Z"/><path d="M67 22 A8 8 0 0 1 72 36.2 L71 41 H63 L62 36.2 A8 8 0 0 1 67 22 Z"/></g>
+<path d="M29.5 45 H36.5 M30.5 49 H35.5 M63.5 45 H70.5 M64.5 49 H69.5" stroke="#5D4E37" stroke-width="3" stroke-linecap="round"/>
+<path d="M25 57 Q50 85 75 57" stroke="#5D4E37" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`;
+const LOOK = {
+  starbattle: { bg: "#FBE3D6", ink: "#C24E2A", path: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z" },
+  sudoku: { bg: "#D7EEEA", ink: "#1F6F73", path: "M4 4h16v16H4z M4 9.3h16 M4 14.7h16 M9.3 4v16 M14.7 4v16" },
+  watersort: { bg: "#ECE2F7", ink: "#6A45B0", path: "M6 3v14a3 3 0 0 0 6 0V3 M5 3h8 M6 11h6 M15 8v9a2.5 2.5 0 0 0 5 0V8 M14.5 8h6" },
+  blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z" },
+  // New (proposed): a grid with a filled corner block and a clue tick. Its own slate blue so it doesn't copy a neighbour.
+  nonogram: { bg: "#E2E6F4", ink: "#3D4C8F", path: "M4 4h16v16H4z M4 12h16 M12 4v16 M6.5 6.5h3v3h-3z M14.5 14.5h3v3h-3z" },
+};
+const gico = (k, box, icon) => `<span class="ico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${LOOK[k].bg}">
+<svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${LOOK[k].ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${LOOK[k].path}"/></svg></span>`;
+const svg = (d, s = 22, c = "#2A211B", w = 2) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+const I = {
+  back: (s = 22) => svg("M19 12H5 M11 6l-6 6 6 6", s),
+  help: (s = 20) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,
+  clock: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  pause: `<svg width="12" height="12" viewBox="0 0 24 24" fill="#6B5D52" style="opacity:.6"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>`,
+  undo: svg("M9 14l-5-5 5-5 M4 9h10a6 6 0 0 1 0 12h-3", 18, "currentColor"),
+  bulb: svg("M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z", 18, "currentColor"),
+  sliders: svg("M4 7h10 M18 7h2 M4 17h2 M10 17h10 M16 5v4 M8 15v4", 18, "currentColor"),
+  restart: svg("M3 12a9 9 0 1 0 3-6.7 M3 4v5h5", 18, "currentColor"),
+  fit: (c = "#fff") => svg("M4 9V4h5 M15 4h5v5 M20 15v5h-5 M9 20H4v-5", 15, c, 2.2),
+  pinch: (c = "#1F57B5") => svg("M5 5l5 5 M5 5h4 M5 5v4 M19 19l-5-5 M19 19h-4 M19 19v-4", 20, c, 2),
+  hand: (c = "#1F57B5") => svg("M9 11V5a1.5 1.5 0 0 1 3 0v5 M12 10V4a1.5 1.5 0 0 1 3 0v6 M15 10V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7L3.5 13a1.5 1.5 0 0 1 2.5-1.6L9 14", 20, c, 1.8),
+  bounce: (c = "#1F57B5") => svg("M4 20h16 M12 16V4 M8 8l4-4 4 4", 20, c, 2),
+  chev: (s = 18, c = "#6B5D52") => svg("M9 6l6 6-6 6", s, c),
+  star: (s, f) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${f}" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg>`,
+  flame: `<svg width="16" height="16" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>`,
+  arrowR: (c = "#fff") => svg("M5 12h14 M13 6l6 6-6 6", 18, c, 2.2),
+  check: (c = "#1F57B5") => svg("M5 12l5 5 9-10", 14, c, 2.6),
+};
+const TAB = { home: "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z", packs: "M21 8l-9-5-9 5 9 5z M3 8v8l9 5 9-5V8 M12 13v8",
+  stats: "M4 20V10 M10 20V4 M16 20v-7 M22 20H2", import: "M4 8h3l2-3h6l2 3h3v12H4z M8.5 13.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0" };
+const tabs = (on) => `<nav class="tabs">${[["home", "Library"], ["packs", "Packs"], ["stats", "Stats"], ["import", "Import"]].map(([k, l]) =>
+  `<span class="${k === on ? "on" : ""}">${svg(TAB[k], 24, k === on ? "#2F6FD6" : "#2A211B", 1.9)}${l}</span>`).join("")}</nav>`;
+const sbar = `<div class="sbar"><span>9:48</span><span class="island"></span><span class="right">
+  <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#2A211B"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#2A211B"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#2A211B"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#2A211B"/></svg>
+  <span class="bat">100</span></span></div>`;
+const glows = `<div class="glow" style="top:-90px; left:-80px; background:#DCE9F2; opacity:.7"></div><div class="glow" style="top:560px; right:-110px; background:#BFE3D8; opacity:.6"></div>`;
+const phone = (inner) => `<div class="frame"><div class="phone">${glows}${sbar}${inner}</div></div>`;
+const bars = (n, of = 4) => `<span class="bars">${Array.from({ length: of }, (_, i) => `<i class="${i < n ? "on" : ""}" style="height:${5 + i * 2}px"></i>`).join("")}</span>`;
+const ring = (f) => `<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(42,33,27,0.1)" stroke-width="3"/>${f > 0
+  ? `<circle cx="12" cy="12" r="9" fill="none" stroke="#2F6FD6" stroke-width="3" stroke-linecap="round" stroke-dasharray="${(56.5 * f).toFixed(1)} 57" transform="rotate(-90 12 12)"/>` : ""}</svg>`;
+
+// A game screen: header, info row, stage, bottom bar (same as Sudoku / Star Battle today).
+function game({ title, sub, right = "", stage, extra = "", dock = true }) {
+  return `<div class="game">
+    <div class="ghead"><span class="sq glass">${I.back()}</span><div class="gtitle"><b>${title}</b><span>${sub}</span></div><span class="sq glass">${I.help()}</span></div>
+    <div class="info"><span class="timer">${I.clock}<span>${right.time ?? "1:24"}</span>${I.pause}</span>${right.html ?? ""}</div>
+    <div class="stage">${stage}</div>
+    ${dock ? `<div class="dock"><span class="tool glass">${I.undo}Undo</span><span class="tool glass hint">${I.bulb}Hint</span><span class="tool glass">${I.sliders}Settings</span><span class="tool glass">${I.restart}Restart</span></div>` : ""}
+  </div>${extra}`;
+}
+// Zoom control in the info row: tiny map of the board with the visible part boxed, the zoom, and Fit.
+function zoomctl({ n, r0, c0, rows, cols, z, colorFn }) {
+  const m = 26, u = m / n;
+  let cells = "";
+  if (colorFn) for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) cells += `<rect x="${c * u}" y="${r * u}" width="${u + 0.05}" height="${u + 0.05}" fill="${colorFn(r, c)}"/>`;
+  return `<span class="zoomctl glass"><svg width="${m}" height="${m}" viewBox="0 0 ${m} ${m}" style="border-radius:4px;background:#FFFDF9;box-shadow:inset 0 0 0 1px rgba(42,33,27,0.25)">${cells}
+    <rect x="${c0 * u}" y="${r0 * u}" width="${cols * u}" height="${rows * u}" fill="rgba(47,111,214,0.18)" stroke="#2F6FD6" stroke-width="1.6" rx="1.5"/></svg>
+    <span class="x">${z}×</span><span class="fit">${I.fit()}Fit</span></span>`;
+}
+
+// ---------- Nonogram ----------
+const HEART = [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."];
+const BOAT = [ // 15×15 "Sailboat" (made up for the mockup; a real pack is checked for exactly one answer)
+  "........X......", ".......XX......", "......XXX.X....", ".....XXXX.XX...", "....XXXXX.XXX..",
+  "...XXXXXX.XXXX.", "..XXXXXXX.XXXXX", "........X......", "XXXXXXXXXXXXXXX", ".XXXXXXXXXXXXX.",
+  "..XXXXXXXXXXX..", ".XX...XX...XX..", "X..XX..XX..XX.X", ".XX..XX..XX..XX", "XXXXXXXXXXXXXXX"];
+const runs = (s) => { const r = (s.match(/X+/g) || []).map((x) => x.length); return r.length ? r : [0]; };
+const colOf = (g, c) => g.map((row) => row[c]).join("");
+const K = (r, c) => `${r},${c}`;
+
+let uid = 0;
+// One Nonogram board as SVG. cs = cell size; px/py = how far it's panned (in px); vw/vh = visible size (incl. clue strips).
+function nono({ g, st = {}, cs, fs, px = 0, py = 0, vw, vh, hiR = -1, hiC = -1, solved = false, color = "#2A211B", fade = false }) {
+  const n = g.length, m = g[0].length, id = ++uid;
+  const rc = g.map(runs), cc = Array.from({ length: m }, (_, c) => runs(colOf(g, c)));
+  const step = fs * 1.25, cw = Math.max(...rc.map((x) => x.length)) * step + 10, ch = Math.max(...cc.map((x) => x.length)) * step + 8;
+  const W = vw ?? cw + m * cs, H = vh ?? ch + n * cs;
+  nono.last = { cw, ch };
+  const filled = (r, c) => st[K(r, c)] === "f";
+  const rowDone = (r) => g[r].split("").every((v, c) => (v === "X") === filled(r, c));
+  const colDone = (c) => g.every((row, r) => (row[c] === "X") === filled(r, c));
+  const ox = cw - px, oy = ch - py; // where cell (0,0) starts
+  let cells = "", lines = "", top = "", left = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < m; c++) {
+    const x = ox + c * cs, y = oy + r * cs, v = st[K(r, c)];
+    if (v === "f") cells += `<rect x="${x + (solved ? 0 : 1)}" y="${y + (solved ? 0 : 1)}" width="${cs - (solved ? 0 : 2)}" height="${cs - (solved ? 0 : 2)}" rx="${solved ? 0 : Math.min(3, cs / 8)}" fill="${color}"/>`;
+    if (v === "x") { const a = cs * 0.32; cells += `<path d="M${x + a} ${y + a}L${x + cs - a} ${y + cs - a}M${x + cs - a} ${y + a}L${x + a} ${y + cs - a}" stroke="#B8ABA0" stroke-width="${Math.max(1.4, cs / 16)}" stroke-linecap="round"/>`; }
+  }
+  if (hiR >= 0) cells = `<rect x="${ox}" y="${oy + hiR * cs}" width="${m * cs}" height="${cs}" fill="rgba(47,111,214,0.08)"/>` + cells;
+  if (hiC >= 0) cells = `<rect x="${ox + hiC * cs}" y="${oy}" width="${cs}" height="${n * cs}" fill="rgba(47,111,214,0.08)"/>` + cells;
+  const thinA = solved ? 0 : 1;
+  for (let i = 0; i <= m; i++) { const x = ox + i * cs, thick = i % 5 === 0; lines += `<line x1="${x}" y1="${oy}" x2="${x}" y2="${oy + n * cs}" stroke="${thick ? "#2A211B" : "#E6DACD"}" stroke-width="${thick ? 1.6 : 1}" opacity="${thick ? (solved ? 0.25 : 1) : thinA}"/>`; }
+  for (let i = 0; i <= n; i++) { const y = oy + i * cs, thick = i % 5 === 0; lines += `<line x1="${ox}" y1="${y}" x2="${ox + m * cs}" y2="${y}" stroke="${thick ? "#2A211B" : "#E6DACD"}" stroke-width="${thick ? 1.6 : 1}" opacity="${thick ? (solved ? 0.25 : 1) : thinA}"/>`; }
+  const txt = (x, y, t, done, anchor) => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="Inter, sans-serif" font-weight="600" font-size="${fs}" fill="${done ? "#C4B9AE" : "#2A211B"}">${t}</text>`;
+  for (let c = 0; c < m; c++) {
+    const x = ox + c * cs + cs / 2, d = colDone(c) || fade;
+    if (c === hiC) top += `<rect x="${ox + c * cs}" y="0" width="${cs}" height="${ch}" fill="#DCEAFE"/>`;
+    cc[c].forEach((v, k) => { top += txt(x, ch - 6 - (cc[c].length - 1 - k) * step, v, d, "middle"); });
+  }
+  for (let r = 0; r < n; r++) {
+    const y = oy + r * cs + cs / 2 + fs * 0.36, d = rowDone(r) || fade;
+    if (r === hiR) left += `<rect x="0" y="${oy + r * cs}" width="${cw}" height="${cs}" fill="#DCEAFE"/>`;
+    rc[r].forEach((v, k) => { left += txt(cw - 7 - (rc[r].length - 1 - k) * step, y, v, d, "end"); });
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">
+    <defs><clipPath id="b${id}"><rect x="${cw}" y="${ch}" width="${W - cw}" height="${H - ch}"/></clipPath>
+      <clipPath id="t${id}"><rect x="${cw}" y="0" width="${W - cw}" height="${ch}"/></clipPath>
+      <clipPath id="l${id}"><rect x="0" y="${ch}" width="${cw}" height="${H - ch}"/></clipPath></defs>
+    <rect width="${W}" height="${H}" fill="#F3EFE9"/>
+    <rect x="${cw}" y="${ch}" width="${W - cw}" height="${H - ch}" fill="#FFFDF9"/>
+    <g clip-path="url(#b${id})">${cells}${lines}</g>
+    <g clip-path="url(#t${id})">${top}</g><g clip-path="url(#l${id})">${left}</g>
+    <line x1="${cw}" y1="0" x2="${cw}" y2="${H}" stroke="rgba(42,33,27,0.18)"/><line x1="0" y1="${ch}" x2="${W}" y2="${ch}" stroke="rgba(42,33,27,0.18)"/>
+  </svg>`;
+}
+// Just the picture (solved), no clues: medals and pack thumbnails.
+const pic = (g, size, col) => { const u = size / g.length; let o = "";
+  g.forEach((row, r) => row.split("").forEach((v, c) => { if (v === "X") o += `<rect x="${c * u}" y="${r * u}" width="${u + 0.05}" height="${u + 0.05}" fill="${col}"/>`; }));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;background:#FFFDF9">${o}</svg>`; };
+const fillFrom = (g, rows, st = {}) => { rows.forEach((r) => g[r].split("").forEach((v, c) => { st[K(r, c)] = v === "X" ? "f" : "x"; })); return st; };
+const fillCol = (g, c, st) => { g.forEach((row, r) => { st[K(r, c)] = row[c] === "X" ? "f" : "x"; }); return st; };
+
+// ---------- Star Battle 12×12 (Triple #1's real regions) ----------
+const SB = ["LGGGGGGGDDBB", "LGKKGIDDDDBB", "LKKKGIDDDBBB", "LLKKIIIDDBBB", "LLKKIIIICBBF", "LLLLHCIICFFF", "LLHHHCICCFFF", "LLHHHCCCCFFF", "LEHHCCJCJAFA", "EEHHCCJJJAAA", "EEEEEEJJJAAA", "EEEEEJJAAAAA"];
+const SBSOL = [[1, 3, 5], [7, 9, 11], [1, 3, 5], [7, 9, 11], [1, 3, 5], [7, 9, 11], [0, 2, 4], [6, 8, 10], [0, 2, 4], [6, 8, 10], [0, 2, 4], [6, 8, 10]];
+const COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8", I: "#E2EA98", J: "#D3D0C8", K: "#CDB497", L: "#E7AEDB" };
+const mix = (hex, t) => { const a = parseInt(hex.slice(1), 16), b = 0xFFFDF9; const ch = (s) => Math.round(((a >> s) & 255) * t + ((b >> s) & 255) * (1 - t)); return `rgb(${ch(16)},${ch(8)},${ch(0)})`; };
+function starbattle({ cs, px = 0, py = 0, vw, vh, marks = {} }) {
+  const n = 12, W = vw ?? n * cs, H = vh ?? n * cs;
+  let out = "", lines = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+    const x = c * cs - px, y = r * cs - py, m = marks[K(r, c)];
+    out += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="${mix(COLORS[SB[r][c]], 0.48)}"/>`;
+    if (m === "s") out += `<g transform="translate(${x + cs * 0.18} ${y + cs * 0.18}) scale(${cs * 0.64 / 24})"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z" fill="#C24E2A"/></g>`;
+    if (m === "x") out += `<text x="${x + cs / 2}" y="${y + cs / 2 + cs * 0.17}" text-anchor="middle" font-family="Inter" font-weight="600" font-size="${cs * 0.42}" fill="#7A6B5F">×</text>`;
+    lines += `<line x1="${x + cs}" y1="${y}" x2="${x + cs}" y2="${y + cs}" stroke="${c < n - 1 && SB[r][c + 1] !== SB[r][c] ? "#2A211B" : "rgba(42,33,27,0.16)"}" stroke-width="${c < n - 1 && SB[r][c + 1] !== SB[r][c] ? 3 : 1}"/>`;
+    lines += `<line x1="${x}" y1="${y + cs}" x2="${x + cs}" y2="${y + cs}" stroke="${r < n - 1 && SB[r + 1][c] !== SB[r][c] ? "#2A211B" : "rgba(42,33,27,0.16)"}" stroke-width="${r < n - 1 && SB[r + 1][c] !== SB[r][c] ? 3 : 1}"/>`;
+  }
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block">${out}${lines}</svg>`;
+}
+const sbMarks = {};
+for (let r = 3; r < 9; r++) SBSOL[r].forEach((c) => { sbMarks[K(r, c)] = "s"; });
+for (let r = 3; r < 9; r++) for (let c = 0; c < 12; c++) if (!sbMarks[K(r, c)] && (r + c) % 3 !== 0 && c > 2 && c < 11) sbMarks[K(r, c)] = "x";
+
+// ---------- the sections ----------
+const S = [];
+const notes = (li) => `<ul class="notes">${li.map((x) => `<li>${x}</li>`).join("")}</ul>`;
+const pair = (cols, side) => `<div class="row">${cols.map(([tag, ph, cls = ""]) => `<div class="col"><span class="tag ${cls}">${tag}</span>${ph}</div>`).join("")}<div class="side">${side}</div></div>`;
+
+// 1. Nonogram 5×5 Easy
+{
+  const st = fillFrom(HEART, [1, 2]);
+  st[K(0, 1)] = "f"; st[K(0, 0)] = "x"; st[K(4, 0)] = "x"; st[K(4, 1)] = "x"; st[K(3, 0)] = "x";
+  const b = nono({ g: HEART, st, cs: 56, fs: 17 });
+  S.push({ id: "five", short: "5×5", title: "Nonogram 5×5, Easy", lede: "The whole board fits; no zoom here.",
+    body: pair([["Easy · 5×5", phone(game({ title: "Nonogram", sub: "Easy · 5×5 · #1", right: { time: "0:31", html: `<span class="count">2 of 5 rows</span>` },
+      stage: `<div class="boardwrap">${b}</div><p class="tip">Tap to fill · tap again for × · drag to do many</p>` })), "rec"]],
+      notes(["<b>The numbers</b> say how many filled squares in a row (or column), in order, with a gap between each group.",
+        "<b>Tap</b> fills a square; tap again makes it a ×; once more clears it (the same cycle as Star Battle's × then star).",
+        "A finished row or column <b>greys its numbers out</b>, so you can see what's left at a glance. No zoom, no Fit button: 5×5 doesn't need it."])) });
+}
+// 2. 15×15 at fit
+{
+  const st = fillFrom(BOAT, [8, 14]); fillCol(BOAT, 8, st);
+  const b = nono({ g: BOAT, st, cs: 18.6, fs: 9.5 });
+  S.push({ id: "fit", short: "15×15 fit", title: "Nonogram 15×15 at fit", lede: "It all fits, but the squares are about the size of a fingertip's edge.",
+    body: pair([["Hard · 15×15, fit", phone(game({ title: "Nonogram", sub: "Hard · 15×15 · #1", right: { time: "6:02", html: `<span class="tip">${I.pinch("#6B5D52")}Pinch to zoom</span>` },
+      stage: `<div class="boardwrap">${b}</div><p class="tip">Two fingers zoom and move · one finger plays</p>` })), "rec"]],
+      notes(["You can play at this size: tap and drag work here like on 5×5.",
+        "<b>Pinch out</b> with two fingers to get bigger squares. The \"Pinch to zoom\" hint shows the first few times, then goes away.",
+        "Thick lines every 5 squares make counting easier at any zoom."])) });
+}
+// 3. 15×15 zoomed with pinned clues
+{
+  const st = fillFrom(BOAT, [8, 14]); fillCol(BOAT, 8, st); fillCol(BOAT, 7, st);
+  ["4,4", "5,4", "5,5", "6,4", "6,5", "6,6"].forEach((k) => { st[k] = "f"; });
+  const cs = 36, b = nono({ g: BOAT, st, cs, fs: 13, px: 3.4 * cs, py: 2.5 * cs, vw: 358, vh: 470 });
+  S.push({ id: "zoom", short: "Zoomed", title: "15×15 zoomed in, clues stay put", lede: "The board is bigger; the clue strips stay on the edges and slide with it.",
+    body: pair([["Zoomed, about 2×", phone(game({ title: "Nonogram", sub: "Hard · 15×15 · #1", right: { time: "6:40",
+      html: zoomctl({ n: 15, r0: 2.5, c0: 3.4, rows: 11.4, cols: 7.6, z: "1.9", colorFn: (r, c) => (st[K(r, c)] === "f" ? "#2A211B" : "#FFFDF9") }) },
+      stage: `<div class="boardwrap">${b}</div>
+        <span class="finger" style="left:150px;top:330px"></span><span class="finger" style="left:250px;top:430px"></span>
+        <span class="note blue" style="left:58px;top:262px">Two fingers: zoom and move</span>` })), "rec"]],
+      notes(["<b>Clues are pinned:</b> the column numbers stay along the top and the row numbers down the left, showing only the rows and columns on screen. They slide as you move.",
+        "<b>Top right:</b> a tiny map of the whole board (blue box = what you see), how far in you are, and <b>Fit</b> to jump back to the whole board. It only appears when you're zoomed in.",
+        "Two-finger double-tap also goes back to fit. Pinch out further than \"fit\" and it springs back with a small bounce, so you can't lose the board.",
+        "<b>No text selection, no page scroll:</b> the board owns all touches, like Star Battle's board already does."])) });
+}
+// 4. Drag-fill in progress
+{
+  const st = fillFrom(BOAT, [8, 14]); fillCol(BOAT, 8, st); fillCol(BOAT, 7, st);
+  for (let c = 1; c <= 6; c++) st[K(9, c)] = "f";
+  const cs = 36, px = 0.2 * cs, py = 4.6 * cs, b = nono({ g: BOAT, st, cs, fs: 13, px, py, vw: 358, vh: 470, hiR: 9 });
+  const { cw, ch } = nono.last, cx = (c) => cw - px + c * cs + cs / 2, cy = (r) => ch - py + r * cs + cs / 2;
+  const ticks = [1, 2, 3, 4, 5].map((c) => `<span style="position:absolute;z-index:8;left:${cx(c) - 4}px;top:${cy(9) - 24}px;width:8px;height:8px;border-radius:50%;background:#2F6FD6;opacity:${0.35 + c * 0.12}"></span>`).join("");
+  S.push({ id: "drag", short: "Drag", title: "Drag across to fill many", lede: "One finger, any zoom: it always plays. The haptics tell you what happened.",
+    body: pair([["Dragging row 10", phone(game({ title: "Nonogram", sub: "Hard · 15×15 · #1", right: { time: "7:12",
+      html: zoomctl({ n: 15, r0: 4.6, c0: 0.2, rows: 11.4, cols: 7.6, z: "1.9", colorFn: (r, c) => (st[K(r, c)] === "f" ? "#2A211B" : "#FFFDF9") }) },
+      stage: `<div style="position:relative"><div class="boardwrap">${b}</div>${ticks}
+      <span class="finger" style="left:${cx(6)}px;top:${cy(9)}px"></span>
+      <span class="note" style="left:${cx(1) - 20}px;top:${cy(9) + 26}px">tick, tick, tick…<small>a light tap per square filled</small></span>
+      <span class="note blue" style="left:${cx(1) + 40}px;top:${cy(8) - 70}px">Row 9 done: firmer thud<small>its clue greys out</small></span></div>` })), "rec"]],
+      `<div class="haptics">
+        <div><i class="light">Light</i>each square you fill or ×, by tap or drag (as Star Battle's drag)</div>
+        <div><i class="firm">Firm</i>a row or column becomes complete and correct; its numbers grey out</div>
+        <div><i class="win">Win</i>the solved buzz you already have</div></div>` +
+      notes(["<b>The first square decides the drag:</b> start on an empty square and you fill; start on a filled one and you clear; start on a × and you lay ×s. A drag stays in its row or column once it's clear which way you're going, so a wobbly finger doesn't leak into the next row.",
+        "The row and column you're on light up in the clue strips, so you can read \"1 2 2 2 1\" without hunting.",
+        "One Undo takes back the whole drag."])) });
+}
+// 5. Solved 5×5
+{
+  const st = {}; HEART.forEach((row, r) => row.split("").forEach((v, c) => { st[K(r, c)] = v === "X" ? "f" : ""; }));
+  const b = nono({ g: HEART, st, cs: 44, fs: 14, solved: true, color: "#C24E2A", fade: true });
+  const small = pic(HEART, 86, "#C24E2A");
+  S.push({ id: "solved", short: "Solved", title: "Solved: the picture shows", lede: "The finish moment is the picture itself.",
+    body: pair([["Solved", phone(game({ title: "Nonogram", sub: "Easy · 5×5 · #1", right: { time: "0:48" },
+      stage: `<div style="margin-top:-300px" class="boardwrap">${b}</div>`, dock: false }) +
+      `<div class="won-scrim" style="background:rgba(42,33,27,0.08)"></div><section class="won-card">
+        <div class="medal">${small}</div>
+        <h2>A heart!</h2><p>Solved in <b>0:48</b></p>
+        <div class="badges"><span class="badge">${I.check()}No hints</span><span class="badge gold">${I.star(13, "#B8860B")}Best time</span></div>
+        <span class="won-next">Next puzzle ${I.arrowR()}</span></section>`), "rec"]],
+      notes(["On the last square, the × marks fade, the thin grid lines melt away and the squares sweep into colour from the top-left, like the win wave on the other boards.",
+        "The card names the picture (\"A heart!\") and shows it as the medal, in place of the usual blue disc.",
+        "<b>Each puzzle has one colour</b> for its picture (heart = SolveBuddy's coral). Solved puzzles in the pack list show their little picture."])) });
+}
+// 6. Star Battle 12×12 zoomed
+{
+  const cs = 50, b = starbattle({ cs, px: 1.6 * cs, py: 2.4 * cs, vw: 358, vh: 470, marks: sbMarks });
+  S.push({ id: "sb", short: "Star Battle", title: "Star Battle 12×12, zoomed", lede: "Same zoom, same rules. Star Battle 10×10 and 12×12 only; 8×8 and Sudoku stay as they are.",
+    body: pair([["Triple 12×12, zoomed", phone(game({ title: "Star Battle", sub: "Triple · Hard · #1", right: { time: "11:05",
+      html: zoomctl({ n: 12, r0: 2.4, c0: 1.6, rows: 9.4, cols: 7.2, z: "1.7", colorFn: (r, c) => mix(COLORS[SB[r][c]], 0.48) }) },
+      stage: `<div class="boardwrap">${b}</div><p class="tip">${I.star(13, "#C24E2A")} 18 / 36 stars</p>` })), "rec"]],
+      notes(["Exactly what Star Battle does today with one finger: tap = ×, tap again = star, drag paints ×s. It just works at any zoom.",
+        "The tiny map is in the region colours, so you can tell where you are on the board.",
+        "Zoom is remembered per puzzle while you play it; a new puzzle starts at fit."])) });
+}
+// 7. Option 2
+{
+  const st = fillFrom(BOAT, [8, 14]); fillCol(BOAT, 8, st);
+  const cs = 36, b = nono({ g: BOAT, st, cs, fs: 13, px: 3.4 * cs, py: 2.5 * cs, vw: 358, vh: 470 });
+  S.push({ id: "opt2", short: "Option 2", title: "Option 2: drag-mark only at fit", lede: "Your first idea, for comparison. Not recommended.",
+    body: pair([["Option 2, zoomed", phone(game({ title: "Nonogram", sub: "Hard · 15×15 · #1", right: { time: "6:40",
+      html: zoomctl({ n: 15, r0: 2.5, c0: 3.4, rows: 11.4, cols: 7.6, z: "1.9" }) },
+      stage: `<div class="boardwrap">${b}</div>
+        <span class="finger grey" style="left:120px;top:380px"></span>
+        <svg class="spring" style="left:130px;top:300px" width="140" height="90" viewBox="0 0 140 90"><path d="M8 80 C50 70 90 40 130 10" stroke="#2A211B" stroke-width="2.5" fill="none" stroke-dasharray="5 5" stroke-linecap="round"/><path d="M118 8l12 2-4 12" stroke="#2A211B" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="note" style="left:40px;top:250px">Zoomed in, one finger moves the board<small>to drag-fill, pinch back out to fit first</small></span>` })), ""]],
+      `<table class="compare"><tr><th></th><th>Recommended</th><th>Option 2</th></tr>
+        <tr><td>One finger, zoomed</td><td>Plays (tap, drag)</td><td>Tap plays; drag moves the board</td></tr>
+        <tr><td>Two fingers</td><td>Zoom and move</td><td>Zoom</td></tr>
+        <tr><td>Drag-fill a row on 15×15</td><td>Any time</td><td>Zoom out, drag, zoom back in</td></tr>
+        <tr><td>Risk</td><td>Moving needs two fingers</td><td>Tedious; a slow tap can turn into a move</td></tr></table>` +
+      notes(["Simpler to explain, and one-finger moving feels like a map.",
+        "But on 15×15 most of the play is drag-filling long runs, so you'd zoom out and back in all the time. That's why the recommendation keeps one finger for playing."])) });
+}
+// 8. Library and packs
+{
+  const tile = (k, n, c, cls = "") => `<div class="c-tile ${cls}">${cls ? `<span class="newdot">New</span>` : ""}${gico(k, 38, 20)}<div><span class="n">${n}</span><span class="c">${c}</span></div></div>`;
+  const lib = `<div class="pg"><div class="c-brand">${FACE}<span class="wm">SolveBuddy</span><span class="streak">${I.flame}4</span></div>
+    <p class="c-ask">What are we solving?</p>
+    <div class="c-tiles">${tile("sudoku", "Sudoku", "56 puzzles")}${tile("starbattle", "Star Battle", "40 puzzles")}${tile("watersort", "Water Sort", "30 levels")}${tile("blocks", "Block Drop", "Endless")}${tile("nonogram", "Nonogram", "15 puzzles", "new")}</div>
+    <p class="c-soon"><b>Coming soon</b>Binairo · Shikaku · Five Letters · Groups</p></div>${tabs("home")}`;
+  const thumbOf = (g, col) => pic(g, 30, col);
+  const prow = (size, level, nb, n, f, zoom, thumb) => `<div class="c-row"><span class="thumb">${thumb}</span><div class="g"><b>${size}</b><small>${bars(nb)}${level} · ${n} puzzles${zoom ? ` · <span class="zchip">${I.pinch("#1F57B5").replace(/width="20" height="20"/, 'width="12" height="12"')}zoom</span>` : ""}</small></div><span class="cnt">${ring(f / n)}${f}/${n}${I.chev()}</span></div>`;
+  const tiny = (n) => `<svg width="30" height="30" viewBox="0 0 30 30"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p} 0V30M0 ${p}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
+  const pk = `<div class="pg"><div class="c-nav"><span class="c-iconbtn">${I.back()}</span><span class="c-iconbtn">${I.help()}</span></div>
+    <div class="c-title"><h1>Nonogram</h1><span>1 of 15 done</span></div>
+    <div class="c-group"><div class="c-ghead">Packs</div><div class="c-list">
+      ${prow("5×5", "Easy", 1, 5, 1, false, thumbOf(HEART, "#C24E2A"))}${prow("10×10", "Medium", 2, 5, 0, false, tiny(10))}${prow("15×15", "Hard", 3, 5, 0, true, tiny(15))}</div></div>
+    <p class="c-lead">Size is the level: bigger pictures, longer clues. Each square shows the last picture you solved in that pack.</p></div>${tabs("home")}`;
+  S.push({ id: "lib", short: "Library", title: "Nonogram in the Library", lede: "A new tile; the four unbuilt games stay on the quiet \"Coming soon\" line.",
+    body: pair([["Library", phone(lib), "rec"], ["Nonogram packs", phone(pk), "rec"]],
+      notes(["<b>Library:</b> Nonogram is a fifth tile with a small \"New\" tag for the first week. It wasn't on the Coming soon line, so that line is unchanged.",
+        "<b>Packs (your call, 10/23):</b> 5×5 Easy (5), 10×10 Medium (5), 15×15 Hard (5) = 15 puzzles. Size is the level; no other splits.",
+        "Only the 15×15 row says \"zoom\". The Packs tab gets one Nonogram block (15, three levels underneath), same as the other games."])) });
+}
+
+// ---------- render ----------
+document.getElementById("rules").innerHTML = [
+  [I.hand(), "One finger plays", "Tap, drag-fill, drag-×. At every zoom, on every board."],
+  [I.pinch(), "Two fingers zoom and move", "Pinch to zoom in or out; slide two fingers to move around."],
+  [I.bounce(), "Springs back to fit", "Zoom out past the whole board and it bounces back. Fit button or two-finger double-tap = whole board."],
+  [svg("M4 4h16v16H4z M4 12h16 M12 4v16", 20, "#1F57B5"), "Big boards only", "Star Battle 10×10 and 12×12, Nonogram 15×15. Not 5×5 or 10×10 Nonogram, not Sudoku."],
+].map(([i, b, s]) => `<div class="rule"><span class="ri">${i}</span><b>${b}</b><span>${s}</span></div>`).join("");
+document.getElementById("secs").innerHTML = S.map((s, i) => `<section class="sec" id="${s.id}"><h2><span>${i + 1}</span>${s.title}</h2><p class="lede">${s.lede}</p>${s.body}</section>`).join("");
+const sw = document.getElementById("switch");
+sw.innerHTML = S.map((s, i) => `<button data-id="${s.id}" aria-pressed="${i === 0}">${i + 1}. ${s.short}</button>`).join("");
+const narrow = matchMedia("(max-width: 760px)");
+function show(id) {
+  sw.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.id === id)));
+  document.querySelectorAll("section.sec").forEach((s) => s.classList.toggle("on", s.id === id));
+  if (!narrow.matches) document.getElementById(id).scrollIntoView({ behavior: "smooth" });
+}
+sw.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) show(b.dataset.id); });
+function mode() { document.body.classList.toggle("one", narrow.matches); }
+narrow.addEventListener("change", mode); mode();
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting && !narrow.matches) sw.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.id === e.target.id))); }),
+  { rootMargin: "-40% 0px -55% 0px" });
+document.querySelectorAll("section.sec").forEach((s) => io.observe(s));
+document.querySelectorAll("section.sec")[0].classList.add("on");
+// Phones scale down to fit narrow screens (16px gutters).
+function fit() { const w = Math.min(window.innerWidth - 32 - 18, 390 * 0.78); document.documentElement.style.setProperty("--s", (w / 390).toFixed(3)); }
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>
