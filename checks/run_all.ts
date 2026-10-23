@@ -391,4 +391,11 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/sudoku_variants.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Nonogram (10/23): line solver right, every pack picture has one answer, Hint alone solves all 15 (nonogram.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Nonogram: line solver, one answer each, Hint alone solves all 15 by line logic",
+    spawnSync(process.execPath, ["checks/nonogram.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);
