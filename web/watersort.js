@@ -265,8 +265,8 @@ function checkSolved() {
   haptic("success");
   const full = s.tubes.filter((t) => t.length).length;
   for (let k = 1; k < full; k++) setTimeout(() => haptic("tap"), k * 110); // a tick as each tube hops
-  const facts = solveFacts("watersort", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
+  const facts = solveFacts("watersort", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
+  logSolve({ g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   render();
   celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
     hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
@@ -281,7 +281,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hints = (s.hints ?? 0) + 1;
+  s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   s.picked = null;
   // Right after a "Show me", carry on with the same plan, so the next hint matches what the last one said would come next.
   const kept = s.nextPlan?.key === JSON.stringify(s.tubes) && s.nextPlan.plan.length ? s.nextPlan.plan : null;
@@ -308,6 +308,7 @@ function advanceHint() {
     return render();
   }
   if (h.level === 2) { // "Show me": the pour plays, then the card says so (unless that pour finished the level)
+    s.hints = (s.hints ?? 0) + 1 / 3;
     const [a, b] = h.move;
     startPour(a, b, () => {
       if (s.solved) return;
@@ -319,6 +320,7 @@ function advanceHint() {
     return;
   }
   h.level++;
+  s.hints = (s.hints ?? 0) + 1 / 3;
   render();
 }
 function hintText(h) {

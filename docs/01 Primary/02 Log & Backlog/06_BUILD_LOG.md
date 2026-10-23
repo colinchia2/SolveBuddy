@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-22 (final) — Hints used on the Solved card; pop-ups above the board
+- Hints count in thirds: each step (Nudge, Explain, Show me) adds 1/3 in Star Battle, Sudoku and Water Sort. The
+  Solved card shows "1.33 hints used" (or "No hints"); the solve log keeps 2 decimals, saves keep exact thirds.
+- Fixed: Thermo/Killer lines and numbers showed through the "How to play" sheet (pop-ups now z-index 50; the
+  Sudoku board isolates its layers). Page tests check both.
+- Colin now plays for a few days, then comes back with comments.
+
 ## 2026-10-22 (night, last) — Expert Killer (5) and Expert Thermo (1)
 - New variant tricks (Expert only, `advanced: true`, so Easy hints stay byte-identical): the **45 rule** (innie/outie,
   1- and 2-cell, single and 2–3 adjacent houses), Cage claims a number, Cage squeeze / Thermo squeeze.

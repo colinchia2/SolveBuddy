@@ -16,7 +16,8 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Next (backlog top):** in-app photo reading (needs a small server, likely a Cloudflare Worker since SolveBuddy
   never uses PythonAnywhere, + a SolveBuddy Anthropic key Colin makes; ~1–3¢ a photo); deeper 3-star "What if" so a real Expert Triple pack is possible; Sudoku variants;
   after-puzzle review; new games (Binairo, Shikaku, Five Letters, Groups).
-- **Open questions:** none waiting. Colin tests the 10/22 evening update and flags anything.
+- **Open questions:** none waiting. **Colin is playing for a few days (from 10/22) and will come back with comments**:
+  start by asking for them, then work through them one at a time. Next steps otherwise: backlog "Next".
 - **To pick up, read:**
   1. This section, then "Key rules" and "How to ship" below.
   2. `../02 Log & Backlog/06_BUILD_LOG.md`: the 10/22 entries.

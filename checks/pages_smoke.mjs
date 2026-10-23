@@ -112,6 +112,33 @@ for (const v of ["killer", "thermo", "killer-expert", "thermo-expert"]) {
     && (v !== "killer-expert" || r.rule45));
 }
 
+// The rules sheet sits above everything on the board (Thermo's lines once showed through it, 10/22).
+await page.goto(`${BASE}sudoku.html?pack=thermo&p=1`);
+await page.waitForTimeout(1200);
+await page.click("#rulesBtn");
+await page.waitForTimeout(400);
+const onTop = await page.evaluate(() => {
+  // Whatever is on top over the board's middle must be the pop-up, not a thermometer or number.
+  const board = document.getElementById("board").getBoundingClientRect();
+  return !!document.elementFromPoint(board.left + board.width / 2, board.top + board.height / 2)?.closest("#rules");
+});
+check("the rules sheet covers the Thermo board", onTop);
+
+// Hints count in thirds and the Solved card says how many (Colin, 10/22).
+await page.goto(`${BASE}sudoku.html?pack=easy&p=1`);
+await page.waitForTimeout(1200);
+const used = await page.evaluate(async () => {
+  const $ = (id) => document.getElementById(id);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let i = 0; i < 200 && !$("won"); i++) {
+    if ($("hint").hidden) { $("hintBtn").click(); await wait(30); }
+    for (let g = 0; g < 10 && !$("hint").hidden; g++) $("hintNext").click();
+  }
+  await wait(2500);
+  return $("won")?.innerText.match(/[\d.]+ hints? used/)?.[0] ?? "";
+});
+check(`the Solved card shows hints used (${used})`, /^\d+(\.\d+)? hints? used$/.test(used));
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

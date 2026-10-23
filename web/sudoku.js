@@ -186,8 +186,8 @@ function checkSolved() {
   saveFinal("sudoku", packName, pid(), { entries: { ...s.entries } });
   haptic("success");
   [250, 500, 750].forEach((ms) => setTimeout(() => haptic("tap"), ms)); // ticks with the blue sweep
-  const facts = solveFacts("sudoku", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "sudoku", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
+  const facts = solveFacts("sudoku", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
+  logSolve({ g: "sudoku", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   const p = pack.puzzles[idx];
   celebrate({ title: packName === "import" ? "Imported puzzle" : p.label || `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
     hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
@@ -202,7 +202,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hints = (s.hints ?? 0) + 1; // for Stats: solved with or without hints
+  s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   s.hint = { data: findHint(board(), s.solution, s.center, s.corner, s.extra), level: 1 };
   render();
 }
@@ -214,6 +214,7 @@ function advanceHint() {
     return render();
   }
   h.level++;
+  s.hints = (s.hints ?? 0) + 1 / 3;
   if (h.level === 3) {
     saveUndo();
     const d = h.data;

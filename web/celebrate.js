@@ -10,6 +10,9 @@ const star = (size, fill, style = "") => `<svg width="${size}" height="${size}" 
 const fmt = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
 
 // What the card says about this solve, worked out BEFORE it goes into the solve log.
+// Hints in thirds (each step a third): "1 hint", "1.33 hints", "4.67 hints" (Colin, 10/22).
+export const hintCount = (h) => { const r = Math.round(h * 100) / 100; return `${r} hint${r === 1 ? "" : "s"}`; };
+const HINT_ICON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg>`;
 export function solveFacts(game, pack, ms, hints) {
   const before = solves().filter((e) => e.g === game && e.pack === pack);
   return { ms, hints, best: before.length > 0 && before.every((e) => ms < e.ms) };
@@ -26,6 +29,7 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000 }
   }).join("");
   const badges = [
     facts.hints === 0 && `<span class="badge blue" style="--at:.75s"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No hints</span>`,
+    facts.hints > 0 && `<span class="badge hintb" style="--at:.75s">${HINT_ICON}${hintCount(facts.hints)} used</span>`,
     facts.best && `<span class="badge gold" style="--at:.9s">${star(14, "#C98A00")}Your best ${level} time</span>`,
     current > 1 && `<span class="badge coral" style="--at:1.05s"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>${current}-day streak</span>`,
   ].filter(Boolean).join("");

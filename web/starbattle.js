@@ -160,8 +160,8 @@ function checkSolved() {
   saveFinal("starbattle", packName, pid(), { marks: { ...s.marks } });
   haptic("success");
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
-  const facts = solveFacts("starbattle", packName, s.elapsed, s.hints ?? 0);
-  logSolve({ g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: s.hints ?? 0 });
+  const facts = solveFacts("starbattle", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
+  logSolve({ g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   celebrate({ title: packName === "import" ? "Imported puzzle" : `${MORE[K].trim()} ${pack.difficulty} #${idx + 1}`.trim(),
     level: pack.difficulty, facts, hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
@@ -193,7 +193,7 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hints = (s.hints ?? 0) + 1; // for Stats: solved with or without hints
+  s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   s.hinted.clear();
   // An automatic × sitting on an answer cell comes from a wrong star; leave it out so the hint
   // points at that star (which the player can fix) rather than the × (which they can't).
@@ -225,6 +225,7 @@ function advanceHint() {
     return render();
   }
   h.level++;
+  s.hints = (s.hints ?? 0) + 1 / 3;
   if (h.level === 3) {
     if (chain) h.play = 0;
     else applyHint(h.data);

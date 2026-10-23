@@ -28,6 +28,7 @@
   .cell .v { font: 600 21px Inter, sans-serif; color: var(--pencil); }
   /* Killer cages and Thermo lines sit over the cell colours but under the numbers (Colin, 10/22). */
   .board { position: relative; }
+  .board { isolation: isolate; } /* cage/thermo layers stay inside the board, under any pop-up (Colin, 10/22) */
   .board svg.extra { position: absolute; left: -3px; top: -3px; pointer-events: none; z-index: 1; }
   .board svg.extra line { stroke: #4E433A; stroke-width: 1.2; stroke-dasharray: 3 3; stroke-opacity: 0.75; }
   .board svg.extra .sum { font: 700 9px Inter, sans-serif; fill: var(--ink); paint-order: stroke; stroke: var(--board); stroke-width: 3px; }
