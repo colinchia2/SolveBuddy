@@ -152,11 +152,16 @@ function startPour(from, to, done) {
   src.style.transform = `translateY(${lift}px)`;
   const br = board.getBoundingClientRect(), sr = src.getBoundingClientRect(), tr = dst.getBoundingClientRect();
   const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift;
-  // Tilted, the tube's mouth sits just above the middle of the other tube's mouth. It tilts so its body lies toward the
-  // middle of the screen, never off the edge (a tube at the side used to swing out of view).
-  const mx = tr.left + tr.width / 2, my = tr.top - 20, rad = (TILT * Math.PI) / 180;
+  // Tilted, the LOWEST corner of the tube's mouth (its lip) sits just above the middle of the other tube's opening, and
+  // the stream leaves from that lip (Colin 10/23: it used to drop from the underside, partway along the tube). It tilts
+  // so its body lies toward the middle of the screen, never off the edge (a tube at the side used to swing out of view).
   const pr = document.querySelector(".phone").getBoundingClientRect();
+  const mx = tr.left + tr.width / 2, my = tr.top - 8, rad = (TILT * Math.PI) / 180;
   const dir = mx >= pr.left + pr.width / 2 ? 1 : -1;
+  const th = dir * rad, cos = Math.cos(th), sin = Math.sin(th);
+  // The mouth's two corners (a little in from the rounded rim), turned with the tube; the lower one is the lip.
+  const lip = [-1, 1].map((sx) => { const x = sx * (sr.width / 2 - 4), y = -sr.height / 2 + 4; return { x: x * cos - y * sin, y: x * sin + y * cos }; })
+    .sort((a, b) => b.y - a.y)[0];
   const drain = [...src.querySelectorAll(".u")].slice(-k).reverse(); // top unit first
   const liquid = dst.querySelector(".liquid");
   const fill = Array.from({ length: k }, () => {
@@ -174,13 +179,10 @@ function startPour(from, to, done) {
     stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${COLORS[c]}`;
     board.appendChild(stream);
   }
-  const liq = src.querySelector(".liquid"), rest = (s.tubes[from].length - k) * UNIT;
-  // The liquid box clips what's outside it, and its top used to follow the shrinking colour while that colour slid to the
-  // mouth, so the poured run looked squeezed from both ends (Colin, 10/22). Full height for the pour: the run stays
-  // touching the mouth and drains only from its inner end. render() rebuilds the tube after.
-  if (!quiet) liq.style.height = `${CAP * UNIT}px`;
-  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, liq, rest, t: 0, speed: 1, last: null,
-    D: quiet ? 260 : POUR_MS, tx: mx - Math.sin(rad) * dir * (sr.height / 2) - cx, ty: my + Math.cos(rad) * (sr.height / 2) - cy,
+  // Inside the pouring tube the liquid stays against its closed bottom (tube space, as it sits upright): the colour being
+  // poured shrinks from its top, so empty space only ever shows at the open end (Colin 10/23).
+  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
+    D: quiet ? 260 : POUR_MS, tx: mx - lip.x - cx, ty: my - lip.y - cy,
     deg: dir * TILT, base: liquid.getBoundingClientRect().bottom - br.top, my: my - br.top };
   if (quiet) haptic("thud");
   const step = (now) => {
@@ -209,14 +211,6 @@ function drawPour(A) {
   A.src.style.transform = `translate(${A.tx * move}px, ${A.lift + (A.ty - A.lift) * move}px) rotate(${A.deg * move}deg)`;
   A.drain.forEach((u, j) => (u.style.height = `${UNIT * (1 - clamp(A.k * q - j))}px`));
   A.fill.forEach((u, j) => (u.style.height = `${UNIT * clamp(A.k * q - j)}px`));
-  // Tilted past level, only the colour being poured runs down to the mouth, so the stream leaves right from it (Colin,
-  // 10/22). The colours underneath stay put at the closed end the whole time; the poured run shrinks as the other
-  // tube fills, then whatever's left of it settles back on top as the tube goes home.
-  if (!A.quiet) {
-    const h = A.rest + A.drain.reduce((sum, u, j) => sum + UNIT * (1 - clamp(A.k * q - j)), 0);
-    const gap = CAP * UNIT - h; // empty space between the liquid's top and the mouth
-    A.drain.forEach((u) => (u.style.transform = `translateY(${-gap * move}px)`));
-  }
   if (A.stream) {
     const surface = A.base - (A.had + A.k * q) * UNIT;
     const top = A.my + (surface - A.my) * clamp((t - 0.7) / 0.06);

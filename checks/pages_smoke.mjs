@@ -619,6 +619,62 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`Packs tab Nonogram block (${blk.join(" / ")}); Stats lists Nonogram (${stat})`, blk.length === 3 && blk[0] === "5×5: Easy" && stat);
 }
 
+// Water Sort pour (Colin 10/23 screenshot): the stream leaves from the lip of the mouth (its lowest corner) and falls
+// into the other tube's opening; inside the pouring tube the liquid stays against the closed bottom and the poured
+// colour shrinks from its top (empty space only at the open end); the other tube fills upward to meet the stream.
+{
+  await page.goto(`${BASE}watersort.html?pack=easy&p=1`);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(1800);
+  const pour = await page.evaluate(async () => {
+    const { canPour, pour: doPour } = await import("../engine/watersort/rules.ts");
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const state = (await (await fetch("../packs/watersort-easy.json")).json()).puzzles[0].tubes;
+    // A pour from a tube with colours left under the poured one.
+    let from = -1, to = -1;
+    for (let a = 0; a < state.length && from < 0; a++) for (let b = 0; b < state.length; b++) {
+      if (a === b || !canPour(state, a, b)) continue;
+      const k = doPour(state, a, b)[b].length - state[b].length;
+      if (state[a].length - k >= 1) { from = a; to = b; break; }
+    }
+    const tube = (i) => document.querySelector(`.tube[data-i="${i}"]`); // picking a tube redraws them all
+    const k = doPour(state, from, to)[to].length - state[to].length;
+    tube(from).click(); await wait(60); tube(to).click();
+    const src = tube(from), dst = tube(to);
+    // The pouring tube's mouth corners on screen: its untransformed box turned by its transform about its centre.
+    const corners = () => {
+      const m = new DOMMatrix(getComputedStyle(src).transform);
+      const b = src.offsetParent.getBoundingClientRect(), w = src.offsetWidth, h = src.offsetHeight;
+      const cx = b.left + src.offsetLeft + w / 2, cy = b.top + src.offsetTop + h / 2;
+      return [-1, 1].map((sx) => { const p = m.transformPoint(new DOMPoint(sx * w / 2, -h / 2)); return { x: cx + p.x, y: cy + p.y }; });
+    };
+    const sample = () => {
+      const units = [...src.querySelectorAll(".liquid .u")], fill = [...dst.querySelectorAll(".liquid .u")];
+      const liq = src.querySelector(".liquid");
+      const st = document.querySelector(".stream")?.getBoundingClientRect();
+      return { top: units.at(-1).offsetHeight, lower: units.slice(0, units.length - k).map((u) => u.offsetHeight),
+        moved: units.some((u) => u.style.transform && u.style.transform !== "none"),
+        anchored: Math.abs(liq.offsetTop + liq.offsetHeight - (src.clientHeight - 6)) <= 2 && Math.abs(liq.offsetHeight - units.reduce((t, u) => t + u.offsetHeight, 0)) <= 1,
+        fill: fill.slice(-k).reduce((t, u) => t + u.offsetHeight, 0), stream: st && { x: st.left + st.width / 2, top: st.top, bottom: st.bottom }, corners: corners() };
+    };
+    await wait(470); const a = sample();
+    await wait(130); const b = sample();
+    const t = dst.getBoundingClientRect();
+    await wait(800);
+    const lip = a.corners.sort((p, q) => q.y - p.y)[0];
+    return { from, to, a, b, lip, target: { left: t.left, right: t.right, top: t.top } };
+  });
+  const { a, b, lip, target } = pour;
+  const dLip = a.stream ? Math.hypot(a.stream.x - lip.x, a.stream.top - lip.y) : 999;
+  check(`Water Sort pour: the stream leaves from the mouth's lip (${dLip.toFixed(1)}px away) and falls into tube ${pour.to + 1}'s opening`,
+    dLip <= 8 && a.stream.x > target.left + 8 && a.stream.x < target.right - 8 && a.stream.bottom > target.top + 10);
+  check(`Water Sort pour: the poured colour shrinks from its top (${a.top} → ${b.top}px) while the colours under it stay (${a.lower} → ${b.lower}), against the closed bottom (${a.anchored && b.anchored}, nothing slides to the mouth: ${!a.moved && !b.moved})`,
+    b.top < a.top && JSON.stringify(a.lower) === JSON.stringify(b.lower) && a.lower.length > 0 && a.anchored && b.anchored && !a.moved && !b.moved);
+  check(`Water Sort pour: the other tube fills upward to meet the stream (${a.fill} → ${b.fill}px)`, b.fill > a.fill);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

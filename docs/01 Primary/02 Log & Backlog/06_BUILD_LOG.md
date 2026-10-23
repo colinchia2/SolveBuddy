@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-10-23 — Water Sort pour: stream from the lip, liquid stays at the bottom (not pushed)
+- Colin (phone screenshot, Hard #3): the tilted tube showed the poured colour at the OPEN end with empty space behind
+  it, and the stream dropped from the tube's underside partway along. Same tilt kept.
+- Fix (`web/watersort.js` `startPour` / `drawPour`): the tube is placed so the LOWEST corner of its mouth (the lip,
+  worked out from the tilt) sits just above the other tube's opening, and the stream starts there. Inside the pouring
+  tube nothing slides any more: the liquid stays against the closed bottom in tube space and the poured colour shrinks
+  from its top, so empty space only shows at the open end (the old full-height box + slide-to-mouth is gone). The
+  other tube still fills upward to meet the stream. Reduced motion and haptics unchanged.
+- New page checks (sampled mid-pour): stream starts within 8px of the lip and lands inside the target's opening; the
+  poured colour's height drops while the colours under it stay and nothing is moved toward the mouth; the target's
+  new colour grows. `pages_smoke.mjs` 69 PASS. Mid-pour shot: scratchpad `nono_shots/pour_mid.png`.
+
 ## 2026-10-23 — Nonogram + two-finger zoom (backlog C; not pushed, needs a phone test)
 - Built from `docs/design/zoom_nonogram_mockup.html` + Colin's 10/23 decisions and comments.
 - **Engine** `engine/nonogram/`: `line.ts` (line solver: what every arrangement of a clue shares), `solve.ts` (line logic
