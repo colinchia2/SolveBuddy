@@ -10,15 +10,16 @@ Top item = what's next.
   button uses `impactAsync(Light)`, which Colin doesn't feel; make it `selectionAsync`. In App.js map light
   impacts to `selectionAsync` and "warn" to `notificationAsync(Warning)`. Pages already send only "pick"/"success"
   (`bridge.js`, 10/24), so this is for the native button and for any older page.
-- **Nonogram in the app's GAMES list** (not there yet: App.js GAMES is sudoku, starbattle, watersort, blocks): at the
-  next app change add "nonogram" to GAMES + pull-pages, then drop `bridge.js` HOSTED and the hosting in
-  `scripts/build_site.ts`.
+- **Nonogram and Shikaku in the app's GAMES list** (not there yet: App.js GAMES is sudoku, starbattle, watersort,
+  blocks): at the next app OTA add "nonogram" and "shikaku" to GAMES + `node scripts/pull-pages.mjs` (so the
+  packed pages carry Shikaku), then drop `bridge.js` HOSTED and the hosting in `scripts/build_site.ts`.
 
 **From Colin 10/23 (Buddy Family chat), in this order:**
 - **A. FIRST TALK on pick-up: is the app's whole structure right?** Colin finds Packs confusing: tapping a pack on
   the Packs tab jumps to Library; "which ones do I have vs what am I downloading?". Talk first (where packs live,
   Library vs Packs vs Get more), no building until he decides.
-- **B. Shikaku (Colin likes LinkedIn's "Patches" UI/UX):** every shape has a number (no blank "any" shapes), any
+- **B. Shikaku: BUILT + pushed 10/24 (build log 2026-10-24 "Shikaku"), waiting on Colin's phone test.** Was:
+  (Colin likes LinkedIn's "Patches" UI/UX): every shape has a number (no blank "any" shapes), any
   rectangle or square; the stretch animation as you drag a shape out; a clear error state (Patches: hatched red +
   "this region can only contain 8 cells"); a celebratory finish animation that turns the solved grid into a graphic.
   Screenshots were in the 10/23 chat. A full new game: mockup first.

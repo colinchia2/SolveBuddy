@@ -10,6 +10,10 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   Library home" (app `b029133`; pages `63f0f09` already live). From `C:\dev\SolveBuddyApp`:
   `npx eas-cli update --channel production --environment production --platform ios --message "Tap the Library tab to go home" --non-interactive`
   then reopen the app twice. Fingerprint still `513e3eaf…`. **Remind Colin at the start of the next chat.**
+  ⚠️ **Shikaku built + pushed 10/24 (after this save point)** as pages only, riding inside the app's Star Battle page
+  like Nonogram (`?game=shikaku`), so the current app gets it with no OTA (reopen twice). Before Colin runs the OTA:
+  add "nonogram" + "shikaku" to App.js GAMES and `pull-pages` again so the update carries them. Build log 2026-10-24
+  "Shikaku"; mockup `docs/design/shikaku_mockup.html`. **Next:** Colin's phone test of Shikaku.
 - **Next after that:** backlog top. The following app OTA (glass back button buzz, "warn" mapping, Nonogram in
   App.js GAMES) was NOT in this one. Then A (talk: Packs vs Library), B Shikaku, D Stats tab.
 - **To pick up, read:** 1) this section + Key rules; 2) `../02 Log & Backlog/06_BUILD_LOG.md`, the 2026-10-24

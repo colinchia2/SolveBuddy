@@ -2,6 +2,37 @@
 
 Newest first.
 
+## 2026-10-24 — Shikaku (pages only; reaches the current app with no OTA)
+- Colin 10/24 (away from his computer): put Shikaku on the app he has now. Mockup `docs/design/shikaku_mockup.html`
+  v2 (https://claude.ai/artifact/Rkf7HkDm6iCgjRy31cBXYt). His answers: a different colour per patch; 8×8 Easy,
+  10×10 Medium, 12×12 Hard, 10 each; Hint yes and it may draw partial patches; bottom bar exactly like the others.
+- **Engine** `engine/shikaku/shikaku.ts`: candidates per number, an answer counter (fewest-choices square first,
+  stops at 2), and hints that are never wrong. Hint order: a patch that isn't right (inside its number's answer) →
+  "Only one shape" (full patch) → "Must cover" (the squares every shape of a number covers: a partial patch) →
+  "Only one reaches" (a square only one number can reach) → last resort "Show the answer" (never needed by the packs).
+  Right patches on the board, partial ones included, block other numbers' shapes; nothing else is trusted.
+- **Packs** `scripts/shikaku_make_packs.ts` (seeded): random cuts kept only with exactly one answer and Hint alone
+  solving without "Show the answer". 8×8 areas 2–8; 10×10 up to 12 (one 1 allowed); 12×12 up to 16.
+- **Page** `web/shikaku.html` + `shikaku.js`: Nonogram's header, info row (timer · "n of N patches"), bottom bar
+  (Undo · Hint · Settings · Restart), hint card (Nudge rings the number → Explain stripes the squares → Show me
+  draws it), settings, pause, More menu, save/resume, Solved card (medal = the picture). Play as the mockup v2: the
+  patch follows the finger (short ease, no overshoot); a drag from a patch grows it (union), never starts over; a
+  drag inside it changes nothing; tap removes; tap a 1 draws it. Red (hatched + one line why) = no number, two
+  numbers or too many squares. **Changed from the mockup:** a patch with its number but too few squares is dashed
+  with a quiet line ("The 6 needs 4 more squares"), not red, because hint partial patches look like that.
+  Touching patches never share a colour (corners don't count). Finish: wave from the top-left, then solid colours.
+  Haptics: L1 per new shape while dragging, L2 on landing, warn on red, success on solving.
+- **Wiring:** bridge.js GAMES + HOSTED (`shikaku: "starbattle"`); `build_site.ts` hosting now takes several guests
+  per host (starbattle carries Nonogram and Shikaku); Library tile 6 + rules, pack rows with the last solved
+  picture as thumb, sheet preview (`preview.js`), LOOK green (`screens.js`, also `SHK_COLORS`, `shikakuPicture`).
+  "Shikaku" drops out of Coming soon by itself.
+- Checks: `checks/shikaku.ts` (in run_all): one answer each, Hint alone solves all 30 with every step right
+  (Only one shape / Must cover / Only one reaches; 170 partial patches drawn), 180 half-done boards and a wrong
+  patch pointed at first. `pages_smoke.mjs` Shikaku blocks: draw / grow / inside / dashed / red + warn / tap removes
+  / Undo, hints finish it (mistake first, partials dashed), wave + Solved card + logged, a partial hint on Hard #1,
+  bottom bar identical to Nonogram's, app starbattle page as Shikaku / Nonogram / Star Battle, Library / Packs /
+  Stats. run_all 49 PASS.
+
 ## 2026-10-24 — Save point: round closed
 - Colin confirmed on the phone: Nonogram clue bar + switch, labels gone, haptics (after 48c6d80, one more step up).
 - Decided: the Library tab (not a top-left logo) is the way home; it's the iPhone standard and adds nothing to the screen.
