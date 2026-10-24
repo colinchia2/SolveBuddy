@@ -306,20 +306,71 @@ const thermoShape = await page.evaluate(() => {
 });
 check(`each thermometer is one flat shape: opaque bulb + tube in one see-through group (${thermoShape.groups})`, thermoShape.ok);
 
-// Hints count in thirds and the Solved card says how many (Colin, 10/22).
+// Hints count in thirds and the Solved card says how many (Colin, 10/22), in the same words as the line over the
+// Hint button (Colin, 10/23): "You've used ⅓ of a hint" … "You've used 1⅓ hints".
 await page.goto(`${BASE}sudoku.html?pack=easy&p=1`);
 await page.waitForTimeout(1200);
+const fmt = await page.evaluate(async () => {
+  const { hintsUsedText, hintAmount } = await import("./bridge.js");
+  return { line: [0, 1 / 3, 2 / 3, 1, 4 / 3, 5 / 3, 2, 13 / 3, 0.33, 1.67].map(hintsUsedText), card: [1 / 3, 1, 1.33, 4.67].map(hintAmount) };
+});
+check(`hints formatter: ${fmt.line.map((t) => t || "(hidden)").join(" | ")}`, JSON.stringify(fmt.line) === JSON.stringify(["",
+  "You've used ⅓ of a hint", "You've used ⅔ of a hint", "You've used 1 hint", "You've used 1⅓ hints", "You've used 1⅔ hints",
+  "You've used 2 hints", "You've used 4⅓ hints", "You've used ⅓ of a hint", "You've used 1⅔ hints"]));
+check(`hints formatter on the Solved card: ${fmt.card.join(" | ")}`, fmt.card.join() === "⅓ of a hint,1 hint,1⅓ hints,4⅔ hints");
 const used = await page.evaluate(async () => {
   const $ = (id) => document.getElementById(id);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  let last = "";
+  const note = () => { const t = $("hintsUsed")?.hidden === false ? $("hintsUsed").textContent : ""; if (t) last = t; };
   for (let i = 0; i < 200 && !$("won"); i++) {
-    if ($("hint").hidden) { $("hintBtn").click(); await wait(30); }
-    for (let g = 0; g < 10 && !$("hint").hidden; g++) $("hintNext").click();
+    if ($("hint").hidden) { $("hintBtn").click(); note(); await wait(30); }
+    for (let g = 0; g < 10 && !$("hint").hidden; g++) { $("hintNext").click(); note(); }
   }
   await wait(2500);
-  return $("won")?.innerText.match(/[\d.]+ hints? used/)?.[0] ?? "";
+  return { card: $("won")?.innerText.match(/\S+ (of a )?hints? used/)?.[0] ?? "", last };
 });
-check(`the Solved card shows hints used (${used})`, /^\d+(\.\d+)? hints? used$/.test(used));
+check(`the Solved card says "${used.card}", the line said "${used.last}"`, /hints? used$/.test(used.card) && used.last === `You've used ${used.card.replace(/ used$/, "")}`);
+
+// The line on every game (Colin 10/23): hidden until the first hint, ⅓ then ⅔ live, Undo keeps it (the hint was
+// used), Restart clears it; it sits over the Hint button in the gap above the bar, adding no height.
+async function hintLine(url) {
+  await page.goto(`${BASE}${url}`);
+  await page.waitForTimeout(1300);
+  return page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id);
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const line = () => ($("hintsUsed") && !$("hintsUsed").hidden ? $("hintsUsed").textContent : "");
+    const restart = async () => { $("restartBtn").click(); await wait(50); document.querySelector('.scrim:not([hidden]) [data-act="yes"]').click(); await wait(400); };
+    await restart();
+    await wait(2200); // the number pad's opening bounce is over
+    const out = { fresh: line() };
+    const dockTop = document.querySelector(".dock").getBoundingClientRect().top;
+    $("hintBtn").click(); await wait(80);
+    out.one = line();
+    $("hintNext").click(); await wait(80);
+    out.two = line();
+    const L = $("hintsUsed").getBoundingClientRect(), H = $("hintBtn").getBoundingClientRect();
+    out.over = L.bottom <= H.top + 0.5 && Math.abs((L.left + L.right) / 2 - (H.left + H.right) / 2) < 1;
+    out.sameDock = Math.abs(document.querySelector(".dock").getBoundingClientRect().top - dockTop) < 0.5;
+    // Nothing on the page above the bar is under the line (the board, the number pad, a tip).
+    const hit = [...document.querySelectorAll(".screen *")].filter((e) => !e.closest(".dock") && !e.closest(".hint") && e.children.length === 0)
+      .map((e) => e.getBoundingClientRect()).filter((r) => r.width && r.height && r.bottom > L.top + 0.5 && r.top < L.bottom - 0.5 && r.right > L.left && r.left < L.right);
+    out.clear = hit.length === 0;
+    $("hintClose").click(); await wait(300);
+    $("undoBtn").click(); await wait(80);
+    out.undo = line();
+    await restart();
+    out.reset = line();
+    return out;
+  });
+}
+for (const url of ["sudoku.html?pack=easy&p=2", "sudoku.html?pack=killer&p=1", "sudoku.html?pack=thermo&p=1", "starbattle.html?pack=easy&p=2",
+  "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1"]) {
+  const r = await hintLine(url);
+  check(`${url}: hints line "${r.fresh || "(hidden)"}" → "${r.one}" → "${r.two}", after Undo "${r.undo}", after Restart "${r.reset || "(hidden)"}"; over Hint ${r.over}, no height ${r.sameDock}, covers nothing ${r.clear}`,
+    r.fresh === "" && r.one === "You've used ⅓ of a hint" && r.two === "You've used ⅔ of a hint" && r.undo === r.two && r.reset === "" && r.over && r.sameDock && r.clear);
+}
 
 const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // Nonogram (Colin 10/23): tap cycle × → fill → clear (■ switch: fill first, remembered per puzzle), a drag paints what

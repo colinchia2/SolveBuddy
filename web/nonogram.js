@@ -8,7 +8,7 @@
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
 import { runs, sameClue } from "../engine/nonogram/line.ts";
-import { clearSaved, finalBoard, goHome, haptic, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -141,6 +141,7 @@ function build() {
 
 // ---- Drawing ----
 function render() {
+  showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint, won = s.solved;
   const focus = new Set(h ? h.data.focus.map(([r, c]) => key(r, c)) : []);
   const stripeF = new Set(h && h.level === 2 ? h.data.fill.map(([r, c]) => key(r, c)) : []);

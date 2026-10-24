@@ -131,6 +131,37 @@ export function fitHint(card, board) {
   card.style.maxHeight = room >= 150 ? `${room}px` : "";
 }
 
+// Hints count in thirds: each hint step (Nudge, Explain, Show me) is ⅓ (Colin, 10/22). One wording everywhere, so the
+// line over the Hint button and the Solved card always agree (Colin, 10/23): "⅓ of a hint", "1 hint", "1⅔ hints".
+export const hintThirds = (h) => Math.max(0, Math.round((h ?? 0) * 3));
+export function hintAmount(h) {
+  const t = hintThirds(h), whole = Math.floor(t / 3), part = ["", "⅓", "⅔"][t % 3];
+  if (t === 0) return "0 hints";
+  if (whole === 0) return `${part} of a hint`;
+  return `${whole}${part} hint${t === 3 ? "" : "s"}`;
+}
+export const hintsUsedText = (h) => (hintThirds(h) ? `You've used ${hintAmount(h)}` : "");
+// The quiet line just above the Hint button, hidden until the first hint. It floats over the gap above the bottom
+// bar, so it adds no height (a zoomable board's area makes room for it, common.css). Games call it from render().
+export function showHintsUsed(h) {
+  const dock = document.querySelector(".dock");
+  if (!dock) return;
+  let el = document.getElementById("hintsUsed");
+  if (!el) {
+    el = document.createElement("p");
+    el.id = "hintsUsed";
+    el.className = "hints-used";
+    el.setAttribute("aria-live", "polite");
+    dock.prepend(el);
+  }
+  const text = hintsUsedText(h);
+  if (el.textContent !== text) el.textContent = text;
+  if (el.hidden !== !text) {
+    el.hidden = !text;
+    dispatchEvent(new Event("resize")); // a zoomable board re-measures its area (web/zoom.js)
+  }
+}
+
 // The More menu behind the bottom bar's ⋯ (Colin, 10/21): Game settings, and Restart, which asks before clearing.
 const GEAR = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1L7 17 M17 7l2.1-2.1"/></svg>`;
 const RESTART = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B3261E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>`;

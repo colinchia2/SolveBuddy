@@ -48,7 +48,14 @@ header { display: flex; align-items: center; gap: 6px; }
 .restart { min-height: 36px; padding: 0 12px; border-radius: 10px; display: flex; align-items: center; gap: 6px; font: 600 13px Inter, sans-serif; }
 
 /* Bottom bar (option A, Colin 10/21): Undo · Hint · More, under the thumb. */
-.dock { margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 4px; }
+.dock { margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 4px; position: relative; }
+/* "You've used 1⅓ hints" (Colin 10/23): a quiet line centred over the Hint button (2nd of 4), floating in the gap above
+   the bar so it adds no height; hidden until the first hint (bridge.js showHintsUsed). */
+.hints-used { position: absolute; bottom: calc(100% - 3px); left: calc((100% - 24px) * 0.375 + 8px); transform: translateX(-50%);
+  margin: 0; white-space: nowrap; font: 500 11px/12px Inter, sans-serif; color: var(--muted); pointer-events: none; }
+.hints-used[hidden] { display: none; }
+/* A zoomable board fills right down to the bar, so it makes room for the line once it shows. */
+.screen:has(.hints-used:not([hidden])) .stage.zarea { padding-bottom: 14px; }
 .tool { height: 46px; border-radius: 14px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   font: 600 10px Inter, sans-serif; color: var(--ink); }
 .tool svg { width: 18px; height: 18px; } /* a small bar (Colin, 10/21: the Hint button was too big) */
@@ -188,7 +195,7 @@ html.nativeback #backBtn { visibility: hidden; }
 .badge { display: flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 10px; font-size: 13px; font-weight: 700;
   animation: sbTick .3s calc(var(--wait) + var(--at, 0s)) ease both; }
 .badge.blue { background: var(--brand-soft); color: var(--brand-dark); }
-.badge.hintb { background: #F8EBC9; color: #7A4E00; } /* "1.33 hints used" */
+.badge.hintb { background: #F8EBC9; color: #7A4E00; } /* "1⅓ hints used" */
 .badge.gold { background: #FDF0D5; color: #7A4E00; }
 .badge.coral { background: var(--accent-soft); color: var(--accent-dark); }
 .won-next { width: 100%; min-height: 54px; border-radius: 14px; border: 0; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif;
