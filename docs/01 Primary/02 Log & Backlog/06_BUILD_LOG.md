@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-10-24 — Save point: round closed
+- Colin confirmed on the phone: Nonogram clue bar + switch, labels gone, haptics (after 48c6d80, one more step up).
+- Decided: the Library tab (not a top-left logo) is the way home; it's the iPhone standard and adds nothing to the screen.
+- Open: Colin runs the tab-tap OTA (primer "Right now").
+
 ## 2026-10-24 — Tap the tab you're on = its first screen (63f0f09 pages, app b029133, OTA by Colin)
 - Colin: getting back to the Library home took one Back per screen. Tapping the Library tab while on it now goes straight home (from a game's packs or a pack); Packs/Stats scroll to the top.
 - App.js: tabPress listener (native tabs' repeated press) injects window.sbHome; needs the OTA. Fingerprint still 513e3eaf.

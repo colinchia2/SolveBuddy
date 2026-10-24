@@ -2,11 +2,18 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (2026-10-24, latest)
-- **Pushed 10/24:** Nonogram clue bar (× / ■ / Clear switch; tap a clue → its numbers big in a bar; slash them; last
-  slash ×'s the line), haptics Colin can feel (only ticks + success go to the app), Library without "New" / "zoom".
-  Build log 2026-10-24. **Next:** Colin's phone test of the clue bar and haptics; ask about the small-number tap rule
-  (build log). Backlog top: the next app OTA (glass back button haptic) and Nonogram in App.js GAMES.
+## Right now (save point 2026-10-24, end of the 10/24 voice-note round)
+- **Done + Colin confirmed on the phone 10/24:** Nonogram clue bar (× / ■ / Clear; tap a clue → big numbers in a
+  bar; slash them; last slash ×'s the line), no "New" / "zoom" labels, haptics (two bumps up; × = medium thud).
+  "No haptics" earlier was iOS muting buzzes while he recorded a voice memo.
+- **⏰ WAITING ON COLIN: run the app OTA** (he runs it himself, at home). It ships "tap the Library tab while on it →
+  Library home" (app `b029133`; pages `63f0f09` already live). From `C:\dev\SolveBuddyApp`:
+  `npx eas-cli update --channel production --environment production --platform ios --message "Tap the Library tab to go home" --non-interactive`
+  then reopen the app twice. Fingerprint still `513e3eaf…`. **Remind Colin at the start of the next chat.**
+- **Next after that:** backlog top. The following app OTA (glass back button buzz, "warn" mapping, Nonogram in
+  App.js GAMES) was NOT in this one. Then A (talk: Packs vs Library), B Shikaku, D Stats tab.
+- **To pick up, read:** 1) this section + Key rules; 2) `../02 Log & Backlog/06_BUILD_LOG.md`, the 2026-10-24
+  entries; 3) `../02 Log & Backlog/08_BACKLOG.md`, "Next"; 4) `Buddies\00 Family\00_PRIMER.md` "How Colin works".
 
 ### Earlier: 2026-10-23
 - **Pushed: Nonogram + two-finger zoom, with Colin's phone-test tweaks.** Tap × first (like Star Battle) with a quiet

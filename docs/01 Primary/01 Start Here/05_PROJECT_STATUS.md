@@ -1,5 +1,12 @@
 # SolveBuddy — project status
 
+**As of 2026-10-24:** 5 games live (Nonogram added 10/23, inside the Star Battle page in the app until the next
+app OTA). 10/24 round confirmed by Colin: Nonogram clue bar, stronger haptics, no "New"/"zoom" labels. Tapping the
+Library tab again → Library home is pushed on the page side; the app side waits for Colin's OTA. Checks: run_all
+48 PASS, pages_smoke 102 PASS.
+
+---
+
 **As of 2026-10-22 (evening):** a full phone app with 4 tabs and 4 games, shipping by git push + OTA.
 
 - App: `C:\dev\SolveBuddyApp` (Expo SDK 56, native iOS 26 tabs, Liquid Glass back button, opening animation,
