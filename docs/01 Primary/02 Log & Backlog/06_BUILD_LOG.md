@@ -49,6 +49,11 @@ Newest first.
   at 150ms, then a tap per extra row.
 - Checks: each built app page (incl. Nonogram inside `app/starbattle.html`) sends a haptic; the app only ever gets
   "pick"/"success" with the right spacing; region done, Water Sort play-through, throttle.
+- **Later 10/24, one step up, twice:** the "nothing" was iOS muting haptics while Colin recorded a voice memo, so
+  `impactAsync` IS felt. `bridge.js` now has five strengths, `hapticLevel(n)` (Star Battle: × / clear L2, star L3,
+  region L4; Nonogram: × / clear / slash L2, fill L3, last-slash × fill L4; win L5), and after "still too light" every
+  level plays one step up: L1 two ticks, L2 medium thud, L3 thud + tick, L4 thud + thud, L5 success; tap = L1,
+  thud = L2, warn = thud + tick 140ms apart. A newer buzz drops a pending second one (clean drags).
 - Still unfelt, needs an app OTA: the native glass back button (`src/GlassBack.js`, `impactAsync` Light). Backlog.
 
 ## 2026-10-24 — Library: no "New" tag, no "zoom" label (3bf2d54, pushed)

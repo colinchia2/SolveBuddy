@@ -45,14 +45,17 @@ globalThis.sbLeave = goHome; // the app's glass back button calls this
 // dropped (Colin 10/24: ~every 40ms at most). Firmer ones always play. Checks set SB_HAPTIC_GAP = 0 to count each one.
 // Five strengths (Colin 10/24; App.js unchanged: it plays "pick" as the selection tick, "thud" as a medium impact,
 // "success" as the success notification):
-//   L1 = one tick · L2 = two ticks 70ms apart · L3 = a medium thud · L4 = a thud, then a tick 70ms later · L5 = success.
-// The kinds above map onto them: tap and pick = L1, thud = L2, success = L5; warn = two ticks 140ms apart.
+//   L1 = two ticks 70ms apart · L2 = a medium thud · L3 = a thud, then a tick 70ms later · L4 = a thud, then another
+//   thud 70ms later · L5 = success. (Colin 10/24, twice: "too light", so every level moved up one step; success is the
+//   top until the app maps something stronger.)
+// The kinds above map onto them: tap and pick = L1, thud = L2, success = L5; warn = a thud, then a tick 140ms later
+// (slower than L3's 70ms, so it stays distinct).
 // Games that want a stronger scale (Star Battle, Nonogram) call hapticLevel(n). The message keeps what was meant in
 // "as"; a second buzz is marked "again". A second buzz is skipped when a newer one has gone out meanwhile, so a fast
 // drag stays clean while each new square still gets its own first buzz.
 const HAPTIC_GAP = 40;
-const LEVELS = { 1: ["pick"], 2: ["pick", "pick"], 3: ["thud"], 4: ["thud", "pick"], 5: ["success"] };
-const VIBRATE = { 1: 10, 2: [10, 60, 10], 3: 30, 4: [30, 40, 10], 5: [20, 60, 30] };
+const LEVELS = { 1: ["pick", "pick"], 2: ["thud"], 3: ["thud", "pick"], 4: ["thud", "thud"], 5: ["success"] };
+const VIBRATE = { 1: [10, 60, 10], 2: 30, 3: [30, 40, 10], 4: [30, 40, 30], 5: [20, 60, 30] };
 const KIND_LEVEL = { tap: 1, pick: 1, thud: 2, success: 5 };
 let lastBuzz = -Infinity, buzzSeq = 0;
 function buzzOut(first, second, gapMs, as, light, vib) {
@@ -68,7 +71,7 @@ function buzzOut(first, second, gapMs, as, light, vib) {
 const level = (n, as, light) => { const [a, b] = LEVELS[n] ?? LEVELS[1]; buzzOut(a, b, 70, as, light, VIBRATE[n] ?? 10); };
 export const hapticLevel = (n, as = `L${n}`) => level(n, as, n <= 2);
 export function haptic(kind = "tap") {
-  if (kind === "warn") return buzzOut("pick", "pick", 140, kind, false, [8, 50, 8]);
+  if (kind === "warn") return buzzOut("thud", "pick", 140, kind, false, [30, 110, 10]);
   level(KIND_LEVEL[kind] ?? 1, kind, kind === "tap" || kind === "pick"); // as before 10/24: only tap and pick are throttled
 }
 export const buzz = (ms = 10) => haptic(ms >= 30 ? "thud" : "tap");

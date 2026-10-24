@@ -1102,9 +1102,9 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     same(ws.empty, ["warn"]) && same(ws.up, ["tap"]) && same(ws.down, ["pick"]) && plain.every((m) => same(m.buzz, ["tap", "thud"]))
     && fillMoves.length > 0 && fillMoves.every((m) => same(m.buzz, ["tap", "thud", "thud"])) && last.buzz.includes("success") && !last.buzz.slice(2).includes("thud"));
   const sentKinds = await p.evaluate(() => [...new Set(window.__raw.map((o) => o.kind))]);
-  // What the app actually gets (Colin 10/24). The kinds: tap = one tick; thud = two ticks ~70ms apart; warn = two ticks
-  // ~140ms apart; success = success (Water Sort sends only those). The levels: L1 tick, L2 two ticks, L3 the app's
-  // medium thud, L4 thud + a tick ~70ms later, L5 success. A newer buzz cancels a pending second one (fast drags).
+  // What the app actually gets (Colin 10/24, one step up): L1 two ticks ~70ms apart, L2 the app's medium thud, L3 thud
+  // + a tick ~70ms later, L4 thud + thud ~70ms later, L5 success. Kinds: tap = L1, thud = L2, success = L5, warn = a
+  // thud + a tick ~140ms later. A newer buzz cancels a pending second one (fast drags).
   await fresh("stats.html"); // a quiet page, so nothing else buzzes meanwhile (the Solved card does)
   const wire = await p.evaluate(async () => {
     const { haptic, hapticLevel } = await import("./bridge.js");
@@ -1124,18 +1124,18 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
       await wait(250);
       out[`L${n}`] = window.__raw.map((o) => o.kind).join("+");
     }
-    // L2, then another L2 30ms later (SB_HAPTIC_GAP is 0 here): the first one's second tick is dropped.
+    // L1, then another L1 30ms later (SB_HAPTIC_GAP is 0 here): the first one's second tick is dropped.
     await wait(200);
     window.__raw = [];
-    hapticLevel(2); await wait(30); hapticLevel(2); await wait(250);
+    hapticLevel(1); await wait(30); hapticLevel(1); await wait(250);
     out.overlap = window.__raw.map((o) => o.kind + (o.again ? "'" : "")).join("+");
     return out;
   });
-  check(`levels: ${[1, 2, 3, 4, 5].map((n) => `L${n} ${wire[`L${n}`]}`).join(", ")}; L2 then L2 30ms later: ${wire.overlap}`,
-    wire.L1 === "pick" && wire.L2 === "pick+pick" && wire.L3 === "thud" && wire.L4 === "thud+pick" && wire.L5 === "success" && wire.overlap === "pick+pick+pick'");
-  check(`Water Sort sends only ticks and success (${sentKinds.join(", ")} during play): tap ${wire.tap.kinds}, thud ${wire.thud.kinds} (${wire.thud.gap}ms), warn ${wire.warn.kinds} (${wire.warn.gap}ms), success ${wire.success.kinds}`,
-    sentKinds.every((k) => k === "pick" || k === "success") && same(wire.tap.kinds, ["pick"]) && same(wire.thud.kinds, ["pick", "pick"])
-    && wire.thud.gap >= 55 && wire.thud.gap <= 120 && same(wire.warn.kinds, ["pick", "pick"]) && wire.warn.gap >= 120 && same(wire.success.kinds, ["success"]));
+  check(`levels: ${[1, 2, 3, 4, 5].map((n) => `L${n} ${wire[`L${n}`]}`).join(", ")}; L1 then L1 30ms later: ${wire.overlap}`,
+    wire.L1 === "pick+pick" && wire.L2 === "thud" && wire.L3 === "thud+pick" && wire.L4 === "thud+thud" && wire.L5 === "success" && wire.overlap === "pick+pick+pick'");
+  check(`kinds: tap ${wire.tap.kinds} (${wire.tap.gap}ms), thud ${wire.thud.kinds}, warn ${wire.warn.kinds} (${wire.warn.gap}ms), success ${wire.success.kinds}; Water Sort play sent ${sentKinds.join(", ")}`,
+    sentKinds.every((k) => ["pick", "thud", "success"].includes(k)) && same(wire.tap.kinds, ["pick", "pick"]) && wire.tap.gap >= 55 && wire.tap.gap <= 120
+    && same(wire.thud.kinds, ["thud"]) && same(wire.warn.kinds, ["thud", "pick"]) && wire.warn.gap >= 120 && same(wire.success.kinds, ["success"]));
   await ctx.close();
 }
 
