@@ -2,6 +2,53 @@
 
 Newest first.
 
+## 2026-10-24 — Nonogram clue bar (e405949, pushed)
+- Built from the approved mockup `docs/design/nonogram_clues_mockup.html` (v2, committed with it).
+- **Switch × / ■ / Clear** (remembered per puzzle). Tap: × → fill → empty in × mode, fill → × → empty in ■ mode,
+  Clear empties. A drag copies the chosen mode along its row or column, starting square included: × and ■ only paint
+  empty squares (never cover a mark), Clear empties every square it passes. The tip line follows the mode.
+- **Tap a clue:** a bar slides up from the bottom (TasteBuddy's sheet spring, 0.55s; closes with a 0.3s ease) with
+  "Row n" / "Column n" and that line's numbers, big (lines of 5+ numbers get slightly smaller buttons). It lies over
+  the bottom buttons; the board doesn't move or resize. The open line's clue is blue, its squares tinted.
+- **Slash:** tap a number in the bar to slash it (orange), on the board too; again to unslash. Tick on each.
+- **Last slash** fills the line's empty squares with × (quick sweep, firm buzz). One Undo takes back the × and that
+  slash (undo steps now hold squares and slashes together). Slashes are saved with the game.
+- **Closing:** a drag on the bar follows the finger (a little resistance upward); let go past ~70px or flick to close,
+  else it springs back. Another clue swaps the bar (the new numbers slide in).
+- **Small-number tap rule** (the brief had "tap the same clue again closes" and "tap the small number slashes"):
+  the first tap anywhere on a clue only opens its bar; with that line's bar up, a tap right on one of its small
+  numbers slashes it, and a tap anywhere else on that clue closes it. On 15×15 the numbers are tiny, so a second tap
+  mostly closes; on 5×5 a second tap right on a number slashes (on a one-number line that also ×'s the line; Undo
+  puts it back). If Colin prefers, the board's numbers can be open-only and slashing bar-only.
+- **Removed:** clues greying by themselves, and the clue-tap check (auto-× on a right line, shake on a wrong one).
+  "2 of 15 rows" still counts as before. Hints read only the squares, never the slashes.
+- 15×15 zoomed: the same bar; board, zoom and pinned clue strips stay put. Opening the bar closes an open hint card;
+  solving puts it down quietly before the win buzz.
+- Checks: `pages_smoke.mjs` Nonogram block rewritten (switch + all three drags, squares never open the bar, bar
+  slides up and nothing moves, slash in bar and board, last slash ×'s + one Undo, drag follows / springs back / swipe
+  closes / swap / same clue closes, no grey + no check, hints solve with slashes about, mode per puzzle, 15×15 zoomed).
+  It caught a real bug (a Clear tap on an empty square buzzed and wrote an empty mark), fixed. run_all 48 PASS,
+  smoke 100 PASS.
+
+## 2026-10-24 — Haptics Colin can feel (251640c, f18df0d, pushed)
+- Colin felt nothing in Nonogram, Water Sort, Star Battle, Block Drop. Every page WAS wired (and live). Cause: the
+  app plays "pick" as `selectionAsync` and "success" as a success notification (felt), but "tap"/"thud"/anything
+  else as `impactAsync`, which he doesn't feel. Sudoku mostly used "pick", so it worked.
+- **Fix, pages only (`bridge.js` `haptic()`):** in the app every buzz goes as the tick or success: tap = one tick,
+  thud = two ticks 70ms apart, warn = two ticks 140ms apart, success = success. The message keeps the meaning in
+  `as`; the second tick is marked `again`. Plain web vibrations unchanged.
+- **Throttle:** light buzzes closer than 40ms to the last are dropped (fast drags). Checks set `SB_HAPTIC_GAP = 0`.
+- **More buzzes:** Star Battle × that finishes a region = firm; Water Sort put down = tick, a move that isn't allowed
+  = "warn", a pour that finishes a tube = a second firm one as it lands; Block Drop line clear = firm, then success
+  at 150ms, then a tap per extra row.
+- Checks: each built app page (incl. Nonogram inside `app/starbattle.html`) sends a haptic; the app only ever gets
+  "pick"/"success" with the right spacing; region done, Water Sort play-through, throttle.
+- Still unfelt, needs an app OTA: the native glass back button (`src/GlassBack.js`, `impactAsync` Light). Backlog.
+
+## 2026-10-24 — Library: no "New" tag, no "zoom" label (3bf2d54, pushed)
+- Nonogram's Library tile has no "New" tag (`isNew` and its CSS gone); the 15×15 pack row no longer says "· zoom"
+  (no other game's pack list had it). Page check covers both.
+
 ## 2026-10-23 — Hints used, shown during the game (not pushed)
 - Colin (10/23): a small quiet line just above the Hint button, "You've used ⅓ of a hint" · "⅔ of a hint" · "1 hint" ·
   "1⅓ hints" … on Sudoku (incl. Killer/Thermo), Star Battle, Nonogram and Water Sort (Block Drop has no hints). Hidden

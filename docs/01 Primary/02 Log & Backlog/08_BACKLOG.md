@@ -3,6 +3,15 @@
 Top item = what's next.
 
 ## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
+**From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
+- **Next app OTA** (App.js + `src/GlassBack.js`, JS only, no build while the fingerprint holds): the glass back
+  button uses `impactAsync(Light)`, which Colin doesn't feel; make it `selectionAsync`. In App.js map light
+  impacts to `selectionAsync` and "warn" to `notificationAsync(Warning)`. Pages already send only "pick"/"success"
+  (`bridge.js`, 10/24), so this is for the native button and for any older page.
+- **Nonogram in the app's GAMES list** (not there yet: App.js GAMES is sudoku, starbattle, watersort, blocks): at the
+  next app change add "nonogram" to GAMES + pull-pages, then drop `bridge.js` HOSTED and the hosting in
+  `scripts/build_site.ts`.
+
 **From Colin 10/23 (Buddy Family chat), in this order:**
 - **A. FIRST TALK on pick-up: is the app's whole structure right?** Colin finds Packs confusing: tapping a pack on
   the Packs tab jumps to Library; "which ones do I have vs what am I downloading?". Talk first (where packs live,

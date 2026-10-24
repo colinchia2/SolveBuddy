@@ -2,7 +2,13 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (2026-10-23, latest)
+## Right now (2026-10-24, latest)
+- **Pushed 10/24:** Nonogram clue bar (× / ■ / Clear switch; tap a clue → its numbers big in a bar; slash them; last
+  slash ×'s the line), haptics Colin can feel (only ticks + success go to the app), Library without "New" / "zoom".
+  Build log 2026-10-24. **Next:** Colin's phone test of the clue bar and haptics; ask about the small-number tap rule
+  (build log). Backlog top: the next app OTA (glass back button haptic) and Nonogram in App.js GAMES.
+
+### Earlier: 2026-10-23
 - **Pushed: Nonogram + two-finger zoom, with Colin's phone-test tweaks.** Tap × first (like Star Battle) with a quiet
   "× · ■" switch for fill-first; a drag paints what its first square shows; tap a line's numbers to × the rest when
   it's right (shake if not); no row/column highlight; zoomed boards use the whole space between the info row and the
