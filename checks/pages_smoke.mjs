@@ -831,6 +831,18 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     }
     return { tiles, tagged, rows, others };
   });
+  // Tapping the Library tab again (the app calls sbHome) goes straight home from a pack, two screens deep (Colin 10/24).
+  const home = await page.evaluate(async () => {
+    document.querySelector('.tile[data-game="nonogram"]').click();
+    await new Promise((r) => setTimeout(r, 300));
+    document.querySelector(".c-row")?.click();
+    await new Promise((r) => setTimeout(r, 300));
+    const deep = !document.querySelector("#view").hidden;
+    window.sbHome();
+    await new Promise((r) => setTimeout(r, 300));
+    return { deep, home: document.querySelector("#view").hidden && !document.querySelector(".home-main").hidden };
+  });
+  check(`Library tab tapped again: from a pack (${home.deep}) straight to the Library's first screen (${home.home})`, home.deep && home.home);
   check(`Library: Nonogram is tile 5 of ${lib.tiles.length} (${lib.tiles.join(", ")}), no "New" tag (${!lib.tagged})`,
     lib.tiles[4] === "nonogram" && !lib.tagged);
   check(`Nonogram packs: ${lib.rows.map((r) => `${r.name}${r.zoom ? " (zoom)" : ""}`).join(", ")}, each with a thumb, no "zoom" label here or on other games' packs (${lib.others.join(", ") || "none"})`,

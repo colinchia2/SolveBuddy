@@ -266,6 +266,9 @@ globalThis.sbRefresh = (left) => {
   const until = Date.now() + 2000;
   watching = setInterval(() => (Date.now() > until ? clearInterval(watching) : fresh()), 100);
 };
+// Tapping the Library tab while you're on it (the app calls this) goes straight back to the Library's first screen
+// from a game's packs or a pack, or scrolls to the top when you're already there (Colin 10/24).
+globalThis.sbHome = () => (at ? go(null) : scrollTo({ top: 0, behavior: "smooth" }));
 addEventListener("storage", () => { fresh(); openAsked(); });
 addEventListener("pageshow", fresh); // the browser's back button
 render();

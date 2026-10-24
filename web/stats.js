@@ -51,4 +51,5 @@ function render() {
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("stats"));
 globalThis.sbRefresh = render;
+globalThis.sbHome = () => scrollTo({ top: 0, behavior: "smooth" }); // tapping this tab again (Colin 10/24)
 render();
