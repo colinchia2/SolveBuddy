@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-10-24 — Haptics one level up in Star Battle and Nonogram (ed17756, pushed)
+- Why: Colin's "no haptics" was a voice memo recording (iOS mutes haptics while the mic is in use). Without it he felt Star Battle, but × was too light.
+- Five strengths in bridge.js (hapticLevel): L1 tick, L2 two ticks, L3 medium impact, L4 medium + tick, L5 success. App.js unchanged.
+- Star Battle: ×/clear L2, star L3, region done L4, solved L5. Nonogram: ×/Clear L2, fill L3, slash L2, auto-× line L4, solved L5. Drags buzz each square at its mark's level.
+- Testing tip: stop any recording before judging haptics.
+
 ## 2026-10-24 — Nonogram clue bar (e405949, pushed)
 - Built from the approved mockup `docs/design/nonogram_clues_mockup.html` (v2, committed with it).
 - **Switch × / ■ / Clear** (remembered per puzzle). Tap: × → fill → empty in × mode, fill → × → empty in ■ mode,
