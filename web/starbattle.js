@@ -4,7 +4,7 @@
 // "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
-import { clearSaved, finalBoard, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -183,7 +183,8 @@ function tap(r, c) {
     if (next) s.marks[k] = next;
     else delete s.marks[k];
   });
-  if (!s.solved) haptic(star || finishesRegion(before) ? "thud" : "tap"); // a firmer one when it becomes a star or finishes a region
+  // Strengths (Colin 10/24, bridge.js): × or clearing = L2, star = L3, a finished region = L4 (the win is L5).
+  if (!s.solved) hapticLevel(finishesRegion(before) ? 4 : star ? 3 : 2);
 }
 
 function checkSolved() {
@@ -482,8 +483,8 @@ function paint(r, c) {
   const was = s.marks[k], before = regionsDone();
   if (drag.mode === "paint" && !s.marks[k]) s.marks[k] = CROSS;
   if (drag.mode === "wipe" && s.marks[k] === CROSS) delete s.marks[k];
-  // a tap for each cell the drag marks or clears (Colin, 10/23); firmer when that × finishes a region (10/24)
-  if (s.marks[k] !== was) haptic(finishesRegion(before) ? "thud" : "tap");
+  // a buzz for each cell the drag marks or clears (Colin, 10/23): L2 like a tap, L4 when that × finishes a region (10/24)
+  if (s.marks[k] !== was) hapticLevel(finishesRegion(before) ? 4 : 2);
   s.hint = null;
   render();
 }

@@ -43,21 +43,33 @@ globalThis.sbLeave = goHome; // the app's glass back button calls this
 // "warn" = a soft no (a move that isn't allowed).
 // A fast drag can ask for a buzz every few ms: light ones (tap, pick) closer than HAPTIC_GAP ms to the last buzz are
 // dropped (Colin 10/24: ~every 40ms at most). Firmer ones always play. Checks set SB_HAPTIC_GAP = 0 to count each one.
-// In the app (Colin's phone test 10/24): the app plays "pick" as the selection tick and "success" as the success
-// notification, which he feels; everything else goes to impactAsync, which he doesn't. So the pages send only those
-// two: tap = one tick, thud = two ticks (APP_ECHO_MS apart, so they don't merge), warn = two ticks further apart,
-// success = success. The message keeps what was meant in "as"; the second tick is marked "again". No app change.
+// Five strengths (Colin 10/24; App.js unchanged: it plays "pick" as the selection tick, "thud" as a medium impact,
+// "success" as the success notification):
+//   L1 = one tick · L2 = two ticks 70ms apart · L3 = a medium thud · L4 = a thud, then a tick 70ms later · L5 = success.
+// The kinds above map onto them: tap and pick = L1, thud = L2, success = L5; warn = two ticks 140ms apart.
+// Games that want a stronger scale (Star Battle, Nonogram) call hapticLevel(n). The message keeps what was meant in
+// "as"; a second buzz is marked "again". A second buzz is skipped when a newer one has gone out meanwhile, so a fast
+// drag stays clean while each new square still gets its own first buzz.
 const HAPTIC_GAP = 40;
-const APP_ECHO_MS = { thud: 70, warn: 140 };
-let lastBuzz = -Infinity;
-export function haptic(kind = "tap") {
-  const now = performance.now(), light = kind === "tap" || kind === "pick";
+const LEVELS = { 1: ["pick"], 2: ["pick", "pick"], 3: ["thud"], 4: ["thud", "pick"], 5: ["success"] };
+const VIBRATE = { 1: 10, 2: [10, 60, 10], 3: 30, 4: [30, 40, 10], 5: [20, 60, 30] };
+const KIND_LEVEL = { tap: 1, pick: 1, thud: 2, success: 5 };
+let lastBuzz = -Infinity, buzzSeq = 0;
+function buzzOut(first, second, gapMs, as, light, vib) {
+  const now = performance.now();
   if (light && now - lastBuzz < (globalThis.SB_HAPTIC_GAP ?? HAPTIC_GAP)) return;
   lastBuzz = now;
-  if (!inApp) return void navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : kind === "warn" ? [8, 50, 8] : 10);
-  const sent = kind === "success" ? "success" : "pick";
-  post({ type: "haptic", kind: sent, as: kind });
-  if (APP_ECHO_MS[kind]) setTimeout(() => { lastBuzz = performance.now(); post({ type: "haptic", kind: "pick", as: kind, again: true }); }, APP_ECHO_MS[kind]);
+  const seq = ++buzzSeq;
+  if (!inApp) return void navigator.vibrate?.(vib);
+  post({ type: "haptic", kind: first, as });
+  if (second) setTimeout(() => { if (seq === buzzSeq) post({ type: "haptic", kind: second, as, again: true }); }, gapMs);
+}
+// L1 and L2 keep the 40ms throttle (they're what a drag paints); firmer ones always play.
+const level = (n, as, light) => { const [a, b] = LEVELS[n] ?? LEVELS[1]; buzzOut(a, b, 70, as, light, VIBRATE[n] ?? 10); };
+export const hapticLevel = (n, as = `L${n}`) => level(n, as, n <= 2);
+export function haptic(kind = "tap") {
+  if (kind === "warn") return buzzOut("pick", "pick", 140, kind, false, [8, 50, 8]);
+  level(KIND_LEVEL[kind] ?? 1, kind, kind === "tap" || kind === "pick"); // as before 10/24: only tap and pick are throttled
 }
 export const buzz = (ms = 10) => haptic(ms >= 30 ? "thud" : "tap");
 

@@ -7,13 +7,13 @@
 //   Tap a number there (or, with the bar up, the small one on the board) to slash it; again to unslash. Slash the
 //   last one and the line's empty squares fill with × (one Undo). Tap the same clue again (off its numbers) or swipe
 //   the bar down to close it; another clue swaps it. Clues never grey by themselves; a clue never checks the answer.
-// Haptics: a light tap per square, a firmer one when a row or column becomes complete and correct, the tick on a
-// slash, a firm one when the last slash ×'s the line, the win buzz.
+// Haptics (Colin 10/24, bridge.js levels): × and clearing L2, fill L3, a slash L2, the last slash's × fill L4, the
+// win L5; opening and closing the bar is the L1 tick.
 // 15×15 zooms with two fingers (web/zoom.js); clue strips stay pinned. Each puzzle is a picture: the finish shows it
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
 import { runs, sameClue } from "../engine/nonogram/line.ts";
-import { clearSaved, finalBoard, goHome, haptic, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -64,10 +64,8 @@ const mark = (r, c) => s.marks[key(r, c)] ?? BLANK;
 const boardArr = () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => mark(r, c)));
 const lineOf = (axis, i) => Array.from({ length: N }, (_, x) => (axis === "row" ? mark(i, x) : mark(x, i)));
 const isX = (r, c) => P.solution[r][c] === "X";
-// A line is done when its filled squares match its clue (counted in "2 of 15 rows"; it never greys), "right" when
-// they match the picture.
+// A line is done when its filled squares match its clue (counted in "2 of 15 rows"; it never greys).
 const lineDone = (axis, i) => sameClue(runs(lineOf(axis, i).map((m) => (m === FILL ? 1 : 0))), (axis === "row" ? P.rows : P.cols)[i]);
-const lineRight = (axis, i) => lineOf(axis, i).every((m, x) => (m === FILL) === (axis === "row" ? isX(i, x) : isX(x, i)));
 const rowsDone = () => P.rows.filter((_, r) => lineDone("row", r)).length;
 
 // ---- Board geometry: everything is sized from the cell size and clue text size, so zoom can re-lay it out. ----
@@ -213,17 +211,12 @@ function render() {
 }
 
 // ---- Playing ----
-// Set one square; one buzz each (fill, × or clear; every square a drag paints): light, or firmer when it finishes a
-// row or column correctly (Colin 10/23).
+// Set one square; one buzz each, every square a drag paints too, at its mark's strength: fill L3, × or clear L2.
 function setMark(r, c, m) {
-  const was = mark(r, c);
-  if (was === m) return false;
-  const right = () => [lineDone("row", r) && lineRight("row", r), lineDone("col", c) && lineRight("col", c)];
-  const before = right();
+  if (mark(r, c) === m) return false;
   if (m === BLANK) delete s.marks[key(r, c)];
   else s.marks[key(r, c)] = m;
-  const after = right();
-  haptic((after[0] && !before[0]) || (after[1] && !before[1]) ? "thud" : "tap");
+  hapticLevel(m === FILL ? 3 : 2);
   return true;
 }
 function tap(r, c) {
@@ -355,8 +348,8 @@ function toggleSlash(axis, i, k) {
   undoStack.push(snap());
   s.slash = { ...s.slash, [id]: on ? [...list, k].sort((a, b) => a - b) : list.filter((x) => x !== k) };
   if (!s.slash[id].length) delete s.slash[id];
-  if (on && s.slash[id].length === clueOf(axis, i).length && crossRest(axis, i)) return haptic("thud"), afterChange();
-  haptic("pick");
+  if (on && s.slash[id].length === clueOf(axis, i).length && crossRest(axis, i)) return hapticLevel(4), afterChange();
+  hapticLevel(2);
   render();
 }
 // × into every empty square of the line, in a quick sweep. It never looks at the answer. Returns how many.

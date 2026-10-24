@@ -250,7 +250,7 @@ for (const h of [844, 750]) {
     return out;
   });
   check(`Star Battle haptics: x ${sb.cross}, star ${sb.star}, drag marking 4 cells ${sb.drag}, drag wiping them ${sb.wipe}`,
-    same(sb.cross, ["tap"]) && same(sb.star, ["thud"]) && same(sb.drag, ["tap", "tap", "tap", "tap"]) && same(sb.wipe, ["tap", "tap", "tap", "tap"]));
+    same(sb.cross, ["L2"]) && same(sb.star, ["L3"]) && same(sb.drag, ["L2", "L2", "L2", "L2"]) && same(sb.wipe, ["L2", "L2", "L2", "L2"])); // strengths, Colin 10/24
   await ctx.close();
 }
 
@@ -546,20 +546,20 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     return out;
   });
   check(`Nonogram switch: ${nn.modes.join(" / ")}; × taps cycle ${nn.cycle.join(" → ")}, one light buzz each (${nn.cycleBuzz})`,
-    same(nn.modes, ["x", "fill", "clear"]) && same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
+    same(nn.modes, ["x", "fill", "clear"]) && same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["L2", "L3", "L2"])); // × L2, fill L3, clear L2 (Colin 10/24)
   check(`Nonogram × drag: × along its row (${nn.xDrag}), a light buzz per square (${nn.xDragBuzz}), one Undo (${nn.xUndo}); never covers a fill (${nn.xOverFill})`,
-    same(nn.xDrag, ["x", "x", "x", "blank"]) && same(nn.xDragBuzz, ["tap", "tap", "tap"]) && nn.xUndo.every((m) => m === "blank") && same(nn.xOverFill, ["x", "x", "fill", "x"]));
-  check(`Nonogram ■: drag fills the run (${nn.fillDrag}), the right row's firm buzz (${nn.fillDragBuzz}); a tap fills (${nn.fillTap})`,
-    nn.fillDrag.every((m) => m === "fill") && same(nn.fillDragBuzz, ["tap", "tap", "tap", "tap", "thud"]) && nn.fillTap === "fill");
+    same(nn.xDrag, ["x", "x", "x", "blank"]) && same(nn.xDragBuzz, ["L2", "L2", "L2"]) && nn.xUndo.every((m) => m === "blank") && same(nn.xOverFill, ["x", "x", "fill", "x"]));
+  check(`Nonogram ■: drag fills the run (${nn.fillDrag}), each square a fill's buzz (${nn.fillDragBuzz}); a tap fills (${nn.fillTap})`,
+    nn.fillDrag.every((m) => m === "fill") && same(nn.fillDragBuzz, ["L3", "L3", "L3", "L3", "L3"]) && nn.fillTap === "fill");
   check(`Nonogram Clear: a tap empties (${nn.clearTap}), an empty square stays quiet (${nn.clearBlankBuzz} buzz); a drag empties fills and × alike (${nn.beforeClear} → ${nn.clearDrag}, ${nn.clearDragBuzz} buzzes)`,
     nn.clearTap === "blank" && nn.clearBlankBuzz === 0 && nn.beforeClear.includes("x") && nn.beforeClear.includes("fill") && nn.clearDrag.every((m) => m === "blank") && nn.clearDragBuzz === 5);
   check(`Nonogram: tapping and dragging squares never brings up the bar (${nn.barAfterSquares})`, nn.barAfterSquares);
   check(`Nonogram clue tap: the bar slides up (${Math.round(nn.midSlide)}px below at 60ms, ${Math.round(nn.settled)} settled) with "${nn.barLbl}": ${nn.barNums.join(" ")}; the board and buttons don't move (${nn.stillBoard}); it covers the buttons (${nn.coversDock}); clue and line marked (${nn.clueOpen}, ${nn.lineTint}); tick (${nn.openBuzz})`,
     nn.midSlide > 20 && Math.abs(nn.settled) < 1 && nn.barLbl === "Row 1" && same(nn.barNums, ["1", "1"]) && nn.stillBoard && nn.coversDock && nn.clueOpen && nn.lineTint && same(nn.openBuzz, ["pick"]));
   check(`Nonogram slash: in the bar (${nn.slashBar}), again to unslash (${nn.unslash}), the board's small number too (${nn.slashBoard}); a tick each (${nn.slashBuzz})`,
-    same(nn.slashBar, [true, false, true]) && same(nn.unslash, [false, false]) && same(nn.slashBoard, [true, true, true]) && same(nn.slashBuzz, ["pick", "pick", "pick"]));
+    same(nn.slashBar, [true, false, true]) && same(nn.unslash, [false, false]) && same(nn.slashBoard, [true, true, true]) && same(nn.slashBuzz, ["L2", "L2", "L2"]));
   check(`Nonogram last slash: × into the line's empty squares (${nn.rowZeroBefore} → ${nn.autoX}), a firm buzz (${nn.autoBuzz}); one Undo takes the × and that slash back (${nn.autoUndo.row}; slashes ${nn.autoUndo.slashes})`,
-    nn.rowZeroBefore.every((m) => m === "blank") && nn.autoX.every((m) => m === "x") && same(nn.autoBuzz, ["thud"]) && nn.autoUndo.row.every((m) => m === "blank") && same(nn.autoUndo.slashes, [true, false]));
+    nn.rowZeroBefore.every((m) => m === "blank") && nn.autoX.every((m) => m === "x") && same(nn.autoBuzz, ["L4"]) && nn.autoUndo.row.every((m) => m === "blank") && same(nn.autoUndo.slashes, [true, false]));
   check(`Nonogram bar: a drag follows the finger (${nn.follows}px for 40) and springs back (${nn.springBack}); a swipe down closes it (${nn.swipedShut}); another clue swaps it (${nn.swap}); the same clue again closes it (${nn.sameClose})`,
     Math.abs(nn.follows - 40) <= 2 && nn.springBack[0] && Math.abs(nn.springBack[1]) <= 1 && same(nn.swipedShut, [true, false])
     && same(nn.swap, [true, "Column 3", true, false]) && same(nn.sameClose, [true, false]));
@@ -1054,7 +1054,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   for (const [r, c] of [[3, 2], [3, 2], [1, 2], [2, 2], [0, 0], [0, 1], [0, 2], [3, 3]]) await tapAt(`.cell[data-r="${r}"][data-c="${c}"]`);
   const region = await take();
   check(`Star Battle: ×, star, then × on the region's other squares; the last one finishes the region with a firmer buzz (${region})`,
-    same(region, ["tap", "thud", "tap", "tap", "tap", "tap", "tap", "thud"]));
+    same(region, ["L2", "L3", "L2", "L2", "L2", "L2", "L2", "L4"]));
   // Throttle: a drag across 6 squares in one instant buzzes once; the same drag at a finger's pace (50ms a square), 5
   // (the first move marks the start square and the next one together, so one of those two is inside 40ms).
   const dragRow = (r, pace) => p.evaluate(async ([r, pace]) => {
@@ -1102,11 +1102,12 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     same(ws.empty, ["warn"]) && same(ws.up, ["tap"]) && same(ws.down, ["pick"]) && plain.every((m) => same(m.buzz, ["tap", "thud"]))
     && fillMoves.length > 0 && fillMoves.every((m) => same(m.buzz, ["tap", "thud", "thud"])) && last.buzz.includes("success") && !last.buzz.slice(2).includes("thud"));
   const sentKinds = await p.evaluate(() => [...new Set(window.__raw.map((o) => o.kind))]);
-  // What the app actually gets (Colin 10/24: he feels the selection tick and the success buzz, not impactAsync): only
-  // "pick" and "success". tap = one tick; thud = two ticks ~70ms apart; warn = two ticks ~140ms apart.
+  // What the app actually gets (Colin 10/24). The kinds: tap = one tick; thud = two ticks ~70ms apart; warn = two ticks
+  // ~140ms apart; success = success (Water Sort sends only those). The levels: L1 tick, L2 two ticks, L3 the app's
+  // medium thud, L4 thud + a tick ~70ms later, L5 success. A newer buzz cancels a pending second one (fast drags).
   await fresh("stats.html"); // a quiet page, so nothing else buzzes meanwhile (the Solved card does)
   const wire = await p.evaluate(async () => {
-    const { haptic } = await import("./bridge.js");
+    const { haptic, hapticLevel } = await import("./bridge.js");
     const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
     const out = {};
     for (const k of ["tap", "thud", "warn", "success"]) {
@@ -1116,9 +1117,23 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
       await wait(250);
       out[k] = { kinds: window.__raw.map((o) => o.kind), gap: window.__raw.length > 1 ? Math.round(window.__raw[1].t - window.__raw[0].t) : 0 };
     }
+    for (const n of [1, 2, 3, 4, 5]) {
+      await wait(200);
+      window.__raw = [];
+      hapticLevel(n);
+      await wait(250);
+      out[`L${n}`] = window.__raw.map((o) => o.kind).join("+");
+    }
+    // L2, then another L2 30ms later (SB_HAPTIC_GAP is 0 here): the first one's second tick is dropped.
+    await wait(200);
+    window.__raw = [];
+    hapticLevel(2); await wait(30); hapticLevel(2); await wait(250);
+    out.overlap = window.__raw.map((o) => o.kind + (o.again ? "'" : "")).join("+");
     return out;
   });
-  check(`the app only gets ticks and success (${sentKinds.join(", ")} during play): tap ${wire.tap.kinds}, thud ${wire.thud.kinds} (${wire.thud.gap}ms), warn ${wire.warn.kinds} (${wire.warn.gap}ms), success ${wire.success.kinds}`,
+  check(`levels: ${[1, 2, 3, 4, 5].map((n) => `L${n} ${wire[`L${n}`]}`).join(", ")}; L2 then L2 30ms later: ${wire.overlap}`,
+    wire.L1 === "pick" && wire.L2 === "pick+pick" && wire.L3 === "thud" && wire.L4 === "thud+pick" && wire.L5 === "success" && wire.overlap === "pick+pick+pick'");
+  check(`Water Sort sends only ticks and success (${sentKinds.join(", ")} during play): tap ${wire.tap.kinds}, thud ${wire.thud.kinds} (${wire.thud.gap}ms), warn ${wire.warn.kinds} (${wire.warn.gap}ms), success ${wire.success.kinds}`,
     sentKinds.every((k) => k === "pick" || k === "success") && same(wire.tap.kinds, ["pick"]) && same(wire.thud.kinds, ["pick", "pick"])
     && wire.thud.gap >= 55 && wire.thud.gap <= 120 && same(wire.warn.kinds, ["pick", "pick"]) && wire.warn.gap >= 120 && same(wire.success.kinds, ["success"]));
   await ctx.close();
