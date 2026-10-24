@@ -374,10 +374,13 @@ for (const url of ["sudoku.html?pack=easy&p=2", "sudoku.html?pack=killer&p=1", "
 }
 
 const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-// Nonogram (Colin 10/23): tap cycle × → fill → clear (■ switch: fill first, remembered per puzzle), a drag paints what
-// its first square shows (empty → ×, filled → fill) locked to a line with one light buzz per square, a firmer buzz when
-// a row is complete and right, tapping a clue ×'s the rest of a right line (shakes otherwise), no row/column highlight, finished clues grey out, one Undo per drag, hints explain a row or column, and the finish
-// names the picture ("A heart!") with the picture as the medal. App bridge stubbed to record every buzz.
+// Nonogram with the clue bar (Colin 10/24, docs/design/nonogram_clues_mockup.html v2), on the heart (rows 1 1 · 5 · 5 ·
+// 3 · 1): (1) the × / ■ / Clear switch, drags copy the chosen mode; (2) square taps never touch the bottom; (3) a clue
+// tap slides the bar up over the bottom with that line's numbers, the board doesn't move; (4) a number in the bar or on
+// the board gets a slash, again to unslash; (5) the last slash ×'s the line's empty squares, one Undo; (6) the same clue
+// again or a swipe down closes it, another clue swaps it, a drag follows the finger and springs back; (7) clues never
+// grey and a clue never checks the line. Then hints (not swayed by slashes) solve it and the finish is the picture.
+// App bridge stubbed to record every buzz.
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(() => {
@@ -397,85 +400,138 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const nn = await p.evaluate(async () => {
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const cell = (r, c) => document.querySelector(`.nc[data-r="${r}"][data-c="${c}"]`);
-    const at = (r, c) => { const b = cell(r, c).getBoundingClientRect(); return { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true }; };
+    const ptOf = (el, dx = 0.5, dy = 0.5) => { const b = el.getBoundingClientRect(); return { clientX: b.left + b.width * dx, clientY: b.top + b.height * dy, bubbles: true, pointerId: 1 }; };
     const take = () => { const o = window.__buzz; window.__buzz = []; return o; };
-    // A drag through cells [r, c]; a "wobble" point can sit off the line.
     const drag = (cells) => {
-      cell(...cells[0]).dispatchEvent(new PointerEvent("pointerdown", at(...cells[0])));
-      for (const rc of cells.slice(1)) document.dispatchEvent(new PointerEvent("pointermove", at(...rc)));
+      cell(...cells[0]).dispatchEvent(new PointerEvent("pointerdown", ptOf(cell(...cells[0]))));
+      for (const rc of cells.slice(1)) document.dispatchEvent(new PointerEvent("pointermove", ptOf(cell(...rc))));
       document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
     };
+    const tapEl = (el, dx, dy) => { const pt = ptOf(el, dx, dy); el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt)); };
+    const mode = (m) => document.querySelector(`#modeSw [data-mode="${m}"]`).click();
     const state = (r, c) => (cell(r, c).classList.contains("f") ? "fill" : cell(r, c).querySelector(".xm") ? "x" : "blank");
+    const row = (r) => [0, 1, 2, 3, 4].map((c) => state(r, c));
+    const undo = () => document.getElementById("undoBtn").click();
+    const bar = document.getElementById("cbar");
+    const barUp = () => !bar.hidden && bar.classList.contains("up");
+    const rect = (el) => JSON.stringify(el.getBoundingClientRect());
+    const rc = (r) => document.querySelector(`.rc[data-r="${r}"]`), cc = (c) => document.querySelector(`.cc[data-c="${c}"]`);
     const out = {};
     take();
+    // (1) The switch: three choices; × mode cycles × → fill → clear.
+    out.modes = [...document.querySelectorAll("#modeSw [data-mode]")].map((b) => b.dataset.mode);
     out.cycle = [];
     for (let i = 0; i < 3; i++) { drag([[4, 0]]); out.cycle.push(state(4, 0)); }
     out.cycleBuzz = take();
-    // No highlight: mid-drag, no row/column classes and the row-mate square looks like any other.
-    cell(0, 0).dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
-    const bg = (r, c) => getComputedStyle(cell(r, c)).backgroundColor;
-    out.noHl = document.querySelectorAll(".lc, .cur").length === 0 && bg(0, 3) === bg(3, 3) && bg(3, 0) === bg(3, 3)
-      && getComputedStyle(document.querySelector('.rc[data-r="0"]')).backgroundColor === getComputedStyle(document.querySelector('.rc[data-r="3"]')).backgroundColor;
-    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
-    document.getElementById("undoBtn").click(); take();
-    // Heart row 2 (index 1) is 5: drag from an empty square (1,0) → (1,1) → a wobble into row 3 at column 2: locks to
-    // row 2 and paints ×.
+    // × drag: × onto empty squares, locked to its row (a wobble into the next row doesn't count); one Undo.
     drag([[1, 0], [1, 1], [2, 2]]);
-    out.dragged = [state(1, 0), state(1, 1), state(1, 2), state(2, 2)];
-    out.dragBuzz = take();
-    document.getElementById("undoBtn").click(); take();
-    out.afterUndo = [state(1, 0), state(1, 1), state(1, 2)];
-    // Fill a run: tap the first square twice (filled), then drag from it: three light taps, then a firmer one as the
-    // row becomes complete and right; its clue greys out.
-    drag([[1, 0]]); drag([[1, 0]]); take();
-    drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]);
-    out.fillRow = [0, 1, 2, 3, 4].map((c) => state(1, c));
-    out.rowBuzz = take();
-    // A drag from an × paints × and never clears: from (4,0) (now ×) over a filled (4,2).
-    drag([[4, 0]]); drag([[4, 2]]); drag([[4, 2]]); take(); // (4,0) × ; (4,2) filled
+    out.xDrag = [...row(1).slice(0, 3), state(2, 2)];
+    out.xDragBuzz = take();
+    undo(); take();
+    out.xUndo = row(1);
+    // × drag never covers a filled square: fill (4,2) (two taps), then drag × along row 5.
+    drag([[4, 2]]); drag([[4, 2]]);
     drag([[4, 0], [4, 1], [4, 2], [4, 3]]);
-    out.fromX = [0, 1, 2, 3].map((c) => state(4, c));
-    document.getElementById("undoBtn").click(); document.getElementById("undoBtn").click(); document.getElementById("undoBtn").click();
-    document.getElementById("undoBtn").click(); take();
-    out.row4Back = [0, 1, 2, 3].map((c) => state(4, c));
-    // ■ switch: a tap fills an empty square directly, a drag from an empty square paints fill (row 4 is .XXX.).
-    document.querySelector('#modeSw [data-mode="fill"]').click(); take();
-    out.modeOn = document.querySelector('#modeSw [data-mode="fill"]').getAttribute("aria-checked");
+    out.xOverFill = row(4).slice(0, 4);
+    undo(); undo(); undo(); take();
+    // ■ mode: a tap fills; a drag fills the run (row 2 is 5: the last square makes it right, the firm buzz).
+    mode("fill"); take();
+    drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]);
+    out.fillDrag = row(1);
+    out.fillDragBuzz = take();
     drag([[3, 1]]);
-    drag([[3, 2], [3, 3]]);
-    out.fillMode = [0, 1, 2, 3, 4].map((c) => state(3, c));
+    out.fillTap = state(3, 1);
+    // Clear mode: a tap empties, a tap on an empty square does nothing, a drag empties fills and × alike.
+    mode("clear"); take();
+    drag([[3, 1]]); out.clearTap = state(3, 1); take();
+    drag([[3, 1]]); out.clearBlankBuzz = take().length;
+    mode("x"); drag([[1, 0]]); drag([[1, 0]]); // (1,0) was filled: fill → blank → ×, so row 2 holds × and fills
+    out.beforeClear = row(1);
+    mode("clear"); take();
+    drag([[1, 4], [1, 3], [1, 2], [1, 1], [1, 0]]);
+    out.clearDrag = row(1);
+    out.clearDragBuzz = take().length;
+    undo(); take();
+    // (2) Squares never open anything at the bottom.
+    out.barAfterSquares = bar.hidden;
+    // (3) Tap a row clue: the bar slides up with just its numbers; the board and the buttons don't move.
+    const boardBefore = rect(document.getElementById("board")), dockBefore = rect(document.querySelector(".dock"));
+    tapEl(rc(0));
+    await wait(60);
+    out.midSlide = new DOMMatrix(getComputedStyle(bar).transform).m42;
+    await wait(700);
+    out.openBuzz = take();
+    out.barLbl = document.getElementById("cbarLbl").textContent;
+    out.barNums = [...bar.querySelectorAll(".nb")].map((b) => b.textContent);
+    out.settled = new DOMMatrix(getComputedStyle(bar).transform).m42;
+    out.stillBoard = rect(document.getElementById("board")) === boardBefore && rect(document.querySelector(".dock")) === dockBefore;
+    const br = bar.getBoundingClientRect(), dr = document.querySelector(".dock").getBoundingClientRect();
+    out.coversDock = br.top <= dr.top && br.bottom >= dr.bottom && Number(getComputedStyle(bar).zIndex) > 0;
+    out.clueOpen = rc(0).classList.contains("open") && !rc(1).classList.contains("open");
+    out.lineTint = [0, 1, 2, 3, 4].every((c) => cell(0, c).classList.contains("hi")) && !cell(1, 0).classList.contains("hi");
+    // (4) Tap a number in the bar: it gets the slash, on the board too; again: off. The board's own small number too.
+    const nb = (k) => bar.querySelectorAll(".nb")[k];
+    const barTap = (el) => { const pt = ptOf(el); el.dispatchEvent(new PointerEvent("pointerdown", pt)); el.dispatchEvent(new PointerEvent("pointerup", pt)); };
+    barTap(nb(0));
+    out.slashBar = [nb(0).classList.contains("s"), nb(1).classList.contains("s"), rc(0).querySelector('.n[data-k="0"]').classList.contains("s")];
+    barTap(nb(0));
+    out.unslash = [nb(0).classList.contains("s"), rc(0).querySelector('.n[data-k="0"]').classList.contains("s")];
+    const small = rc(0).querySelector('.n[data-k="0"]');
+    tapEl(small);
+    out.slashBoard = [small.classList.contains("s"), nb(0).classList.contains("s"), barUp()];
+    out.slashBuzz = take();
+    out.rowZeroBefore = row(0);
+    // (5) The last number slashed: × into every empty square of that line (it doesn't check the answer); one Undo.
+    barTap(nb(1));
+    out.autoX = row(0);
+    out.autoBuzz = take();
+    undo(); take();
+    out.autoUndo = { row: row(0), slashes: [nb(0).classList.contains("s"), nb(1).classList.contains("s")] };
+    // (6) Swipe: a short drag follows the finger and springs back; a longer one closes.
+    const y0 = bar.getBoundingClientRect().top, x0 = bar.getBoundingClientRect().left + 100;
+    const at = (dy) => ({ clientX: x0, clientY: y0 + 10 + dy, bubbles: true, pointerId: 7 }); // where the finger is, fixed to the screen
+    bar.dispatchEvent(new PointerEvent("pointerdown", at(0)));
+    bar.dispatchEvent(new PointerEvent("pointermove", at(20)));
+    await wait(100); // a slow pull, not a flick
+    bar.dispatchEvent(new PointerEvent("pointermove", at(40)));
+    out.follows = Math.round(bar.getBoundingClientRect().top - y0);
+    await wait(30);
+    bar.dispatchEvent(new PointerEvent("pointerup", at(40)));
+    await wait(700);
+    out.springBack = [barUp(), Math.round(bar.getBoundingClientRect().top - y0)];
+    bar.dispatchEvent(new PointerEvent("pointerdown", at(0)));
+    for (const dy of [30, 60, 90, 120]) { await wait(16); bar.dispatchEvent(new PointerEvent("pointermove", at(dy))); }
+    bar.dispatchEvent(new PointerEvent("pointerup", at(120)));
+    await wait(500);
+    out.swipedShut = [bar.hidden, rc(0).classList.contains("open")];
+    // Another clue swaps; the same clue again (off its numbers) closes.
+    tapEl(rc(0)); await wait(600);
+    tapEl(cc(2)); await wait(300);
+    out.swap = [barUp(), document.getElementById("cbarLbl").textContent, cc(2).classList.contains("open"), rc(0).classList.contains("open")];
+    tapEl(cc(2), 0.5, 0.06); // the top of column 3's clue: above its numbers
+    await wait(500);
+    out.sameClose = [bar.hidden, cc(2).classList.contains("open")];
     take();
-    // Tap a clue when the line is right: × into every other empty square, a few light ticks then the firm one;
-    // one Undo takes the whole fill back.
-    const clue = (sel) => { const el = document.querySelector(sel), b = el.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
-      el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt)); };
-    clue('.rc[data-r="3"]');
-    out.swept = !!document.querySelector('.nc[data-r="3"][data-c="4"].sw');
-    await wait(600);
-    out.clueRow = [0, 1, 2, 3, 4].map((c) => state(3, c));
-    out.clueBuzz = take();
-    document.getElementById("undoBtn").click(); take();
-    out.clueUndo = [0, 1, 2, 3, 4].map((c) => state(3, c));
-    // Column 1 (index 0) is 2 (rows 2-3) but row 4 is wrong: fill (4,0), then tap the column's clue: it only shakes.
-    drag([[4, 0]]); take();
-    const before = JSON.stringify(window.sbNono.state().marks);
-    clue('.cc[data-c="0"]');
-    await wait(400);
-    out.wrongShake = document.querySelector('.cc[data-c="0"]').classList.contains("shake");
-    out.wrongSame = JSON.stringify(window.sbNono.state().marks) === before;
-    out.wrongBuzz = take();
-    document.getElementById("undoBtn").click(); take();
-    out.rowGrey = document.querySelector('.rc[data-r="1"]').classList.contains("done");
-    out.otherGrey = document.querySelector('.rc[data-r="2"]').classList.contains("done");
-    // Hint: names a row or column, then explains why with its technique.
+    // (7) Clues never grey: row 2 filled right (in ■ mode) looks like any other clue; a clue tap on a wrong line changes
+    // nothing (no shake, no marks, no buzz beyond the bar's own tick).
+    mode("clear"); drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]);
+    mode("fill"); drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]); take(); // row 2 complete and right
+    out.noGrey = !document.querySelector(".rc.done, .cc.done") && getComputedStyle(rc(1)).color === getComputedStyle(rc(2)).color;
+    drag([[4, 0]]); take(); // column 1 now wrong
+    const marksBefore = JSON.stringify(window.sbNono.state().marks);
+    tapEl(cc(0)); await wait(400);
+    out.noCheck = [JSON.stringify(window.sbNono.state().marks) === marksBefore, !document.querySelector(".shake"), take()];
+    tapEl(cc(0), 0.5, 0.06); await wait(450);
+    // Hints aren't swayed by slashes: slash every number of row 4 and column 5 (× fills), then hints still finish it.
+    undo(); // the (5,1) fill
     document.getElementById("hintBtn").click(); await wait(50);
     out.nudge = document.getElementById("hintTitle").textContent;
     document.getElementById("hintNext").click(); await wait(50);
     out.chip = document.getElementById("hintChip").textContent;
     out.why = document.getElementById("hintBody").textContent;
     document.getElementById("hintClose").click(); await wait(50);
-    // Hints alone finish it; the finish is the picture.
-    // (the card slides out for a moment after closing, so go by the game's own hint state)
+    tapEl(rc(4)); await wait(100); barTap(nb(0)); await wait(100);
+    tapEl(rc(4), 0.04, 0.5); await wait(450); // close (left of the numbers)
     for (let i = 0; i < 60 && !document.getElementById("won"); i++) {
       if (!window.sbNono.state().hint) { document.getElementById("hintBtn").click(); await wait(20); }
       for (let g = 0; g < 4 && window.sbNono.state().hint; g++) document.getElementById("hintNext").click();
@@ -486,35 +542,65 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     out.medal = !!won?.querySelector(".disc.pic svg rect");
     out.boardWon = document.getElementById("board").classList.contains("won");
     out.winBuzz = take().includes("success");
+    out.barDownAtWin = bar.hidden || !bar.classList.contains("up");
     return out;
   });
-  // (the fill crosses off the last row's [1] clue, so it's the crisp tick, Colin 10/24)
-  check(`Nonogram tap cycles × → fill → clear like Star Battle (${nn.cycle.join(" → ")}), one buzz each (${nn.cycleBuzz})`,
-    same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "pick", "tap"]));
-  check(`Nonogram: no blue row/column highlight while touching a square (${nn.noHl})`, nn.noHl);
-  check(`Nonogram drag from an empty square paints × and locks to its row (${nn.dragged.join(", ")}), one light buzz per square (${nn.dragBuzz}), one Undo takes it all back (${nn.afterUndo})`,
-    same(nn.dragged, ["x", "x", "x", "blank"]) && same(nn.dragBuzz, ["tap", "tap", "tap"]) && same(nn.afterUndo, ["blank", "blank", "blank"]));
-  check(`Nonogram drag from a filled square paints fill (${nn.fillRow.join(", ")}); row complete and right: firmer buzz (${nn.rowBuzz}), its clue greys (${nn.rowGrey}, unfinished row ${nn.otherGrey})`,
-    same(nn.fillRow, ["fill", "fill", "fill", "fill", "fill"]) && same(nn.rowBuzz, ["tap", "tap", "tap", "thud"]) && nn.rowGrey && !nn.otherGrey);
-  check(`Nonogram drag from an × paints × and never clears a filled square (${nn.fromX.join(", ")}); Undo back (${nn.row4Back})`,
-    same(nn.fromX, ["x", "x", "fill", "x"]) && same(nn.row4Back, ["blank", "blank", "blank", "blank"]));
-  check(`Nonogram ■ switch (${nn.modeOn}): a tap fills, a drag from an empty square paints fill (${nn.fillMode.join(", ")})`,
-    nn.modeOn === "true" && same(nn.fillMode, ["blank", "fill", "fill", "fill", "blank"]));
-  check(`Nonogram tap a right line's clue: × sweeps in (${nn.clueRow.join(", ")}; sweep ${nn.swept}), light ticks then firm (${nn.clueBuzz}); one Undo restores (${nn.clueUndo.join(", ")})`,
-    same(nn.clueRow, ["x", "fill", "fill", "fill", "x"]) && nn.swept && same(nn.clueBuzz, ["tap", "tap", "thud"]) && same(nn.clueUndo, ["blank", "fill", "fill", "fill", "blank"]));
-  check(`Nonogram tap a wrong line's clue: it shakes (${nn.wrongShake}), nothing changes (${nn.wrongSame}), no buzz (${nn.wrongBuzz.length})`,
-    nn.wrongShake && nn.wrongSame && nn.wrongBuzz.length === 0);
+  check(`Nonogram switch: ${nn.modes.join(" / ")}; × taps cycle ${nn.cycle.join(" → ")}, one light buzz each (${nn.cycleBuzz})`,
+    same(nn.modes, ["x", "fill", "clear"]) && same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
+  check(`Nonogram × drag: × along its row (${nn.xDrag}), a light buzz per square (${nn.xDragBuzz}), one Undo (${nn.xUndo}); never covers a fill (${nn.xOverFill})`,
+    same(nn.xDrag, ["x", "x", "x", "blank"]) && same(nn.xDragBuzz, ["tap", "tap", "tap"]) && nn.xUndo.every((m) => m === "blank") && same(nn.xOverFill, ["x", "x", "fill", "x"]));
+  check(`Nonogram ■: drag fills the run (${nn.fillDrag}), the right row's firm buzz (${nn.fillDragBuzz}); a tap fills (${nn.fillTap})`,
+    nn.fillDrag.every((m) => m === "fill") && same(nn.fillDragBuzz, ["tap", "tap", "tap", "tap", "thud"]) && nn.fillTap === "fill");
+  check(`Nonogram Clear: a tap empties (${nn.clearTap}), an empty square stays quiet (${nn.clearBlankBuzz} buzz); a drag empties fills and × alike (${nn.beforeClear} → ${nn.clearDrag}, ${nn.clearDragBuzz} buzzes)`,
+    nn.clearTap === "blank" && nn.clearBlankBuzz === 0 && nn.beforeClear.includes("x") && nn.beforeClear.includes("fill") && nn.clearDrag.every((m) => m === "blank") && nn.clearDragBuzz === 5);
+  check(`Nonogram: tapping and dragging squares never brings up the bar (${nn.barAfterSquares})`, nn.barAfterSquares);
+  check(`Nonogram clue tap: the bar slides up (${Math.round(nn.midSlide)}px below at 60ms, ${Math.round(nn.settled)} settled) with "${nn.barLbl}": ${nn.barNums.join(" ")}; the board and buttons don't move (${nn.stillBoard}); it covers the buttons (${nn.coversDock}); clue and line marked (${nn.clueOpen}, ${nn.lineTint}); tick (${nn.openBuzz})`,
+    nn.midSlide > 20 && Math.abs(nn.settled) < 1 && nn.barLbl === "Row 1" && same(nn.barNums, ["1", "1"]) && nn.stillBoard && nn.coversDock && nn.clueOpen && nn.lineTint && same(nn.openBuzz, ["pick"]));
+  check(`Nonogram slash: in the bar (${nn.slashBar}), again to unslash (${nn.unslash}), the board's small number too (${nn.slashBoard}); a tick each (${nn.slashBuzz})`,
+    same(nn.slashBar, [true, false, true]) && same(nn.unslash, [false, false]) && same(nn.slashBoard, [true, true, true]) && same(nn.slashBuzz, ["pick", "pick", "pick"]));
+  check(`Nonogram last slash: × into the line's empty squares (${nn.rowZeroBefore} → ${nn.autoX}), a firm buzz (${nn.autoBuzz}); one Undo takes the × and that slash back (${nn.autoUndo.row}; slashes ${nn.autoUndo.slashes})`,
+    nn.rowZeroBefore.every((m) => m === "blank") && nn.autoX.every((m) => m === "x") && same(nn.autoBuzz, ["thud"]) && nn.autoUndo.row.every((m) => m === "blank") && same(nn.autoUndo.slashes, [true, false]));
+  check(`Nonogram bar: a drag follows the finger (${nn.follows}px for 40) and springs back (${nn.springBack}); a swipe down closes it (${nn.swipedShut}); another clue swaps it (${nn.swap}); the same clue again closes it (${nn.sameClose})`,
+    Math.abs(nn.follows - 40) <= 2 && nn.springBack[0] && Math.abs(nn.springBack[1]) <= 1 && same(nn.swipedShut, [true, false])
+    && same(nn.swap, [true, "Column 3", true, false]) && same(nn.sameClose, [true, false]));
+  check(`Nonogram clues never grey by themselves (${nn.noGrey}); a clue tap never checks the line (marks same ${nn.noCheck[0]}, no shake ${nn.noCheck[1]}, buzz ${nn.noCheck[2]})`,
+    nn.noGrey && nn.noCheck[0] && nn.noCheck[1] && same(nn.noCheck[2], ["pick"]));
   check(`Nonogram hint: "${nn.nudge}" → ${nn.chip}: "${nn.why.slice(0, 60)}…"`, /^Look at (row|column) \d+/.test(nn.nudge) && nn.chip.length > 0 && nn.why.length > 20);
-  check(`Nonogram solved by hints: the picture card says "${nn.heading}" with the picture as the medal, colour sweep on, win buzz`,
-    nn.heading === "A heart!" && nn.medal && nn.boardWon && nn.winBuzz);
-  // The ■ switch is remembered for this puzzle (and isn't on for another).
+  check(`Nonogram solved by hints with slashes about: the picture card says "${nn.heading}" with the picture as the medal, colour sweep on, win buzz, bar down (${nn.barDownAtWin})`,
+    nn.heading === "A heart!" && nn.medal && nn.boardWon && nn.winBuzz && nn.barDownAtWin);
+  // The switch is remembered for this puzzle (Clear here) and another starts on ×.
+  await p.goto(`${BASE}nonogram.html?pack=easy&p=2`);
+  await p.waitForTimeout(1200);
+  await p.evaluate(() => document.querySelector('#modeSw [data-mode="clear"]').click());
   await p.reload();
   await p.waitForTimeout(1500);
-  const modeKept = await p.evaluate(() => document.querySelector('#modeSw [data-mode="fill"]').getAttribute("aria-checked"));
-  await p.goto(`${BASE}nonogram.html?pack=easy&p=2`);
+  const modeKept = await p.evaluate(() => ({ on: document.querySelector('#modeSw [aria-checked="true"]').dataset.mode, tip: document.getElementById("tip").textContent }));
+  await p.goto(`${BASE}nonogram.html?pack=easy&p=3`);
   await p.waitForTimeout(1500);
-  const modeOther = await p.evaluate(() => document.querySelector('#modeSw [data-mode="x"]').getAttribute("aria-checked"));
-  check(`Nonogram ■ switch remembered per puzzle (this one ${modeKept}, another starts on × ${modeOther})`, modeKept === "true" && modeOther === "true");
+  const modeOther = await p.evaluate(() => document.querySelector('#modeSw [aria-checked="true"]').dataset.mode);
+  check(`Nonogram switch remembered per puzzle (this one ${modeKept.on}: "${modeKept.tip}"; another starts on ${modeOther})`,
+    modeKept.on === "clear" && /Clear/.test(modeKept.tip) && modeOther === "x");
+  // (8) 15×15 zoomed: the same bar comes up over the bottom; the board, its zoom and the pinned clue strips stay put.
+  await p.evaluate(() => localStorage.setItem("solvebuddy.saved", JSON.stringify({ "nonogram/hard/1": { p: 1, marks: { "0,0": 2 }, ms: 1000, hints: 0, zoom: { z: 2.2, x: 300, y: 300 } } })));
+  await p.goto(`${BASE}nonogram.html?pack=hard&p=1`);
+  await p.waitForTimeout(1800);
+  const zb = await p.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rect = (sel) => JSON.stringify(document.querySelector(sel).getBoundingClientRect());
+    const top = document.querySelector(".ntop").getBoundingClientRect();
+    const col = [...document.querySelectorAll(".cc")].find((el) => { const b = el.getBoundingClientRect(); return b.left >= top.left && b.right <= top.right; });
+    const before = { board: rect("#board"), ntop: rect(".ntop"), nleft: rect(".nleft"), z: window.sbNono.view().z };
+    const b = col.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
+    col.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt));
+    await wait(700);
+    const bar = document.getElementById("cbar");
+    return { z: before.z, up: !bar.hidden && bar.classList.contains("up"), lbl: document.getElementById("cbarLbl").textContent,
+      want: `Column ${Number(col.dataset.c) + 1}`, nums: bar.querySelectorAll(".nb").length, clue: col.querySelectorAll(".n").length,
+      still: rect("#board") === before.board && rect(".ntop") === before.ntop && rect(".nleft") === before.nleft && window.sbNono.view().z === before.z,
+      fits: bar.getBoundingClientRect().right <= document.querySelector(".phone").getBoundingClientRect().right };
+  });
+  check(`Nonogram 15×15 zoomed ${zb.z.toFixed(1)}×: a clue tap brings up the same bar ("${zb.lbl}", ${zb.nums} numbers), the board, zoom and pinned clue strips stay put (${zb.still})`,
+    zb.z > 1.5 && zb.up && zb.lbl === zb.want && zb.nums === zb.clue && zb.still && zb.fits);
   // A puzzle with no picture name gets the usual card (future imports).
   const plainCard = await p.evaluate(async () => {
     const { celebrate } = await import("./celebrate.js");
@@ -912,7 +998,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 // Haptics on every game (Colin 10/24: he felt none in Nonogram, Water Sort, Star Battle, Block Drop). First: each built
 // app page (the file the phone runs, Nonogram inside app/starbattle.html too) sends the app a haptic on a first move.
-// Then, with every buzz counted (SB_HAPTIC_GAP = 0): Nonogram's clue crossed off = the tick; Star Battle's finished
+// Then, with every buzz counted (SB_HAPTIC_GAP = 0) (Nonogram's slash buzzes are in its own block): Star Battle's finished
 // region = medium; Water Sort pick up / put down / soft no / pour / tube done / win; and the throttle: a fast drag
 // buzzes at most every ~40ms.
 {
@@ -961,15 +1047,6 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   }, sel);
   const take = () => p.evaluate(() => { const o = window.__buzz; window.__buzz = []; return o; });
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-
-  // Nonogram heart: the last row's clue is [1] (its square is the middle one). × then fill its first square: the fill
-  // crosses the clue off (it greys) without the row being right.
-  await fresh("nonogram.html?pack=easy&p=1");
-  await take();
-  for (let i = 0; i < 2; i++) await tapAt('.nc[data-r="4"][data-c="0"]');
-  const nono = { buzz: await take(), grey: await p.evaluate(() => document.querySelector('.rc[data-r="4"]').classList.contains("done")) };
-  check(`Nonogram: × = light tap, then fill = the tick as its clue is crossed off (${nono.buzz}; clue greys ${nono.grey})`,
-    same(nono.buzz, ["tap", "pick"]) && nono.grey);
 
   // Star Battle easy #1: region D's star is 4th row, 3rd column. Star first, then × the rest: the last × finishes it.
   await fresh("starbattle.html?pack=easy&p=1");

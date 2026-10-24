@@ -1,9 +1,14 @@
 // Nonogram play page (Colin 10/23, docs/design/zoom_nonogram_mockup.html), wired to the line-logic engine and packs.
-// Tap (Colin 10/23, like Star Battle): × → fill → clear. The quiet "× · ■" switch above the board flips it to fill → × →
-// clear (remembered per puzzle). Drag: paints what the first square shows after its tap (empty → × or, in ■ mode,
-// fill; filled → fill; × → ×), only onto empty squares (a drag never clears), locked to its row or column.
-// Tap a row's or column's clue: if its filled squares are exactly right, × sweeps into the rest; if not, the clue shakes.
-// Haptics: a light tap per square, a firmer one when a row or column becomes complete and correct, the win buzz.
+// The clue bar (Colin 10/24, docs/design/nonogram_clues_mockup.html v2):
+// - Top switch × / ■ / Clear (remembered per puzzle). Tap: × mode × → fill → clear; ■ mode fill → × → clear; Clear
+//   empties. Drag copies the chosen mode along its row or column: × or ■ onto empty squares, Clear empties every one.
+// - Tapping squares never changes anything at the bottom.
+// - Tap a clue: a bar slides up over the bottom (a spring) with just that line's numbers, big; nothing else moves.
+//   Tap a number there (or, with the bar up, the small one on the board) to slash it; again to unslash. Slash the
+//   last one and the line's empty squares fill with × (one Undo). Tap the same clue again (off its numbers) or swipe
+//   the bar down to close it; another clue swaps it. Clues never grey by themselves; a clue never checks the answer.
+// Haptics: a light tap per square, a firmer one when a row or column becomes complete and correct, the tick on a
+// slash, a firm one when the last slash ×'s the line, the win buzz.
 // 15×15 zooms with two fingers (web/zoom.js); clue strips stay pinned. Each puzzle is a picture: the finish shows it
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
@@ -26,16 +31,17 @@ const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
 const pid = () => idx + 1;
 const fmt = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
-const TAP_TIP = "Tap for × · again to fill · tap a clue to finish its line";
+const TIPS = { x: "Tap for × · again to fill · tap a clue for its numbers", fill: "Tap to fill · again for × · tap a clue for its numbers",
+  clear: "Clear: tap or drag to empty squares" };
 
-// The "× · ■" switch is remembered per puzzle in its own small store, so choosing it alone doesn't make a puzzle
+// The × / ■ / Clear switch is remembered per puzzle in its own small store, so choosing it alone doesn't make a puzzle
 // "in progress" in the Library.
 const MODES_KEY = "solvebuddy.nonogramMode";
 const modeKey = () => `${packName}/${pid()}`;
 const modes = () => { try { return JSON.parse(localStorage.getItem(MODES_KEY) || "{}"); } catch { return {}; } };
 function saveMode() {
   const all = modes();
-  if (s.mode === "fill") all[modeKey()] = "fill";
+  if (s.mode !== "x") all[modeKey()] = s.mode;
   else delete all[modeKey()];
   try { localStorage.setItem(MODES_KEY, JSON.stringify(all)); } catch {}
 }
@@ -50,12 +56,16 @@ function flipSetting(name) {
 }
 
 let P, N, s; // the puzzle, its size, the game state
+// Undo steps hold the squares and the slashes together (the last slash and its × fill are one step).
 const undoStack = [];
+const snap = () => JSON.stringify({ marks: s.marks, slash: s.slash });
+const restore = (j) => { const o = JSON.parse(j); s.marks = o.marks; s.slash = o.slash; };
 const mark = (r, c) => s.marks[key(r, c)] ?? BLANK;
 const boardArr = () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => mark(r, c)));
 const lineOf = (axis, i) => Array.from({ length: N }, (_, x) => (axis === "row" ? mark(i, x) : mark(x, i)));
 const isX = (r, c) => P.solution[r][c] === "X";
-// A line is done when its filled squares match its clue (it greys out); "right" when they match the picture.
+// A line is done when its filled squares match its clue (counted in "2 of 15 rows"; it never greys), "right" when
+// they match the picture.
 const lineDone = (axis, i) => sameClue(runs(lineOf(axis, i).map((m) => (m === FILL ? 1 : 0))), (axis === "row" ? P.rows : P.cols)[i]);
 const lineRight = (axis, i) => lineOf(axis, i).every((m, x) => (m === FILL) === (axis === "row" ? isX(i, x) : isX(x, i)));
 const rowsDone = () => P.rows.filter((_, r) => lineDone("row", r)).length;
@@ -77,7 +87,7 @@ const geomAt = (z) => {
   const fs = fsAt(z), cw = G.cwOf(fs), ch = G.chOf(fs), size = N * G.cs1 * z + 2;
   return { ox: cw, oy: ch, visW: G.W - cw, visH: G.H - ch, w: size, h: size, fs, cw, ch };
 };
-let view = { z: 1, x: 0, y: 0 };
+let view = { z: 1, x: 0, y: 0 }, lastTip = TIPS.x;
 function applyView(v) {
   view = v;
   const g = geomAt(v.z), b = $("board").style;
@@ -89,7 +99,7 @@ function applyView(v) {
   b.setProperty("--py", v.y.toFixed(2));
 }
 const zoom = makeZoom({
-  view: $("board"), area: $("stage"), reserve: 30, geom: geomAt, apply: applyView, ctl: $("zoomCtl"), tip: $("tip"), tipText: TAP_TIP, zmax: 2.6,
+  view: $("board"), area: $("stage"), reserve: 30, geom: geomAt, apply: applyView, ctl: $("zoomCtl"), tip: $("tip"), tipText: TIPS.x, zmax: 2.6,
   mapColors: () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => (mark(r, c) === FILL ? "#2A211B" : "#FFFDF9"))),
   onTwoFingers: cancelDrag,
   onZoomed: (on) => { $("countWrap").hidden = on; },
@@ -100,10 +110,10 @@ function load(i, name = packName, first = false) {
   packName = name; pack = PACKS[name]; idx = i;
   P = pack.puzzles[i]; N = P.rows.length;
   undoStack.length = 0;
-  s = { marks: {}, hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, mode: "x", sweep: null };
+  s = { marks: {}, slash: {}, bar: null, hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, mode: "x", sweep: null };
   const saved = savedGame("nonogram", name, pid());
-  if (saved) { s.marks = { ...(saved.marks ?? {}) }; s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
-  s.mode = modes()[modeKey()] === "fill" ? "fill" : "x";
+  if (saved) { s.marks = { ...(saved.marks ?? {}) }; s.slash = { ...(saved.slash ?? {}) }; s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
+  s.mode = ["fill", "clear"].includes(modes()[modeKey()]) ? modes()[modeKey()] : "x";
   $("sub").textContent = `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?${query.get("game") ? "game=nonogram&" : ""}pack=${name}&p=${i + 1}`);
@@ -112,6 +122,7 @@ function load(i, name = packName, first = false) {
   $("board").style.setProperty("--pic", P.color ?? "var(--ink)");
   $("board").style.width = ""; $("board").style.height = "";
   build();
+  hideBar(true); // a new puzzle starts with the bar down
   geometry();
   $("board").style.width = `${G.W}px`;
   $("board").style.height = `${G.H}px`;
@@ -134,8 +145,8 @@ function load(i, name = packName, first = false) {
 function build() {
   const cell = (r, c) => `<div class="nc${c % 5 === 4 || c === N - 1 ? " t5r" : ""}${r % 5 === 4 || r === N - 1 ? " t5b" : ""}" data-r="${r}" data-c="${c}"></div>`;
   $("board").innerHTML = `<div class="ncorner"></div>
-    <div class="ntop"><div class="ntop-in">${P.cols.map((cl, c) => `<div class="cc" data-c="${c}">${cl.map((n) => `<span>${n}</span>`).join("")}</div>`).join("")}</div></div>
-    <div class="nleft"><div class="nleft-in">${P.rows.map((cl, r) => `<div class="rc" data-r="${r}">${cl.map((n) => `<span>${n}</span>`).join("")}</div>`).join("")}</div></div>
+    <div class="ntop"><div class="ntop-in">${P.cols.map((cl, c) => `<div class="cc" data-c="${c}">${cl.map((n, k) => `<span class="n" data-k="${k}">${n}</span>`).join("")}</div>`).join("")}</div></div>
+    <div class="nleft"><div class="nleft-in">${P.rows.map((cl, r) => `<div class="rc" data-r="${r}">${cl.map((n, k) => `<span class="n" data-k="${k}">${n}</span>`).join("")}</div>`).join("")}</div></div>
     <div class="ngwrap"><div class="ngrid">${Array.from({ length: N * N }, (_, k) => cell(Math.floor(k / N), k % N)).join("")}</div></div>`;
 }
 
@@ -159,24 +170,25 @@ function render() {
     el.classList.toggle("stripe", stripeF.has(k) || stripeX.has(k));
     el.classList.toggle("sx", stripeX.has(k));
     el.classList.toggle("ring", ring === k);
+    el.classList.toggle("hi", !won && !!s.bar && (s.bar.axis === "row" ? s.bar.i === r : s.bar.i === c)); // the bar's line, tinted
     el.style.setProperty("--d", `${((r + c) * (0.9 / (2 * N))).toFixed(3)}s`);
     const x = m === CROSS ? `<span class="xm${bad ? " bad" : ""}">×</span>` : "";
     if (el.innerHTML !== x) el.innerHTML = x;
   }
   const hlLine = h && h.data.line && h.data.kind === "step" ? h.data.line : null;
-  for (const el of $("board").querySelectorAll(".rc")) {
-    const r = Number(el.dataset.r);
-    el.classList.toggle("done", lineDone("row", r));
-    el.classList.toggle("hl", !!hlLine && hlLine.axis === "row" && hlLine.i === r);
-  }
-  for (const el of $("board").querySelectorAll(".cc")) {
-    const c = Number(el.dataset.c);
-    el.classList.toggle("done", lineDone("col", c));
-    el.classList.toggle("hl", !!hlLine && hlLine.axis === "col" && hlLine.i === c);
+  // Clues: only your slashes and the open bar's line show on them; they never grey by themselves (Colin 10/24).
+  for (const el of $("board").querySelectorAll(".rc, .cc")) {
+    const axis = el.classList.contains("rc") ? "row" : "col", i = Number(axis === "row" ? el.dataset.r : el.dataset.c);
+    const cut = slashed(axis, i);
+    el.classList.toggle("hl", !!hlLine && hlLine.axis === axis && hlLine.i === i);
+    el.classList.toggle("open", !won && !!s.bar && s.bar.axis === axis && s.bar.i === i);
+    el.querySelectorAll(".n").forEach((n) => n.classList.toggle("s", cut.includes(Number(n.dataset.k))));
   }
   $("count").textContent = `${rowsDone()} of ${N} rows`;
   document.querySelectorAll("#modeSw [data-mode]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.mode === s.mode)));
   $("modeSw").classList.toggle("gone", won);
+  if (lastTip !== TIPS[s.mode]) zoom.setTipText((lastTip = TIPS[s.mode]));
+  renderBar();
   zoom.refreshMap();
   $("hintBtn").classList.toggle("pressed", !!h);
   $("hint").hidden = !h;
@@ -202,34 +214,36 @@ function render() {
 
 // ---- Playing ----
 // Set one square; one buzz each (fill, × or clear; every square a drag paints): light, or firmer when it finishes a
-// row or column correctly (Colin 10/23), or the crisp tick when it only crosses off a clue (it greys) (Colin 10/24).
+// row or column correctly (Colin 10/23).
 function setMark(r, c, m) {
   const was = mark(r, c);
   if (was === m) return false;
-  const state = () => ["row", "col"].map((axis) => { const i = axis === "row" ? r : c, done = lineDone(axis, i); return done && lineRight(axis, i) ? 2 : done ? 1 : 0; });
-  const before = state();
+  const right = () => [lineDone("row", r) && lineRight("row", r), lineDone("col", c) && lineRight("col", c)];
+  const before = right();
   if (m === BLANK) delete s.marks[key(r, c)];
   else s.marks[key(r, c)] = m;
-  const after = state();
-  haptic(after.some((v, j) => v === 2 && before[j] !== 2) ? "thud" : after.some((v, j) => v === 1 && !before[j]) ? "pick" : "tap");
+  const after = right();
+  haptic((after[0] && !before[0]) || (after[1] && !before[1]) ? "thud" : "tap");
   return true;
 }
 function tap(r, c) {
   if (s.solved) return;
-  undoStack.push(JSON.stringify(s.marks));
-  setMark(r, c, nextMark(mark(r, c)));
+  const next = nextMark(mark(r, c));
+  if (next === mark(r, c)) return; // Clear on an empty square
+  undoStack.push(snap());
+  setMark(r, c, next);
   afterChange();
 }
-// × mode (the default, like Star Battle): × → fill → clear. ■ mode: fill → × → clear.
-const nextMark = (m) => (s.mode === "fill" ? { [BLANK]: FILL, [FILL]: CROSS, [CROSS]: BLANK } : { [BLANK]: CROSS, [CROSS]: FILL, [FILL]: BLANK })[m];
+// × mode (the default, like Star Battle): × → fill → clear. ■ mode: fill → × → clear. Clear: empties it.
+const nextMark = (m) => (s.mode === "clear" ? BLANK : (s.mode === "fill" ? { [BLANK]: FILL, [FILL]: CROSS, [CROSS]: BLANK } : { [BLANK]: CROSS, [CROSS]: FILL, [FILL]: BLANK })[m]);
 function afterChange() {
   s.hint = null;
   checkSolved();
   render();
 }
 
-// Drag (Colin 10/23): it paints what the first square shows after its tap (empty → × or, in ■ mode, fill; filled →
-// fill; × → ×), onto empty squares only, so a drag never clears. The first move decides row or column; it stays there.
+// Drag (Colin 10/24): it copies the chosen mode, start square included: × or ■ onto empty squares (it never covers a
+// mark), Clear empties every square it passes. The first move decides row or column; it stays there.
 let drag = null;
 const gridCell = (x, y) => {
   const g = $("board").querySelector(".ngrid").getBoundingClientRect(), cs = G.cs1 * view.z;
@@ -240,8 +254,8 @@ $("board").addEventListener("pointerdown", (e) => {
   const el = e.target.closest(".nc");
   if (!el || s.solved || zoom.busy || second(e) || s.pausedAt) return;
   e.preventDefault();
-  const r = Number(el.dataset.r), c = Number(el.dataset.c), m = mark(r, c);
-  drag = { start: [r, c], last: [r, c], axis: null, moved: false, mode: m === BLANK ? nextMark(BLANK) : m };
+  const r = Number(el.dataset.r), c = Number(el.dataset.c);
+  drag = { start: [r, c], last: [r, c], axis: null, moved: false, mode: { x: CROSS, fill: FILL, clear: BLANK }[s.mode] };
 });
 document.addEventListener("pointermove", (e) => {
   if (!drag || second(e)) return;
@@ -252,7 +266,7 @@ document.addEventListener("pointermove", (e) => {
     if (clamp(r) === r0 && clamp(c) === c0) return;
     drag.moved = true;
     drag.axis = Math.abs(c - c0) >= Math.abs(r - r0) ? "row" : "col";
-    undoStack.push(JSON.stringify(s.marks)); // one Undo for the whole drag
+    undoStack.push(snap()); // one Undo for the whole drag
     paint(r0, c0);
   }
   // Locked to the line: only the position along it counts. Fill every square between, so a fast swipe skips none.
@@ -272,49 +286,132 @@ document.addEventListener("pointerup", (e) => {
 });
 document.addEventListener("pointercancel", () => cancelDrag());
 function paint(r, c) {
-  if (mark(r, c) === BLANK) setMark(r, c, drag.mode);
+  if (drag.mode === BLANK || mark(r, c) === BLANK) setMark(r, c, drag.mode);
 }
 
-// Tap a clue (Colin 10/23): when the line's filled squares are exactly the picture's, × sweeps along the rest of it
-// (a few light ticks, then the firm "line done" one); one Undo takes it back. Otherwise the clue just shakes; it
-// never says what's wrong.
+// ---- The clue bar (Colin 10/24, docs/design/nonogram_clues_mockup.html) ----
+// Tap a clue: the bar slides up with that line's numbers. With the bar up on that line, a tap right on one of its small
+// numbers slashes it; a tap anywhere else on that clue closes the bar. Another clue swaps the bar to its line.
+const lineId = (axis, i) => `${axis === "row" ? "r" : "c"}${i}`;
+const clueOf = (axis, i) => (axis === "row" ? P.rows : P.cols)[i];
+const slashed = (axis, i) => s.slash[lineId(axis, i)] ?? [];
 let clueTap = null, sweepTimer = 0;
 $("board").addEventListener("pointerdown", (e) => {
   const el = e.target.closest(".rc, .cc");
-  clueTap = el && !s.solved && !zoom.busy && !second(e) && !s.pausedAt ? { el, x: e.clientX, y: e.clientY } : null;
+  clueTap = el && !s.solved && !zoom.busy && !second(e) && !s.pausedAt
+    ? { el, k: e.target.closest(".n")?.dataset.k, x: e.clientX, y: e.clientY } : null;
 });
 document.addEventListener("pointerup", (e) => {
   const t = clueTap;
   clueTap = null;
-  if (!t || second(e) || zoom.busy || Math.hypot(e.clientX - t.x, e.clientY - t.y) > 12) return;
-  const row = t.el.classList.contains("rc");
-  finishLine(row ? "row" : "col", Number(row ? t.el.dataset.r : t.el.dataset.c), t.el);
+  if (!t || second(e) || zoom.busy || s.solved || s.pausedAt || Math.hypot(e.clientX - t.x, e.clientY - t.y) > 12) return;
+  const axis = t.el.classList.contains("rc") ? "row" : "col", i = Number(axis === "row" ? t.el.dataset.r : t.el.dataset.c);
+  const open = s.bar && s.bar.axis === axis && s.bar.i === i;
+  if (!open) return showBar(axis, i);
+  if (t.k !== undefined) return toggleSlash(axis, i, Number(t.k));
+  hideBar();
 });
-function finishLine(axis, i, el) {
-  if (s.solved || s.pausedAt) return;
-  if (!lineRight(axis, i)) {
-    el.classList.remove("shake");
-    void el.offsetWidth; // restart the shake if it's tapped again
-    el.classList.add("shake");
-    return;
-  }
+
+function showBar(axis, i) {
+  const swap = !!s.bar;
+  s.bar = { axis, i };
+  s.hint = null; // the bar takes the bottom of the screen
+  haptic("pick");
+  const bar = $("cbar");
+  bar.hidden = false;
+  bar.classList.remove("swapped");
+  render();
+  void bar.offsetWidth; // start from below the screen (or, swapping, restart the numbers' little slide)
+  bar.classList.add("up");
+  if (swap) bar.classList.add("swapped");
+}
+function hideBar(now = false) {
+  const bar = $("cbar");
+  if (!bar) return;
+  if (s?.bar && !now) haptic("pick");
+  if (s) s.bar = null;
+  bar.style.transition = now ? "none" : "";
+  bar.style.transform = "";
+  bar.classList.remove("up", "swapped");
+  if (now) { bar.hidden = true; void bar.offsetWidth; bar.style.transition = ""; }
+  if (s && P && !now) render();
+}
+$("cbar").addEventListener("transitionend", (e) => { if (e.target === $("cbar") && !$("cbar").classList.contains("up")) $("cbar").hidden = true; });
+
+function renderBar() {
+  if (!s.bar || s.solved) return;
+  const { axis, i } = s.bar, clue = clueOf(axis, i), cut = slashed(axis, i);
+  $("cbarLbl").textContent = `${axis === "row" ? "Row" : "Column"} ${i + 1}`;
+  const html = clue.map((n, k) => `<button class="nb${cut.includes(k) ? " s" : ""}" data-k="${k}" aria-label="${n}${cut.includes(k) ? ", slashed" : ""}">${n}</button>`).join("");
+  const nums = $("cbarNums");
+  if (nums.dataset.line !== lineId(axis, i) || nums.innerHTML !== html) { nums.innerHTML = html; nums.dataset.line = lineId(axis, i); }
+  nums.classList.toggle("many", clue.length > 4);
+}
+
+// Slash a number (again to unslash). The last one fills the line's empty squares with × (one Undo with the slash).
+function toggleSlash(axis, i, k) {
+  if (s.solved) return;
+  const id = lineId(axis, i), list = slashed(axis, i), on = !list.includes(k);
+  undoStack.push(snap());
+  s.slash = { ...s.slash, [id]: on ? [...list, k].sort((a, b) => a - b) : list.filter((x) => x !== k) };
+  if (!s.slash[id].length) delete s.slash[id];
+  if (on && s.slash[id].length === clueOf(axis, i).length && crossRest(axis, i)) return haptic("thud"), afterChange();
+  haptic("pick");
+  render();
+}
+// × into every empty square of the line, in a quick sweep. It never looks at the answer. Returns how many.
+function crossRest(axis, i) {
   const empty = Array.from({ length: N }, (_, x) => (axis === "row" ? [i, x] : [x, i])).filter(([r, c]) => mark(r, c) === BLANK);
-  if (!empty.length) return;
-  undoStack.push(JSON.stringify(s.marks));
+  if (!empty.length) return 0;
   const step = Math.min(35, 300 / empty.length); // ms between squares; a long line still sweeps in about a third of a second
   s.sweep = new Map();
   empty.forEach(([r, c], n) => { s.marks[key(r, c)] = CROSS; s.sweep.set(key(r, c), Math.round(n * step)); });
-  const last = (empty.length - 1) * step, ticks = Math.min(empty.length, 4);
-  for (let t = 0; t < ticks; t++) setTimeout(() => haptic("tap"), Math.round(ticks > 1 ? (t * last) / (ticks - 1) : 0));
-  setTimeout(() => { if (!s.solved) haptic("thud"); }, last + 90);
   clearTimeout(sweepTimer);
-  sweepTimer = setTimeout(() => { s.sweep = null; render(); }, last + 400);
-  afterChange();
+  sweepTimer = setTimeout(() => { s.sweep = null; render(); }, (empty.length - 1) * step + 400);
+  return empty.length;
+}
+
+// The bar's own touches: a number tap slashes; a drag follows the finger down (a little resistance upward) and on
+// release closes past ~70px or a quick flick, else springs back.
+{
+  const bar = $("cbar");
+  let g = null;
+  bar.addEventListener("pointerdown", (e) => {
+    if (second(e) || !s.bar) return;
+    g = { y: e.clientY, t: performance.now(), dy: 0, v: 0, moved: false, k: e.target.closest(".nb")?.dataset.k, id: e.pointerId };
+    try { bar.setPointerCapture(e.pointerId); } catch {} // keep the finger even when it leaves the bar
+  });
+  bar.addEventListener("pointermove", (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    const raw = e.clientY - g.y, now = performance.now();
+    if (!g.moved && Math.abs(raw) < 6) return;
+    g.moved = true;
+    const dy = raw > 0 ? raw : raw / 4; // pulling up only gives a little
+    g.v = (dy - g.dy) / Math.max(1, now - g.t);
+    g.dy = dy; g.t = now;
+    bar.style.transition = "none";
+    bar.style.transform = `translateY(${dy}px)`;
+  });
+  const up = (e) => {
+    if (!g || e.pointerId !== g.id) return;
+    const d = g;
+    g = null;
+    if (!d.moved) {
+      if (d.k !== undefined && s.bar) toggleSlash(s.bar.axis, s.bar.i, Number(d.k));
+      return;
+    }
+    bar.style.transition = "";
+    const flick = performance.now() - d.t < 80 && d.v > 0.5; // a quick flick down, still moving at the end
+    if (d.dy > 70 || flick) return hideBar();
+    bar.style.transform = ""; // springs back with the bar's own ease
+  };
+  bar.addEventListener("pointerup", up);
+  bar.addEventListener("pointercancel", (e) => { if (g && e.pointerId === g.id) { g = null; bar.style.transition = ""; bar.style.transform = ""; } });
 }
 // Two fingers came down: whatever one finger started doesn't count.
 function cancelDrag() {
   if (!drag) return;
-  if (drag.moved) s.marks = JSON.parse(undoStack.pop());
+  if (drag.moved) restore(undoStack.pop());
   drag = null;
   render();
 }
@@ -323,6 +420,8 @@ function checkSolved() {
   if (s.solved || !isSolved(P, boardArr())) return;
   s.solved = true;
   s.elapsed = Date.now() - s.started;
+  s.bar = null; // the bar goes down quietly; the win has its own buzz
+  hideBar();
   clearSaved("nonogram", packName, pid());
   saveFinal("nonogram", packName, pid(), { marks: { ...s.marks } });
   haptic("success");
@@ -359,7 +458,7 @@ function advanceHint() {
   h.level++;
   s.hints += 1 / 3;
   if (h.level === 3) {
-    undoStack.push(JSON.stringify(s.marks));
+    undoStack.push(snap());
     for (const [r, c] of h.data.clear) delete s.marks[key(r, c)];
     for (const [r, c] of h.data.fill) s.marks[key(r, c)] = FILL;
     for (const [r, c] of h.data.cross) s.marks[key(r, c)] = CROSS;
@@ -371,7 +470,7 @@ $("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
   if (!undoStack.length || s.solved) return;
   haptic("tap");
-  s.marks = JSON.parse(undoStack.pop());
+  restore(undoStack.pop());
   s.hint = null;
   render();
 };
@@ -403,7 +502,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 
 function persist() {
   if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("nonogram", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0,
+  saveGame("nonogram", packName, { p: pid(), marks: s.marks, slash: s.slash, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0,
     zoom: zoom.isOn() ? zoom.state() : null });
 }
 setInterval(() => {
