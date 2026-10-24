@@ -2,6 +2,10 @@
 
 Newest first.
 
+## 2026-10-24 — Tap the tab you're on = its first screen (63f0f09 pages, app b029133, OTA by Colin)
+- Colin: getting back to the Library home took one Back per screen. Tapping the Library tab while on it now goes straight home (from a game's packs or a pack); Packs/Stats scroll to the top.
+- App.js: tabPress listener (native tabs' repeated press) injects window.sbHome; needs the OTA. Fingerprint still 513e3eaf.
+
 ## 2026-10-24 — Haptics one level up in Star Battle and Nonogram (ed17756, pushed)
 - Why: Colin's "no haptics" was a voice memo recording (iOS mutes haptics while the mic is in use). Without it he felt Star Battle, but × was too light.
 - Five strengths in bridge.js (hapticLevel): L1 tick, L2 two ticks, L3 medium impact, L4 medium + tick, L5 success. App.js unchanged.
