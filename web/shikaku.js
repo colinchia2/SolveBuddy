@@ -8,23 +8,32 @@
 //   patch fills solid and the Solved card shows the picture.
 // Haptics (bridge.js levels): L1 for each new square while dragging, L2 when a patch lands, warn on red, L5 solved.
 // The header, info row, bottom bar, hint card, settings, pause and finish are the same as Nonogram's.
-import { hint as findHint, area, cluesIn, inside, isSolved, overlaps, same, sortPatches } from "../engine/shikaku/shikaku.ts";
+import { hint as findHint, SHAPE_RULE, area, candidates, cluesIn, contains, fits, inside, isSolved, label, overlaps, same, shapeOf, sortPatches } from "../engine/shikaku/shikaku.ts";
 import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
-import { SHK_COLORS, shikakuColors, shikakuPicture } from "./screens.js";
+import { SHK_COLORS, SHK_TILE, shikakuColors, shikakuPicture, shkClueColor } from "./screens.js";
 import { second } from "./zoom.js";
 
 const PACKS = {
   easy: await loadPack("shikaku8-easy.json"),
   medium: await loadPack("shikaku10-medium.json"),
   hard: await loadPack("shikaku12-hard.json"),
+  patches: await loadPack("shikaku8-patches.json"), // shape clues, like LinkedIn's Patches (Colin 10/24)
 };
 const query = new URLSearchParams(location.search);
-let packName = PACKS[query.get("pack")] ? query.get("pack") : "easy";
+// Imported puzzles (?import=<id>, Colin 10/24: his Patches screenshot) save and log under pack "import" with p = the
+// import's id. Claude adds them to the bundled imports.json.
+const importId = query.get("import");
+if (importId) {
+  const bundled = (await loadPack("imports.json").catch(() => null))?.puzzles ?? [];
+  const item = bundled.find((x) => x.id === importId && x.game === "shikaku");
+  PACKS.import = { id: "import", difficulty: "Imported", puzzles: item ? [item] : [] };
+}
+let packName = importId && PACKS.import.puzzles.length ? "import" : PACKS[query.get("pack")] ? query.get("pack") : "easy";
 let pack = PACKS[packName];
 let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 const $ = (id) => document.getElementById(id);
-const pid = () => idx + 1;
+const pid = () => (packName === "import" ? importId : idx + 1);
 const fmt = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
 const TIP = "Drag to draw a patch · drag from a patch to grow it";
 
@@ -43,20 +52,27 @@ const snap = () => JSON.stringify(s.patches);
 const restore = (j) => { s.patches = JSON.parse(j); };
 const rects = () => s.patches.map(({ r, c, w, h }) => ({ r, c, w, h }));
 const num = (i) => P.clues[i][2];
-// What a patch is: "ok" (one number, the right size), "part" (one number, too small) or "err" (and why).
+const cap = (t) => t[0].toUpperCase() + t.slice(1);
+const squares = (n) => `${n} square${n === 1 ? "" : "s"}`;
+// What a patch is: "ok" (one clue, fits its size and shape), "part" (one clue, can still grow to fit) or "err" (and
+// why). Patches clues: "A tall shape is taller than it is wide." when the shape is off.
 function status(R) {
-  const k = cluesIn(P, R);
-  if (k.length === 0) return { kind: "err", why: "Each patch needs one number. This one has none." };
-  if (k.length > 1) return { kind: "err", why: `This patch has ${k.length} numbers. A patch holds just one.` };
-  const n = num(k[0]), a = area(R);
-  if (a > n) return { kind: "err", why: `The ${n} needs ${n} square${n === 1 ? "" : "s"}. This patch has ${a}.` };
-  if (a < n) return { kind: "part", why: `The ${n} needs ${n - a} more square${n - a === 1 ? "" : "s"}.` };
-  return { kind: "ok", why: "" };
+  const k = cluesIn(P, R), word = P.style ? "clue" : "number";
+  if (k.length === 0) return { kind: "err", why: `Each patch needs one ${word}. This one has none.` };
+  if (k.length > 1) return { kind: "err", why: `This patch has ${k.length} ${word}s. A patch holds just one.` };
+  const i = k[0], n = num(i), a = area(R), rule = SHAPE_RULE[shapeOf(P.clues[i])];
+  if (fits(P, i, R)) return { kind: "ok", why: "" };
+  if (n && a > n) return { kind: "err", why: `${cap(label(P, i))} needs ${squares(n)}. This patch has ${a}.` };
+  const grows = candidates(P, i).some((C) => contains(C, R));
+  if (n && a < n) return { kind: grows ? "part" : "err", why: `${cap(label(P, i))} needs ${n - a} more square${n - a === 1 ? "" : "s"}.${!grows && rule ? ` ${rule}` : ""}` };
+  return { kind: grows ? "part" : "err", why: rule || `${cap(label(P, i))} can't be that shape.` };
 }
 const touches = (a, b) => a.r <= b.r + b.h && b.r <= a.r + a.h && a.c <= b.c + b.w && b.c <= a.c + a.w
   && !((a.r + a.h === b.r || b.r + b.h === a.r) && (a.c + a.w === b.c || b.c + b.w === a.c)); // corners don't count
-// A colour no touching patch has (keep `keep` if it's still free).
+// A colour no touching patch has (keep `keep` if it's still free). Patches: a patch over one clue takes its colour.
 function colorFor(R, keep = -1, others = s.patches) {
+  const k = P.style ? cluesIn(P, R) : [];
+  if (k.length === 1) return shkClueColor(k[0]);
   const used = new Set(others.filter((Q) => touches(Q, R)).map((Q) => Q.k));
   if (keep >= 0 && !used.has(keep)) return keep;
   const start = (R.r * 7 + R.c * 3) % SHK_COLORS.length;
@@ -73,9 +89,10 @@ function load(i, name = packName, first = false) {
   s = { patches: [], hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, msg: null, landed: null };
   const saved = savedGame("shikaku", name, pid());
   if (saved) { s.patches = (saved.patches ?? []).map((Q) => ({ ...Q })); s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
-  $("sub").textContent = `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
+  $("sub").textContent = name === "import" ? `Imported · ${N}×${N}${P.style ? " · Patches" : ""}` : `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
+  $("rulesPatches").hidden = !P.style;
   $("time").textContent = "0:00";
-  history.replaceState(null, "", `?${query.get("game") ? "game=shikaku&" : ""}pack=${name}&p=${i + 1}`);
+  history.replaceState(null, "", `?${query.get("game") ? "game=shikaku&" : ""}${name === "import" ? `import=${encodeURIComponent(importId)}` : `pack=${name}&p=${i + 1}`}`);
   const b = $("board");
   b.classList.remove("won", "wave");
   b.style.setProperty("--n", N);
@@ -84,8 +101,15 @@ function load(i, name = packName, first = false) {
   b.style.width = b.style.height = `${cs * N}px`;
   b.style.setProperty("--fs", `${N >= 12 ? 13 : N >= 10 ? 15 : 17}px`);
   $("cells").innerHTML = Array.from({ length: N * N }, () => "<i></i>").join("");
-  const at = new Map(P.clues.map(([r, c, n]) => [r * N + c, n]));
-  $("nums").innerHTML = Array.from({ length: N * N }, (_, x) => `<span>${at.get(x) ?? ""}</span>`).join("");
+  // Classic: the numbers. Patches: a small tile in the clue's shape and colour, its number (if any) on it.
+  const at = new Map(P.clues.map((k, i) => [k[0] * N + k[1], i]));
+  const clueHtml = (i) => {
+    const [, , n] = P.clues[i];
+    if (!P.style) return n;
+    const sh = shapeOf(P.clues[i]), [tw, th] = SHK_TILE[sh];
+    return `<b class="tile ${sh}" style="--tw:${tw};--th:${th};--tc:${SHK_COLORS[shkClueColor(i)][1]}">${n || ""}</b>`;
+  };
+  $("nums").innerHTML = Array.from({ length: N * N }, (_, x) => `<span>${at.has(x) ? clueHtml(at.get(x)) : ""}</span>`).join("");
   $("patches").innerHTML = "";
   if (first && query.get("view")) {
     const mine = finalBoard("shikaku", name, pid());
@@ -175,7 +199,7 @@ function showPreview(R) {
   let el = $("patches").querySelector(".preview");
   if (!el) { el = document.createElement("div"); el.className = "patch preview"; el.innerHTML = '<span class="size"></span>'; $("patches").appendChild(el); }
   place(el, R);
-  el.querySelector(".size").textContent = area(R) === 1 ? "1" : `${R.h}×${R.w} = ${area(R)}`;
+  el.querySelector(".size").textContent = area(R); // just the count (Colin 10/24: no "3×2 = 6")
 }
 const dropPreview = () => $("patches").querySelector(".preview")?.remove();
 $("board").addEventListener("pointerdown", (e) => {
@@ -214,7 +238,7 @@ function finish(d) {
       hapticLevel(1);
       return afterChange(null);
     }
-    if (cluesIn(P, R).length !== 1 || num(cluesIn(P, R)[0]) !== 1) return; // a tap only draws on a 1
+    if (cluesIn(P, R).length !== 1 || num(cluesIn(P, R)[0]) !== 1 || !fits(P, cluesIn(P, R)[0], R)) return; // a tap only draws on a 1
   }
   if (d.base && same(R, d.base)) return; // dragged within the patch: no change
   undoStack.push(snap());
@@ -249,7 +273,8 @@ function checkSolved() {
   const hints = Math.round((s.hints ?? 0) * 100) / 100;
   const facts = solveFacts("shikaku", packName, s.elapsed, hints);
   logSolve({ g: "shikaku", pack: packName, p: pid(), ms: s.elapsed, hints });
-  celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
+  celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
+    hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1600, medal: shikakuPicture(N, s.patches, 86) });
 }
 
@@ -326,6 +351,7 @@ addEventListener("pagehide", persist);
 function renderPicker() {
   const p = $("picker");
   for (const [name, pk] of Object.entries(PACKS)) {
+    if (name === "import") continue;
     const lbl = document.createElement("span");
     lbl.textContent = `${pk.difficulty}:`;
     lbl.style.marginLeft = "6px";

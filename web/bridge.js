@@ -109,8 +109,10 @@ export const GAMES = {
     sets: [{ name: "5×5", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "15×15", levels: ["hard"] }] },
   // Shikaku (Colin 10/24): size is the level, 10 each.
   shikaku: { name: "Shikaku", packs: [
-    ["easy", "shikaku8-easy.json", "Easy"], ["medium", "shikaku10-medium.json", "Medium"], ["hard", "shikaku12-hard.json", "Hard"]],
-    sets: [{ name: "8×8", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "12×12", levels: ["hard"] }] },
+    ["easy", "shikaku8-easy.json", "Easy"], ["medium", "shikaku10-medium.json", "Medium"], ["hard", "shikaku12-hard.json", "Hard"],
+    ["patches", "shikaku8-patches.json", "Patches"]], // shape clues, like LinkedIn's Patches (Colin 10/24)
+    sets: [{ name: "8×8", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "12×12", levels: ["hard"] },
+      { name: "Patches 8×8", levels: ["patches"] }] },
 };
 // Block Drop (Colin, 10/22) is endless, with no packs: its tile opens the game, and it keeps its own best scores.
 export const BLOCKS_KEY = "solvebuddy.blocks";

@@ -126,7 +126,7 @@ const imp = await page.evaluate(async () => {
 check(`Import: ${imp.tiles} imports as ${imp.cols}-wide blocks under ${imp.days} day heading(s) (${[...new Set(imp.words)].join(", ")})`,
   imp.tiles >= 4 && imp.cols === 2 && imp.days >= 1 && imp.words.every((w) => ["New", "In progress", "Solved"].includes(w)));
 check(`Import: sort flips the order (${imp.sortLabel}); filter offers ${imp.choices.join(" / ")}, Sudoku shows ${imp.sudoku} (${imp.label}), All shows ${imp.back}`,
-  imp.sorted && imp.sortLabel === "Oldest" && imp.choices.join() === "All games,Star Battle,Sudoku,Water Sort" && imp.label === "Sudoku" && imp.back === imp.tiles
+  imp.sorted && imp.sortLabel === "Oldest" && imp.choices.join() === "All games,Star Battle,Sudoku,Water Sort,Shikaku" && imp.label === "Sudoku" && imp.back === imp.tiles
   && imp.sudoku < imp.tiles);
 
 // Triple #1 solved by Hint presses alone.
@@ -981,18 +981,84 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     document.querySelector('.ptile[data-p="2"]').click();
     await wait(400);
     const sheet = document.getElementById("tile");
-    return { tiles, soon, rows, sheet: !sheet.hidden && !!sheet.querySelector(".pv-shk svg rect"), note: sheet.querySelector("p")?.textContent ?? "" };
+    return { tiles, soon, rows, sheet: !sheet.hidden && !!sheet.querySelector(".pv-shk svg rect"), note: sheet.querySelector("p")?.textContent ?? "",
+      nums: sheet.querySelectorAll(".pv-shk svg text").length, lines: sheet.querySelectorAll(".pv-shk svg path").length };
   });
   check(`Library: Shikaku is tile 6 (${lib.tiles.join(", ")}), not under Coming soon ("${lib.soon.replace(/\n/g, " ")}")`, lib.tiles[5] === "shikaku" && !/Shikaku/.test(lib.soon));
-  check(`Shikaku packs: ${lib.rows.map((r) => `${r.name}${r.rects ? ` (${r.rects} patches)` : ""}`).join(", ")}, each with a thumb; a half-done one's sheet shows its board ("${lib.note}")`,
-    lib.rows.map((r) => r.name).join() === "8×8,10×10,12×12" && lib.rows.every((r) => r.thumb) && lib.rows[0].rects > 5 && lib.sheet && /1 of \d+ patches drawn/.test(lib.note));
+  // The half-done sheet shows the grid, your patch and every number (Colin 10/24: it was blank).
+  check(`Shikaku packs: ${lib.rows.map((r) => `${r.name}${r.rects ? ` (${r.rects} patches)` : ""}`).join(", ")}, each with a thumb; a half-done one's sheet shows its board with the grid (${lib.lines} lines) and numbers (${lib.nums}) ("${lib.note}")`,
+    lib.rows.map((r) => r.name).join() === "8×8,10×10,12×12,Patches 8×8" && lib.rows.every((r) => r.thumb) && lib.rows[0].rects > 5 && lib.sheet
+    && /1 of \d+ patches drawn/.test(lib.note) && lib.nums >= 10 && lib.lines === 7);
   await p.goto(`${BASE}packs.html`);
   await p.waitForTimeout(700);
   const blk = await p.evaluate(() => [...document.querySelectorAll('.btile[data-g="shikaku"]')].map((b) => `${b.querySelector(".n").textContent}: ${b.querySelectorAll(".c")[1].textContent}`));
   await p.goto(`${BASE}stats.html`);
   await p.waitForTimeout(500);
   const stat = await p.evaluate(() => document.getElementById("games").innerText.includes("Shikaku"));
-  check(`Packs tab Shikaku block (${blk.join(" / ")}); Stats lists Shikaku (${stat})`, blk.length === 3 && blk[0] === "8×8: Easy" && stat);
+  check(`Packs tab Shikaku block (${blk.join(" / ")}); Stats lists Shikaku (${stat})`, blk.length === 4 && blk[0] === "8×8: Easy" && stat);
+  await ctx.close();
+}
+
+// Shikaku Patches (Colin 10/24, LinkedIn Patches): clues are tiles in their shape (square / tall / wide / dashed "any")
+// and colour, the number on them when there is one; a patch over a clue takes its colour; a patch in the wrong shape
+// that can still grow says the rule (dashed); the drag label is just the count; Hint solves Colin's imported Patches
+// screenshot; the Patches pack shows tiles and classic packs don't; his Patches and Queens screenshots are in the
+// Import tab and open.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}home.html`);
+  const imps = await p.evaluate(async () => (await (await fetch("../packs/imports.json")).json()).puzzles);
+  const shk = imps.find((x) => x.game === "shikaku"), q = imps.find((x) => x.game === "starbattle" && x.size === 9);
+  await p.goto(`${BASE}shikaku.html?import=${encodeURIComponent(shk.id)}`);
+  await p.waitForTimeout(800);
+  const tiles = await p.evaluate(() => [...document.querySelectorAll("#nums .tile")].map((t) => `${t.classList[1]}${t.textContent}`));
+  const bx = await p.locator("#board").boundingBox(), cs = bx.width / 8;
+  const at = (r, c) => [bx.x + (c + 0.5) * cs, bx.y + (r + 0.5) * cs];
+  const drag = async (a, z, look) => {
+    await p.mouse.move(...at(...a)); await p.mouse.down(); await p.mouse.move(...at(...z), { steps: 5 });
+    const label = look ? await p.evaluate(() => document.querySelector(".patch.preview .size")?.textContent) : null;
+    await p.mouse.up(); await p.waitForTimeout(250);
+    return label;
+  };
+  // The tall clue at row 2, column 6 drawn 1 high and 2 wide (with the empty square to its left).
+  const label = await drag([1, 5], [1, 4], true);
+  const wrongShape = await p.evaluate(() => ({ tip: document.getElementById("tip").textContent, part: !!document.querySelector(".patch.part"), err: !!document.querySelector(".patch.err") }));
+  // Grow it down to 3 high, 2 wide: a tall shape, in the clue's colour.
+  await drag([1, 4], [3, 4]);
+  const grown = await p.evaluate(() => {
+    const st = globalThis.sbShik.state(), P = globalThis.sbShik.puzzle(), i = P.clues.findIndex((k) => k[0] === 1 && k[1] === 5);
+    const Q = st.patches.find((x) => x.r <= 1 && 1 < x.r + x.h && x.c <= 5 && 5 < x.c + x.w);
+    return { h: Q?.h, w: Q?.w, k: Q?.k, want: i % 7, part: !!document.querySelector(".patch.part"), err: !!document.querySelector(".patch.err") };
+  });
+  check(`Patches import: ${tiles.length} clue tiles (${tiles.join(" ")}); drag label is just the count ("${label}"); a tall clue drawn wide: "${wrongShape.tip}" (dashed ${wrongShape.part}, red ${wrongShape.err}); grown to ${grown.h} high × ${grown.w} wide it fits and takes the clue's colour (${grown.k} = ${grown.want})`,
+    tiles.length === 12 && tiles.includes("s4") && tiles.includes("a2") && tiles.includes("t") && label === "2"
+    && /taller than it is wide/.test(wrongShape.tip) && wrongShape.part && !wrongShape.err
+    && grown.h === 3 && grown.w === 2 && !grown.part && !grown.err && grown.k === grown.want);
+  // Hint (Nudge → Explain → Show me) alone finishes it from there (it takes the wrong patch away first).
+  for (let n = 0; n < 80; n++) {
+    if (await p.evaluate(() => globalThis.sbShik.state().solved)) break;
+    await p.click("#hintBtn"); await p.click("#hintNext"); await p.click("#hintNext"); await p.click("#hintNext");
+  }
+  const solved = await p.evaluate(() => globalThis.sbShik.state().solved);
+  await p.goto(`${BASE}shikaku.html?pack=patches&p=1`);
+  await p.waitForTimeout(700);
+  const pk = await p.evaluate(() => ({ sub: document.getElementById("sub").textContent, tiles: document.querySelectorAll("#nums .tile").length, rules: !document.getElementById("rulesPatches").hidden }));
+  await p.goto(`${BASE}shikaku.html?pack=easy&p=1`);
+  await p.waitForTimeout(500);
+  const classic = await p.evaluate(() => ({ tiles: document.querySelectorAll("#nums .tile").length, rules: !document.getElementById("rulesPatches").hidden }));
+  check(`Patches: Hint solves the import (${solved}); the Patches pack shows tiles (${pk.sub}, ${pk.tiles}, rules line ${pk.rules}); classic Easy keeps plain numbers (${classic.tiles} tiles, rules line ${classic.rules})`,
+    solved && pk.sub === "Patches · 8×8 · #1" && pk.tiles > 10 && pk.rules && classic.tiles === 0 && !classic.rules);
+  // Import tab: both screenshots are listed and open.
+  await p.goto(`${BASE}import.html`);
+  await p.waitForTimeout(800);
+  const list = await p.evaluate(() => [...document.querySelectorAll(".imp-open")].map((b) => b.getAttribute("aria-label")));
+  await p.goto(`${BASE}starbattle.html?import=${encodeURIComponent(q.id)}`);
+  await p.waitForTimeout(800);
+  const qs = await p.evaluate(() => document.getElementById("sub").textContent);
+  check(`Import tab lists the Patches Shikaku and the 9×9 Queens (${list.filter((l) => /Shikaku|9×9/.test(l)).join(" | ")}); the Queens one opens ("${qs}")`,
+    list.some((l) => /^Open Shikaku 8×8 · Patches, (New|Solved)/.test(l)) && list.some((l) => /^Open Star Battle 9×9 · 1 star, New/.test(l)) && /Imported · 9×9 · 1 star/.test(qs));
   await ctx.close();
 }
 

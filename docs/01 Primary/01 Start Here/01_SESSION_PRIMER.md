@@ -6,6 +6,9 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Done + Colin confirmed 10/24:** Nonogram clue bar, no "New"/"zoom" labels, stronger haptics, and **Shikaku**
   ("Looks great!"; pages only, inside the app's Star Battle page via `?game=shikaku`; 8×8 / 10×10 / 12×12, 10 each;
   hints may draw partial patches; build log 2026-10-24 "Shikaku").
+- **Pushed later 10/24 (pages only, waiting on Colin's phone test):** Shikaku Patches clues + a "Patches 8×8" pack,
+  his LinkedIn Patches and Queens screenshots in the Import tab, the Shikaku resume card shows the board, drag label
+  = just the count. Build log "Shikaku Patches clues".
 - **⏰ WAITING ON COLIN: the app OTA, when he's home and says "ready".** Remind him at the start of the next chat.
   Before he runs it, in `C:\dev\SolveBuddyApp`: add "nonogram" + "shikaku" to App.js GAMES, `node scripts/pull-pages.mjs`,
   `npx expo export --platform ios`, check the fingerprint is still `513e3eaf…`, commit + push the app repo. Then he runs:

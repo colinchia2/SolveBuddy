@@ -2,6 +2,26 @@
 
 Newest first.
 
+## 2026-10-24 — Shikaku Patches clues, Colin's two screenshots, the resume card (pages only, no OTA)
+- **Patches-style clues** (Colin: "Add patches style shape clues"; LinkedIn Patches). A clue can be a shape (square,
+  tall = taller than wide, wide = wider than tall, any) with or without a number (`[r, c, n (0 = none), shape]`;
+  puzzle `style: "patches"`). Engine: candidates respect shape and optional size; the answer counter, "Only one
+  shape", "Must cover" (partial) and "Only one reaches" all work unchanged; labels read "the 4 square", "the tall
+  shape". A "Must cover" hint on a clue with no number can turn out to be the whole patch (it can't know yet).
+  Classic packs: byte-for-byte unchanged (regenerated, no diff).
+- **Page:** a Patches clue is a small tile in its shape and colour (dashed for "any"), number on it; a patch over one
+  clue takes that clue's colour. Wrong shape that can still grow = dashed + "A tall shape is taller than it is wide.";
+  can't grow = red. Rules sheet gets a Patches line (shown only on Patches puzzles). Gestures unchanged.
+- **New pack "Patches 8×8"** (`packs/shikaku8-patches.json`, 10 puzzles): about half the clues have no number; one
+  answer each, Hint alone solves all 10.
+- **Imports** (`packs/imports.json`): Colin's LinkedIn **Patches** screenshot (8×8, 12 clues; one answer, Hint
+  solves it) and his **Queens** screenshot (9×9 Star Battle, 1 star; one answer, matches his × marks; marks left
+  off as asked). The Import tab now lists and filters Shikaku imports; `shikaku.js` opens `?import=<id>`.
+- **Resume card:** an in-progress Shikaku now shows the grid, your patches and every clue (was a blank square).
+- **Drag label:** just the count ("6"), not "3×2 = 6".
+- Checks: `checks/shikaku.ts` (shape clues, Patches pack, the import) and a pages_smoke Patches block (tiles, shape
+  message, clue colour, Hint solves the import, Import tab + Queens opens, resume card grid + numbers).
+
 ## 2026-10-24 — Save point (evening)
 - Colin on Shikaku: "Looks great!" Open: the app OTA when he's home (primer "Right now" has the steps).
 

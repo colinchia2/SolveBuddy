@@ -14,6 +14,10 @@ Top item = what's next.
   blocks): at the next app OTA add "nonogram" and "shikaku" to GAMES + `node scripts/pull-pages.mjs` (so the
   packed pages carry Shikaku), then drop `bridge.js` HOSTED and the hosting in `scripts/build_site.ts`.
 
+**From 10/24 evening (Shikaku round 2, built and pushed: build log "Shikaku Patches clues"):** waiting on Colin's phone
+test of the Patches pack, his two imported screenshots and the resume card. Not built: making Patches puzzles by hand
+in the Import tab (only Claude adds them from a screenshot for now).
+
 **From Colin 10/23 (Buddy Family chat), in this order:**
 - **A. FIRST TALK on pick-up: is the app's whole structure right?** Colin finds Packs confusing: tapping a pack on
   the Packs tab jumps to Library; "which ones do I have vs what am I downloading?". Talk first (where packs live,

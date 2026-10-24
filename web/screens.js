@@ -68,6 +68,26 @@ export function shikakuPicture(n, patches, size, solid = true) {
   const rects = patches.map((P) => `<rect x="${(P.c * u + 0.6).toFixed(2)}" y="${(P.r * u + 0.6).toFixed(2)}" width="${(P.w * u - 1.2).toFixed(2)}" height="${(P.h * u - 1.2).toFixed(2)}" rx="${Math.max(1, u * 0.18).toFixed(2)}" fill="${SHK_COLORS[P.k % SHK_COLORS.length][solid ? 1 : 0]}"${solid ? "" : ` stroke="${SHK_COLORS[P.k % SHK_COLORS.length][1]}" stroke-width="1"`}/>`).join("");
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block;background:#FFFDF9">${rects}</svg>`;
 }
+// Patches-style clues (Colin 10/24): a small tile in the clue's shape, in the clue's own colour, the number on it.
+// Tile size as a share of a square: [width, height]. "a" (any) is a dashed square.
+export const SHK_TILE = { s: [0.6, 0.6], t: [0.42, 0.74], w: [0.74, 0.42], a: [0.64, 0.64] };
+export const shkClueColor = (i) => i % SHK_COLORS.length;
+// A Shikaku board for the Resume sheet (Colin 10/24: "at least the grid with the numbers"): the grid, the patches you
+// drew (soft) or the finished ones (solid), and every clue on top.
+export function shikakuBoard(puzzle, patches, size, solid = false) {
+  const n = puzzle.size, u = size / n;
+  const lines = Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * u).toFixed(2); return `<path d="M${p} 0V${size}M0 ${p}H${size}" stroke="#E6DACD" stroke-width=".8"/>`; }).join("");
+  const pic = shikakuPicture(n, patches, size, solid).replace(/^<svg[^>]*>|<\/svg>$/g, "");
+  const fs = Math.max(7, u * 0.5).toFixed(1);
+  const clues = puzzle.clues.map(([r, c, num, sh], i) => {
+    const cx = (c + 0.5) * u, cy = (r + 0.5) * u;
+    const txt = num ? `<text x="${cx.toFixed(2)}" y="${(cy + u * 0.17).toFixed(2)}" text-anchor="middle" font-family="Inter, sans-serif" font-weight="700" font-size="${fs}" fill="${puzzle.style || solid ? "#fff" : "#2A211B"}">${num}</text>` : "";
+    if (!puzzle.style) return txt;
+    const [tw, th] = SHK_TILE[sh ?? "a"], col = SHK_COLORS[shkClueColor(i)][1];
+    return `<rect x="${(cx - (tw * u) / 2).toFixed(2)}" y="${(cy - (th * u) / 2).toFixed(2)}" width="${(tw * u).toFixed(2)}" height="${(th * u).toFixed(2)}" rx="${(u * 0.12).toFixed(2)}" fill="${col}"${(sh ?? "a") === "a" ? ` fill-opacity=".55" stroke="${col}" stroke-dasharray="2 1.5"` : ""}/>${txt}`;
+  }).join("");
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block;background:#FFFDF9">${lines}${pic}${clues}</svg>`;
+}
 // Colour the answer's patches so no two touching ones match (for pictures of a puzzle nobody coloured by hand).
 export function shikakuColors(rects) {
   const touch = (a, b) => a.r <= b.r + b.h && b.r <= a.r + a.h && a.c <= b.c + b.w && b.c <= a.c + a.w

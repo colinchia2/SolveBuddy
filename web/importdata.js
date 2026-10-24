@@ -49,6 +49,7 @@ export function validImport(x) {
   if (!x || typeof x.id !== "string") return false;
   if (x.game === "sudoku") return validSudoku(x);
   if (x.game === "watersort") return validWater(x);
+  if (x.game === "shikaku") return validShikaku(x);
   if (x.game !== "starbattle") return false;
   const n = x.size;
   if (!Number.isInteger(n) || n < MIN_SIZE || n > MAX_SIZE || !Number.isInteger(x.stars) || x.stars < 1 || x.stars > maxStars(n)) return false;
@@ -61,6 +62,15 @@ const isGrid9 = (g, lo) => Array.isArray(g) && g.length === 9 && g.every((r) => 
 function validSudoku(x) {
   if (x.size !== 9 || !isGrid9(x.givens, 0) || !isGrid9(x.solution, 1)) return false;
   return Object.entries(x.entries ?? {}).every(([k, v]) => /^[0-8],[0-8]$/.test(k) && Number.isInteger(v) && v >= 1 && v <= 9);
+}
+// Shikaku (Claude adds these from a screenshot, Colin 10/24): clues [row, col, number (0 = none), shape?] and the
+// answer, one rectangle per clue.
+function validShikaku(x) {
+  const n = x.size, inB = (v) => Number.isInteger(v) && v >= 0 && v < n;
+  if (!Number.isInteger(n) || n < 4 || n > 15 || !Array.isArray(x.clues) || !x.clues.length) return false;
+  if (!x.clues.every((k) => Array.isArray(k) && inB(k[0]) && inB(k[1]) && Number.isInteger(k[2]) && k[2] >= 0 && (k[3] === undefined || "stwa".includes(k[3])))) return false;
+  return Array.isArray(x.solution) && x.solution.length === x.clues.length
+    && x.solution.every((R) => R && inB(R.r) && inB(R.c) && R.w >= 1 && R.h >= 1 && R.r + R.h <= n && R.c + R.w <= n);
 }
 function validWater(x) {
   const t = x.tubes;

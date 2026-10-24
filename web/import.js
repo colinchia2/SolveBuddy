@@ -13,7 +13,7 @@ import { LETTERS, MAX_SIZE, MAX_TUBES, MIN_SIZE, MIN_TUBES, REGION_COLORS, TUBE_
   answerVerdict, boardProblem, deleteImport, groupByDay, markClashes, maxStars, sudokuClashes, sudokuWrong, waterProblem } from "./importdata.js";
 
 const bundled = (await loadPack("imports.json").catch(() => null))?.puzzles ?? [];
-const GAME_NAMES = { starbattle: "Star Battle", sudoku: "Sudoku", watersort: "Water Sort" };
+const GAME_NAMES = { starbattle: "Star Battle", sudoku: "Sudoku", watersort: "Water Sort", shikaku: "Shikaku" };
 const STAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z" fill="#2A211B"/></svg>`;
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
@@ -43,6 +43,7 @@ function itemState(it) {
 function itemTitle(it) {
   if (it.game === "sudoku") return "Sudoku 9×9 · Classic";
   if (it.game === "watersort") return `Water Sort · ${it.tubes.length} tubes`;
+  if (it.game === "shikaku") return `Shikaku ${it.size}×${it.size}${it.style === "patches" ? " · Patches" : ""}`;
   return `Star Battle ${it.size}×${it.size} · ${it.stars} star${it.stars === 1 ? "" : "s"}`;
 }
 function rowNote(it, s) {
@@ -54,6 +55,7 @@ function rowNote(it, s) {
       return `Added ${time} · ${filled} of 81 filled`;
     }
     if (it.game === "watersort") return `Added ${time} · ${s.saved.moves ?? 0} moves`;
+    if (it.game === "shikaku") return `Added ${time} · ${(s.saved.patches ?? []).length} of ${it.clues.length} patches`;
     const stars = Object.values(s.saved.marks ?? {}).filter((v) => v === 2).length;
     return `Added ${time} · ${stars} of ${it.size * it.stars} stars`;
   }
@@ -64,9 +66,10 @@ function rowNote(it, s) {
 function itemShape(it) {
   if (it.game === "sudoku") return "9×9 · Classic";
   if (it.game === "watersort") return `${it.tubes.length} tubes`;
+  if (it.game === "shikaku") return `${it.size}×${it.size}${it.style === "patches" ? " · Patches" : ""}`;
   return `${it.size}×${it.size} · ${it.stars} star${it.stars === 1 ? "" : "s"}`;
 }
-const FILTERS = [["all", "All games"], ["starbattle", "Star Battle"], ["sudoku", "Sudoku"], ["watersort", "Water Sort"]];
+const FILTERS = [["all", "All games"], ["starbattle", "Star Battle"], ["sudoku", "Sudoku"], ["watersort", "Water Sort"], ["shikaku", "Shikaku"]];
 const STATE_WORD = { new: "New", progress: "In progress", solved: "Solved" };
 // Calmer screens (Colin 10/23): a New import button with one line under it, then your imports as 2-wide blocks under
 // their day, with the game filter and the sort in one small row.

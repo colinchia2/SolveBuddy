@@ -22,7 +22,7 @@ const TILES = [
 // Games on the list but not built yet: one quiet line under the tiles (calmer screens, Colin 10/23). Never a game
 // that's playable (the page test checks).
 const SOON = ["Binairo", "Shikaku", "Five Letters", "Groups"].filter((n) => !Object.values(GAMES).some((g) => g.name === n));
-const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4, "thermo-expert": 4 };
+const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4, "thermo-expert": 4, patches: 2 };
 // Nonogram's pack rows (Colin 10/23): the last picture you solved in that pack, or an empty grid of its size.
 function nonoThumb(k) {
   const last = solves().filter((e) => e.g === "nonogram" && e.pack === k).sort((a, b) => b.at - a.at)[0];
