@@ -398,4 +398,11 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/nonogram.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Shikaku (10/24): one answer each, Hint alone solves all 30 (full and partial patches), hints never wrong (shikaku.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Shikaku: one answer each, Hint alone solves all 30, hints never wrong (partial patches too)",
+    spawnSync(process.execPath, ["checks/shikaku.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);
