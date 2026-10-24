@@ -65,7 +65,7 @@ function flipSetting(name) {
 const ZOOM_FROM = 10;
 let boardPx = 355; // the board's size at fit (set when a zoomable board loads)
 const zoom = makeZoom({
-  view: $("zview"), ctl: $("zoomCtl"), tip: $("tip"), zmax: 2.2,
+  view: $("zview"), area: $("stage"), reserve: 30, ctl: $("zoomCtl"), tip: $("tip"), zmax: 2.2,
   geom: (z) => ({ ox: 0, oy: 0, visW: boardPx, visH: boardPx, w: boardPx * z, h: boardPx * z }),
   apply: ({ z, x, y }) => { $("board").style.transform = z === 1 && !x && !y ? "" : `translate(${-x}px, ${-y}px) scale(${z})`; },
   mapColors: () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => (s.marks[key(r, c)] === STAR ? "#2A211B"

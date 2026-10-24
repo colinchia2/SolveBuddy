@@ -11,6 +11,12 @@
 //   apply(s)  draw the board at { z, x, y } (x, y = how far it's panned, in px at that zoom)
 //   mapColors() → n×n colours for the tiny map;  onTwoFingers() = cancel any one-finger mark in progress
 //   ctl, tip  where the Fit control and the tip line go; onZoomed(on) to swap the game's own info (count) out
+//   area      (Colin 10/23) the element holding all the free space between the info row (with the Fit control's hint
+//             line) and the dock. On a zoomable board the window (view) is placed inside it by this file: at fit it's
+//             the board's size, centred (reserve = room kept free under it for the tip line); zoomed, it grows with
+//             the board until it fills the whole area (taller than wide is fine). Fingers are measured against the area,
+//             which never moves. With an area, geom(z) gives ox/oy as the clue strips' size inside the window; visW/visH
+//             are worked out here.
 import { haptic } from "./bridge.js";
 
 const TIPS_KEY = "solvebuddy.zoomTips";
@@ -30,8 +36,25 @@ const easeOutBack = (t) => { const s = 1.4; return 1 + (s + 1) * (t - 1) ** 3 + 
 // A second finger's pointer (the first finger plays; two fingers zoom). Test events without a pointer type count as first.
 export const second = (e) => e.pointerType === "touch" && !e.isPrimary;
 
-export function makeZoom({ view, geom, apply, mapColors, onTwoFingers, onZoomed, ctl, tip, tipText = "", zmax = 2.5 }) {
+export function makeZoom({ view, area = null, reserve = 0, geom: gameGeom, apply, mapColors, onTwoFingers, onZoomed, ctl, tip, tipText = "", zmax = 2.5 }) {
   const st = { z: 1, x: 0, y: 0 };
+  // The area's inner box (inside its padding), measured when a board loads and when the screen size changes.
+  let abox = null;
+  const measure = () => {
+    if (!area) return (abox = null);
+    const cs = getComputedStyle(area), n = (v) => parseFloat(v) || 0;
+    abox = { x: n(cs.paddingLeft), y: n(cs.paddingTop), w: area.clientWidth - n(cs.paddingLeft) - n(cs.paddingRight),
+      h: area.clientHeight - n(cs.paddingTop) - n(cs.paddingBottom) };
+  };
+  // Where everything sits at zoom z, in the touch frame (the area's, or the window's when there's no area).
+  function geom(z) {
+    const g = gameGeom(z);
+    if (!abox || !enabled) return g;
+    const visW = Math.min(abox.w - g.ox, g.w), visH = Math.min(abox.h - g.oy, g.h);
+    const w = g.ox + visW, h = g.oy + visH;
+    const left = abox.x + (abox.w - w) / 2, top = abox.y + Math.max(0, Math.min((abox.h - reserve - h) / 2, abox.h - h));
+    return { ...g, visW, visH, ox: left + g.ox, oy: top + g.oy, win: { left, top, w, h } };
+  }
   let enabled = false, anim = 0, gesture = null, lastTwoTap = 0, zoomedNow = false;
   const z0 = { busy: false };
   const waiting = []; // things to do once every finger is up (see whenFree)
@@ -50,6 +73,10 @@ export function makeZoom({ view, geom, apply, mapColors, onTwoFingers, onZoomed,
   }
   function draw() {
     apply({ ...st });
+    if (abox && enabled) {
+      const { win } = geom(st.z), v = view.style;
+      v.position = "absolute"; v.left = `${win.left}px`; v.top = `${win.top}px`; v.width = `${win.w}px`; v.height = `${win.h}px`;
+    }
     const on = enabled && st.z > 1.02;
     if (on !== zoomedNow) { zoomedNow = on; box.hidden = cap.hidden = ctl.hidden = !on; onZoomed?.(on); showTip(); }
     if (on) {
@@ -111,7 +138,8 @@ export function makeZoom({ view, geom, apply, mapColors, onTwoFingers, onZoomed,
 
   // Touches. Two fingers anywhere on the board start a zoom/move; from then until every finger lifts, one-finger
   // play is off (busy), so the first finger never leaves a mark. No page scroll or bounce while touching the board.
-  const pt = (t) => { const r = view.getBoundingClientRect(); return { x: t.clientX - r.left, y: t.clientY - r.top }; };
+  const frame = area ?? view; // fingers are measured against this; it doesn't move while the window grows
+  const pt = (t) => { const r = frame.getBoundingClientRect(); return { x: t.clientX - r.left, y: t.clientY - r.top }; };
   function start(e) {
     if (!enabled || e.touches.length < 2) return;
     e.preventDefault();
@@ -148,17 +176,18 @@ export function makeZoom({ view, geom, apply, mapColors, onTwoFingers, onZoomed,
     }
     if (e.touches.length === 0) setTimeout(() => { z0.busy = false; const q = waiting.splice(0); q.forEach((f) => f()); }, 0);
   }
-  view.addEventListener("touchstart", start, { passive: false });
-  view.addEventListener("touchmove", move, { passive: false });
-  view.addEventListener("touchend", end);
-  view.addEventListener("touchcancel", end);
+  frame.addEventListener("touchstart", start, { passive: false });
+  frame.addEventListener("touchmove", move, { passive: false });
+  frame.addEventListener("touchend", end);
+  frame.addEventListener("touchcancel", end);
   // Safari's own pinch events: never let the page zoom.
-  view.addEventListener("gesturestart", (e) => e.preventDefault());
+  frame.addEventListener("gesturestart", (e) => e.preventDefault());
+  addEventListener("resize", () => { if (!enabled || !area) return; measure(); settle(); draw(); });
   // A trackpad pinch in a desktop browser (ctrl + wheel): handy for testing.
-  view.addEventListener("wheel", (e) => {
+  frame.addEventListener("wheel", (e) => {
     if (!enabled || !e.ctrlKey) return;
     e.preventDefault();
-    const r = view.getBoundingClientRect(), g = geom(st.z);
+    const r = frame.getBoundingClientRect(), g = geom(st.z);
     const mx = e.clientX - r.left, my = e.clientY - r.top, u = (mx - g.ox + st.x) / st.z, v = (my - g.oy + st.y) / st.z;
     const z = Math.max(1, Math.min(zmax, st.z * Math.exp(-e.deltaY / 200))), g2 = geom(z), L = limits(z);
     Object.assign(st, { z, x: Math.max(L.xlo, Math.min(L.xhi, u * z - (mx - g2.ox))), y: Math.max(L.ylo, Math.min(L.yhi, v * z - (my - g2.oy))) });
@@ -171,6 +200,11 @@ export function makeZoom({ view, geom, apply, mapColors, onTwoFingers, onZoomed,
       enabled = on;
       cancelAnimationFrame(anim);
       view.classList.toggle("zoomable", on);
+      if (area) {
+        area.classList.toggle("zarea", on);
+        if (!on) for (const k of ["position", "left", "top"]) view.style[k] = "";
+        measure();
+      }
       const L = limits(1);
       Object.assign(st, { z: 1, x: L.xlo, y: L.ylo });
       if (on && saved?.z > 1) { const S = limits(saved.z); Object.assign(st, { z: Math.min(zmax, saved.z), x: Math.max(S.xlo, Math.min(S.xhi, saved.x)), y: Math.max(S.ylo, Math.min(S.yhi, saved.y)) }); }

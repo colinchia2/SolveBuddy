@@ -2,10 +2,11 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (2026-10-23, late)
-- **Built, committed, NOT pushed: Nonogram + two-finger zoom (backlog C).** 15 picture puzzles (5×5 / 10×10 / 15×15),
-  trustworthy one-line hints, picture finish ("A heart!"); zoom on Star Battle 10×10+ and Nonogram 15×15
-  (`web/zoom.js`). Build log 2026-10-23 "Nonogram + two-finger zoom". **Next:** Colin's phone test, then push.
+## Right now (2026-10-23, latest)
+- **Pushed: Nonogram + two-finger zoom, with Colin's phone-test tweaks.** Tap × first (like Star Battle) with a quiet
+  "× · ■" switch for fill-first; a drag paints what its first square shows; tap a line's numbers to × the rest when
+  it's right (shake if not); no row/column highlight; zoomed boards use the whole space between the info row and the
+  dock. Build log 2026-10-23 "Nonogram phone-test tweaks". **Next:** Colin's next phone round.
 - **App note:** the app only opens pages it lists, so in the app Nonogram rides inside `app/starbattle.html`
   (`?game=nonogram`, `bridge.js` HOSTED). At the next app-shell change, add "nonogram" to App.js GAMES + pull-pages.
 

@@ -237,6 +237,13 @@ html.nativeback #backBtn { visibility: hidden; }
 .zview { position: relative; flex: none; }
 .zview.zoomable { overflow: hidden; border-radius: 10px; box-shadow: 0 12px 32px rgba(30,30,30,0.14); touch-action: none; overscroll-behavior: contain; }
 .zview.zoomable > .board { box-shadow: none; border-radius: 0; transform-origin: 0 0; }
+/* Zoomable boards (Colin 10/23): the stage is the whole free space between the info row (and the hint line under Fit)
+   and the dock; web/zoom.js places the window in it: centred at fit, growing to fill all of it when zoomed. */
+/* The info row keeps the Fit control's height, so the area doesn't change size when zooming starts. */
+.screen:has(.zarea) .info { min-height: 40px; }
+.stage.zarea { position: relative; justify-content: flex-end; margin: -14px 0; padding: 26px 0 2px; }
+.stage.zarea > .tip { margin-bottom: 6px; }
+.stage.zarea > #zcount { position: absolute; left: 2px; top: 5px; margin: 0; min-height: 0; font-size: 12px; font-weight: 600; color: var(--body); }
 /* A solved picture as the medal (Nonogram): a white rounded square instead of the blue disc. */
 .medal .disc.pic { border-radius: 22px; background: #FFFDF9; box-shadow: 0 12px 28px rgba(194,78,42,0.3); overflow: hidden; }
 .medal .disc.pic svg { width: 100%; height: 100%; }

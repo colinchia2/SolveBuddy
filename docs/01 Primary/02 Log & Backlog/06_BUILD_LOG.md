@@ -2,7 +2,32 @@
 
 Newest first.
 
-## 2026-10-23 — Water Sort pour: stream from the lip, liquid stays at the bottom (not pushed)
+## 2026-10-23 — Nonogram phone-test tweaks: tap × first, ■ switch, tap a clue to finish a line, no highlight; zoom uses the whole screen
+- Colin's phone test (10/23). **Pushed** (this ships Nonogram + zoom, the Water Sort pour fix and these tweaks).
+- **Tap** (`web/nonogram.js`): × → fill → clear, like Star Battle. A small quiet **"× · ■" switch** in the info row
+  (next to the timer): on ■ a tap fills first (fill → × → clear). Remembered per puzzle in its own store
+  (`solvebuddy.nonogramMode`), so picking it alone doesn't make a puzzle "in progress" in the Library.
+- **Drag:** paints what the first square shows after its tap: empty → × (or fill on ■), filled → fill, × → ×. Only
+  onto empty squares, so a drag never clears (clear stays the third tap). Still locked to its row or column. To fill
+  a run on ×: tap the first square twice, then drag from it.
+- **Tap a clue** (row or column numbers): if the line's filled squares are exactly the picture's, × goes into every
+  other empty square with a quick sweep along the line (≤ 4 light ticks, then the firm "line done" one); one Undo
+  takes it all back. If not exactly right: the clue gives a small shake, nothing else (no buzz, no reveal).
+- **No row/column highlight** any more (cells and clue strips). Hint's own line colour stays.
+- **Zoom window uses the whole free space** (`web/zoom.js` new `area` option, both Nonogram 15×15 and Star Battle
+  10×10+): the stage becomes the area between the info row (+ the hint line under Fit) and the dock, 16px gutters.
+  At fit the window is the board, centred (15×15 already fills the width edge to edge); zoomed, it grows with the
+  board until it fills the whole area (taller than wide). Fingers are measured against the area so pinching stays
+  steady while the window grows. The info row keeps the Fit control's height on zoomable boards so the area never
+  changes size. Star Battle's zoomed star count moved up to the hint line (left of "Two fingers to move…").
+- Tip line and How-to-play updated (tap order, ■, drag from a filled square, tap the numbers).
+- Checks: `run_all.ts` 48 PASS; `pages_smoke.mjs` 78 PASS (new: tap order × → fill → clear; no highlight while
+  touching; drag from empty paints ×, from filled paints fill, from × paints × and never clears; ■ tap + drag fill;
+  ■ remembered per puzzle; clue tap on a right line sweeps ×, ticks then firm, one Undo; wrong line only shakes;
+  15×15 fit fills the width; zoomed window height within 8px of the free space and 16px gutters, Nonogram and Star
+  Battle 12×12).
+
+## 2026-10-23 — Water Sort pour: stream from the lip, liquid stays at the bottom (pushed with the Nonogram tweaks)
 - Colin (phone screenshot, Hard #3): the tilted tube showed the poured colour at the OPEN end with empty space behind
   it, and the stream dropped from the tube's underside partway along. Same tilt kept.
 - Fix (`web/watersort.js` `startPour` / `drawPour`): the tube is placed so the LOWEST corner of its mouth (the lip,
@@ -14,7 +39,7 @@ Newest first.
   poured colour's height drops while the colours under it stay and nothing is moved toward the mouth; the target's
   new colour grows. `pages_smoke.mjs` 69 PASS. Mid-pour shot: scratchpad `nono_shots/pour_mid.png`.
 
-## 2026-10-23 — Nonogram + two-finger zoom (backlog C; not pushed, needs a phone test)
+## 2026-10-23 — Nonogram + two-finger zoom (backlog C; phone-tested, pushed with the tweaks above)
 - Built from `docs/design/zoom_nonogram_mockup.html` + Colin's 10/23 decisions and comments.
 - **Engine** `engine/nonogram/`: `line.ts` (line solver: what every arrangement of a clue shares), `solve.ts` (line logic
   to a standstill + an answer counter that guesses, so "one answer" is checked separately), `hint.ts` (a wrong filled

@@ -1,5 +1,8 @@
 // Nonogram play page (Colin 10/23, docs/design/zoom_nonogram_mockup.html), wired to the line-logic engine and packs.
-// Tap: fill → × → clear. Drag: the first square decides (fill, clear, or ×) and the drag locks to its row or column.
+// Tap (Colin 10/23, like Star Battle): × → fill → clear. The quiet "× · ■" switch above the board flips it to fill → × →
+// clear (remembered per puzzle). Drag: paints what the first square shows after its tap (empty → × or, in ■ mode,
+// fill; filled → fill; × → ×), only onto empty squares (a drag never clears), locked to its row or column.
+// Tap a row's or column's clue: if its filled squares are exactly right, × sweeps into the rest; if not, the clue shakes.
 // Haptics: a light tap per square, a firmer one when a row or column becomes complete and correct, the win buzz.
 // 15×15 zooms with two fingers (web/zoom.js); clue strips stay pinned. Each puzzle is a picture: the finish shows it
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
@@ -23,7 +26,19 @@ const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
 const pid = () => idx + 1;
 const fmt = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
-const TAP_TIP = "Tap to fill · tap again for × · drag to do many";
+const TAP_TIP = "Tap for × · again to fill · tap a clue to finish its line";
+
+// The "× · ■" switch is remembered per puzzle in its own small store, so choosing it alone doesn't make a puzzle
+// "in progress" in the Library.
+const MODES_KEY = "solvebuddy.nonogramMode";
+const modeKey = () => `${packName}/${pid()}`;
+const modes = () => { try { return JSON.parse(localStorage.getItem(MODES_KEY) || "{}"); } catch { return {}; } };
+function saveMode() {
+  const all = modes();
+  if (s.mode === "fill") all[modeKey()] = "fill";
+  else delete all[modeKey()];
+  try { localStorage.setItem(MODES_KEY, JSON.stringify(all)); } catch {}
+}
 
 const SETTINGS_KEY = "solvebuddy.settings";
 const settings = { timer: true, mistakes: false };
@@ -74,7 +89,7 @@ function applyView(v) {
   b.setProperty("--py", v.y.toFixed(2));
 }
 const zoom = makeZoom({
-  view: $("board"), geom: geomAt, apply: applyView, ctl: $("zoomCtl"), tip: $("tip"), tipText: TAP_TIP, zmax: 2.6,
+  view: $("board"), area: $("stage"), reserve: 30, geom: geomAt, apply: applyView, ctl: $("zoomCtl"), tip: $("tip"), tipText: TAP_TIP, zmax: 2.6,
   mapColors: () => Array.from({ length: N }, (_, r) => Array.from({ length: N }, (_, c) => (mark(r, c) === FILL ? "#2A211B" : "#FFFDF9"))),
   onTwoFingers: cancelDrag,
   onZoomed: (on) => { $("countWrap").hidden = on; },
@@ -85,9 +100,10 @@ function load(i, name = packName, first = false) {
   packName = name; pack = PACKS[name]; idx = i;
   P = pack.puzzles[i]; N = P.rows.length;
   undoStack.length = 0;
-  s = { marks: {}, hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, cur: null, hints: 0 };
+  s = { marks: {}, hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, mode: "x", sweep: null };
   const saved = savedGame("nonogram", name, pid());
   if (saved) { s.marks = { ...(saved.marks ?? {}) }; s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
+  s.mode = modes()[modeKey()] === "fill" ? "fill" : "x";
   $("sub").textContent = `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
   $("time").textContent = "0:00";
   history.replaceState(null, "", `?${query.get("game") ? "game=nonogram&" : ""}pack=${name}&p=${i + 1}`);
@@ -130,13 +146,14 @@ function render() {
   const stripeF = new Set(h && h.level === 2 ? h.data.fill.map(([r, c]) => key(r, c)) : []);
   const stripeX = new Set(h && h.level === 2 ? h.data.cross.map(([r, c]) => key(r, c)) : []);
   const ring = h && h.data.kind === "mistake" && h.level >= 2 ? key(...h.data.clear[0]) : null;
-  const cur = !won && !h ? s.cur : null;
   for (const el of $("board").querySelectorAll(".nc")) {
     const r = Number(el.dataset.r), c = Number(el.dataset.c), k = key(r, c), m = mark(r, c);
     const bad = settings.mistakes && !won && ((m === FILL && !isX(r, c)) || (m === CROSS && isX(r, c)));
     el.classList.toggle("f", m === FILL);
     el.classList.toggle("bad", bad);
-    el.classList.toggle("lc", !!cur && (cur[0] === r || cur[1] === c));
+    const sd = s.sweep?.get(k);
+    el.classList.toggle("sw", sd !== undefined);
+    if (sd !== undefined) el.style.setProperty("--sd", `${sd}ms`);
     el.classList.toggle("focus", focus.has(k) && h.data.kind !== "mistake");
     el.classList.toggle("stripe", stripeF.has(k) || stripeX.has(k));
     el.classList.toggle("sx", stripeX.has(k));
@@ -149,16 +166,16 @@ function render() {
   for (const el of $("board").querySelectorAll(".rc")) {
     const r = Number(el.dataset.r);
     el.classList.toggle("done", lineDone("row", r));
-    el.classList.toggle("cur", !!cur && cur[0] === r);
     el.classList.toggle("hl", !!hlLine && hlLine.axis === "row" && hlLine.i === r);
   }
   for (const el of $("board").querySelectorAll(".cc")) {
     const c = Number(el.dataset.c);
     el.classList.toggle("done", lineDone("col", c));
-    el.classList.toggle("cur", !!cur && cur[1] === c);
     el.classList.toggle("hl", !!hlLine && hlLine.axis === "col" && hlLine.i === c);
   }
   $("count").textContent = `${rowsDone()} of ${N} rows`;
+  document.querySelectorAll("#modeSw [data-mode]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.mode === s.mode)));
+  $("modeSw").classList.toggle("gone", won);
   zoom.refreshMap();
   $("hintBtn").classList.toggle("pressed", !!h);
   $("hint").hidden = !h;
@@ -197,16 +214,19 @@ function setMark(r, c, m) {
 function tap(r, c) {
   if (s.solved) return;
   undoStack.push(JSON.stringify(s.marks));
-  setMark(r, c, ({ [BLANK]: FILL, [FILL]: CROSS, [CROSS]: BLANK })[mark(r, c)]); // fill → × → clear
+  setMark(r, c, nextMark(mark(r, c)));
   afterChange();
 }
+// × mode (the default, like Star Battle): × → fill → clear. ■ mode: fill → × → clear.
+const nextMark = (m) => (s.mode === "fill" ? { [BLANK]: FILL, [FILL]: CROSS, [CROSS]: BLANK } : { [BLANK]: CROSS, [CROSS]: FILL, [FILL]: BLANK })[m];
 function afterChange() {
   s.hint = null;
   checkSolved();
   render();
 }
 
-// Drag: the first square decides what the drag does; the first move decides row or column, and it stays there.
+// Drag (Colin 10/23): it paints what the first square shows after its tap (empty → × or, in ■ mode, fill; filled →
+// fill; × → ×), onto empty squares only, so a drag never clears. The first move decides row or column; it stays there.
 let drag = null;
 const gridCell = (x, y) => {
   const g = $("board").querySelector(".ngrid").getBoundingClientRect(), cs = G.cs1 * view.z;
@@ -218,9 +238,7 @@ $("board").addEventListener("pointerdown", (e) => {
   if (!el || s.solved || zoom.busy || second(e) || s.pausedAt) return;
   e.preventDefault();
   const r = Number(el.dataset.r), c = Number(el.dataset.c), m = mark(r, c);
-  drag = { start: [r, c], last: [r, c], axis: null, moved: false, mode: m === BLANK ? FILL : m === FILL ? BLANK : CROSS };
-  s.cur = [r, c];
-  render();
+  drag = { start: [r, c], last: [r, c], axis: null, moved: false, mode: m === BLANK ? nextMark(BLANK) : m };
 });
 document.addEventListener("pointermove", (e) => {
   if (!drag || second(e)) return;
@@ -239,7 +257,6 @@ document.addEventListener("pointermove", (e) => {
   const [lr, lc] = drag.last, steps = Math.max(Math.abs(to[0] - lr), Math.abs(to[1] - lc));
   for (let i = 1; i <= steps; i++) paint(lr + Math.sign(to[0] - lr) * i * (to[0] !== lr ? 1 : 0), lc + Math.sign(to[1] - lc) * i * (to[1] !== lc ? 1 : 0));
   drag.last = to;
-  s.cur = to;
   render();
 });
 document.addEventListener("pointerup", (e) => {
@@ -252,10 +269,44 @@ document.addEventListener("pointerup", (e) => {
 });
 document.addEventListener("pointercancel", () => cancelDrag());
 function paint(r, c) {
-  const m = mark(r, c);
-  if (drag.mode === FILL && m === BLANK) setMark(r, c, FILL);
-  else if (drag.mode === BLANK && m === FILL) setMark(r, c, BLANK);
-  else if (drag.mode === CROSS && m === BLANK) setMark(r, c, CROSS);
+  if (mark(r, c) === BLANK) setMark(r, c, drag.mode);
+}
+
+// Tap a clue (Colin 10/23): when the line's filled squares are exactly the picture's, × sweeps along the rest of it
+// (a few light ticks, then the firm "line done" one); one Undo takes it back. Otherwise the clue just shakes; it
+// never says what's wrong.
+let clueTap = null, sweepTimer = 0;
+$("board").addEventListener("pointerdown", (e) => {
+  const el = e.target.closest(".rc, .cc");
+  clueTap = el && !s.solved && !zoom.busy && !second(e) && !s.pausedAt ? { el, x: e.clientX, y: e.clientY } : null;
+});
+document.addEventListener("pointerup", (e) => {
+  const t = clueTap;
+  clueTap = null;
+  if (!t || second(e) || zoom.busy || Math.hypot(e.clientX - t.x, e.clientY - t.y) > 12) return;
+  const row = t.el.classList.contains("rc");
+  finishLine(row ? "row" : "col", Number(row ? t.el.dataset.r : t.el.dataset.c), t.el);
+});
+function finishLine(axis, i, el) {
+  if (s.solved || s.pausedAt) return;
+  if (!lineRight(axis, i)) {
+    el.classList.remove("shake");
+    void el.offsetWidth; // restart the shake if it's tapped again
+    el.classList.add("shake");
+    return;
+  }
+  const empty = Array.from({ length: N }, (_, x) => (axis === "row" ? [i, x] : [x, i])).filter(([r, c]) => mark(r, c) === BLANK);
+  if (!empty.length) return;
+  undoStack.push(JSON.stringify(s.marks));
+  const step = Math.min(35, 300 / empty.length); // ms between squares; a long line still sweeps in about a third of a second
+  s.sweep = new Map();
+  empty.forEach(([r, c], n) => { s.marks[key(r, c)] = CROSS; s.sweep.set(key(r, c), Math.round(n * step)); });
+  const last = (empty.length - 1) * step, ticks = Math.min(empty.length, 4);
+  for (let t = 0; t < ticks; t++) setTimeout(() => haptic("tap"), Math.round(ticks > 1 ? (t * last) / (ticks - 1) : 0));
+  setTimeout(() => { if (!s.solved) haptic("thud"); }, last + 90);
+  clearTimeout(sweepTimer);
+  sweepTimer = setTimeout(() => { s.sweep = null; render(); }, last + 400);
+  afterChange();
 }
 // Two fingers came down: whatever one finger started doesn't count.
 function cancelDrag() {
@@ -272,7 +323,6 @@ function checkSolved() {
   clearSaved("nonogram", packName, pid());
   saveFinal("nonogram", packName, pid(), { marks: { ...s.marks } });
   haptic("success");
-  s.cur = null;
   // The picture moment: zoom back to the whole board, then × marks and grid lines melt and the colour sweeps in.
   zoom.fit();
   setTimeout(() => $("board").classList.add("won"), 120);
@@ -333,6 +383,13 @@ $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
 document.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => flipSetting(b.dataset.set)));
+document.querySelectorAll("#modeSw [data-mode]").forEach((b) => (b.onclick = () => {
+  if (s.solved || s.mode === b.dataset.mode) return;
+  haptic("pick");
+  s.mode = b.dataset.mode;
+  saveMode();
+  render();
+}));
 document.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "z" && !s.pausedAt) $("undoBtn").onclick(); });
 
 function pause() { if (s.solved || s.pausedAt) return; s.pausedAt = Date.now(); render(); }

@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="common.css">
 <style>
   /* Nonogram (Colin 10/23, docs/design/zoom_nonogram_mockup.html): clue strips top and left, thick lines every 5,
-     finished clues grey, the row and column you're on light up. 15×15 zooms (web/zoom.js); the clue strips stay
+     finished clues grey (no row/column highlight, Colin 10/23). 15×15 zooms (web/zoom.js); the clue strips stay
      pinned to the edges and slide with the board. */
   .screen { height: 844px; }
   .stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 0 30px; min-height: 0; }
@@ -31,7 +31,9 @@
   .rc { flex: none; height: calc(1px * var(--cs)); display: flex; justify-content: flex-end; align-items: center; gap: calc(0.45px * var(--fs)); padding-right: 7px;
     font: 600 calc(1px * var(--fs)) / 1 Inter, sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
   .cc.done, .rc.done { color: #C4B9AE; }
-  .cc.cur, .rc.cur { background: var(--brand-soft); }
+  .cc, .rc { cursor: pointer; } /* tap a clue to × the rest of a line that's right */
+  .cc.shake, .rc.shake { animation: nshake .32s ease; }
+  @keyframes nshake { 20% { transform: translateX(-3px); } 45% { transform: translateX(3px); } 70% { transform: translateX(-2px); } 100% { transform: none; } }
   .cc.hl, .rc.hl { background: var(--accent-soft); color: var(--accent-dark); }
   .ngrid { display: grid; grid-template-columns: repeat(var(--n), calc(1px * var(--cs))); border-left: 2px solid var(--ink); border-top: 2px solid var(--ink);
     width: max-content; transform: translate(calc(-1px * var(--px)), calc(-1px * var(--py))); }
@@ -39,7 +41,6 @@
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--board); }
   .nc.t5r { border-right: 2px solid var(--ink); }
   .nc.t5b { border-bottom: 2px solid var(--ink); }
-  .nc.lc { background: #F1F6FE; } /* the row and column you're on */
   .nc.focus { background: #FDF0E8; } /* the hint's row or column */
   .nc::before { content: ""; position: absolute; inset: 1px; border-radius: 2px; background: var(--ink); opacity: 0; transform: scale(0.6);
     transition: opacity .08s ease, transform .12s cubic-bezier(0.3,1.4,0.5,1); }
@@ -47,6 +48,15 @@
   .nc.f.bad::before { background: var(--conflict-star); }
   .nc .xm { position: relative; font: 600 calc(0.5px * var(--cs)) / 1 Inter, sans-serif; color: #B8ABA0; transition: opacity .3s ease; }
   .nc .xm.bad { color: var(--conflict-star); }
+  .nc.sw .xm { animation: nsweep .26s cubic-bezier(0.3,1.4,0.5,1) backwards; animation-delay: var(--sd); } /* clue tap: × sweeps along */
+  @keyframes nsweep { from { opacity: 0; transform: scale(0.4); } }
+  /* What a tap does first: × (default, like Star Battle) or ■. Small and quiet, above the board. */
+  .nmode { display: flex; padding: 2px; border-radius: 9px; background: rgba(42,33,27,0.06); }
+  .nmode.gone { visibility: hidden; }
+  .nmode button { width: 38px; height: 24px; border: 0; border-radius: 7px; background: none; display: grid; place-items: center; cursor: pointer;
+    font: 600 15px/1 Inter, sans-serif; color: #9A8E84; -webkit-tap-highlight-color: transparent; }
+  .nmode button[aria-checked="true"] { background: #FFFDF9; color: var(--ink); box-shadow: 0 1px 3px rgba(30,30,30,0.12); }
+  .nmode .sqi { width: 11px; height: 11px; border-radius: 2px; background: currentColor; }
   .nc.stripe { background: repeating-linear-gradient(135deg, rgba(47,111,214,0.34) 0 4px, rgba(255,255,255,0) 4px 9px), var(--board); }
   .nc.stripe.sx { background: repeating-linear-gradient(135deg, rgba(194,78,42,0.3) 0 4px, rgba(255,255,255,0) 4px 9px), var(--board); }
   .nc.ring { box-shadow: inset 0 0 0 2px var(--accent); }
@@ -75,6 +85,10 @@
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+      <div class="nmode" id="modeSw" role="radiogroup" aria-label="What a tap does first">
+        <button role="radio" data-mode="x" aria-label="Tap marks × first">×</button>
+        <button role="radio" data-mode="fill" aria-label="Tap fills first"><span class="sqi"></span></button>
+      </div>
       <span class="count" id="countWrap"><span id="count"></span></span><span class="zslot" id="zoomCtl"></span>
     </div>
 
@@ -112,7 +126,8 @@
     <section class="sheet" role="dialog" aria-label="How to play Nonogram">
       <div class="sheet-top"><h2>How to play</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
       <div class="row"><span class="ico" style="background:#E2E6F4"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3D4C8F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z M4 12h16 M12 4v16 M6.5 6.5h3v3h-3z M14.5 14.5h3v3h-3z"/></svg></span><span>The numbers say how many squares in a row (or column) are <strong>filled, in order</strong>, with at least one gap between each group. Fill them all and a picture appears.</span></div>
-      <div class="row"><span class="ico" style="background:#EDE5DC; font-weight:700; color:#4E433A">×</span><span><strong>Tap</strong> fills a square, tap again for ×, once more clears it. <strong>Drag</strong> along a row or column to do many: where you start decides fill, × or clear.</span></div>
+      <div class="row"><span class="ico" style="background:#EDE5DC; font-weight:700; color:#4E433A">×</span><span><strong>Tap</strong> once for ×, twice to fill, a third time clears. Pick <strong>■</strong> at the top to fill first. <strong>Drag</strong> along a row or column to do many: it paints what your first square shows, so to fill a run, fill the first square, then drag from it.</span></div>
+      <div class="row"><span class="ico" style="background:#E3EFE6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F7A4C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg></span><span>Filled a line right? <strong>Tap its numbers</strong> and × goes in every square left. If something's off, the numbers just give a little shake.</span></div>
       <div class="row"><span class="ico" style="background:#DCEAFE"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F57B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l5 5 M5 5h4 M5 5v4 M19 19l-5-5 M19 19h-4 M19 19v-4"/></svg></span><span>On 15×15, <strong>pinch with two fingers</strong> to zoom, and slide two fingers to move. One finger always plays. Fit shows the whole board again.</span></div>
       <div class="row"><span class="ico" style="background:#F8EBC9"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C5F00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/></svg></span><span>Stuck? Hint checks for a wrong square first, then shows one row or column you can work out, and why.</span></div>
 <button class="dark" data-close>Got it</button>

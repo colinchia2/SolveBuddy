@@ -322,8 +322,9 @@ const used = await page.evaluate(async () => {
 check(`the Solved card shows hints used (${used})`, /^\d+(\.\d+)? hints? used$/.test(used));
 
 const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-// Nonogram (Colin 10/23): tap cycle, drag locked to a line with one light buzz per square, a firmer buzz when a row
-// is complete and right, finished clues grey out, one Undo per drag, hints explain a row or column, and the finish
+// Nonogram (Colin 10/23): tap cycle × → fill → clear (■ switch: fill first, remembered per puzzle), a drag paints what
+// its first square shows (empty → ×, filled → fill) locked to a line with one light buzz per square, a firmer buzz when
+// a row is complete and right, tapping a clue ×'s the rest of a right line (shakes otherwise), no row/column highlight, finished clues grey out, one Undo per drag, hints explain a row or column, and the finish
 // names the picture ("A heart!") with the picture as the medal. App bridge stubbed to record every buzz.
 {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -357,15 +358,60 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     out.cycle = [];
     for (let i = 0; i < 3; i++) { drag([[4, 0]]); out.cycle.push(state(4, 0)); }
     out.cycleBuzz = take();
-    // Heart row 2 (index 1) is 5: drag (1,0) → (1,1) → a wobble into row 3 at column 2: locks to row 2.
+    // No highlight: mid-drag, no row/column classes and the row-mate square looks like any other.
+    cell(0, 0).dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
+    const bg = (r, c) => getComputedStyle(cell(r, c)).backgroundColor;
+    out.noHl = document.querySelectorAll(".lc, .cur").length === 0 && bg(0, 3) === bg(3, 3) && bg(3, 0) === bg(3, 3)
+      && getComputedStyle(document.querySelector('.rc[data-r="0"]')).backgroundColor === getComputedStyle(document.querySelector('.rc[data-r="3"]')).backgroundColor;
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    document.getElementById("undoBtn").click(); take();
+    // Heart row 2 (index 1) is 5: drag from an empty square (1,0) → (1,1) → a wobble into row 3 at column 2: locks to
+    // row 2 and paints ×.
     drag([[1, 0], [1, 1], [2, 2]]);
     out.dragged = [state(1, 0), state(1, 1), state(1, 2), state(2, 2)];
     out.dragBuzz = take();
     document.getElementById("undoBtn").click(); take();
     out.afterUndo = [state(1, 0), state(1, 1), state(1, 2)];
-    // The whole row: four light taps, then a firmer one as it becomes complete and right; its clue greys out.
+    // Fill a run: tap the first square twice (filled), then drag from it: three light taps, then a firmer one as the
+    // row becomes complete and right; its clue greys out.
+    drag([[1, 0]]); drag([[1, 0]]); take();
     drag([[1, 0], [1, 1], [1, 2], [1, 3], [1, 4]]);
+    out.fillRow = [0, 1, 2, 3, 4].map((c) => state(1, c));
     out.rowBuzz = take();
+    // A drag from an × paints × and never clears: from (4,0) (now ×) over a filled (4,2).
+    drag([[4, 0]]); drag([[4, 2]]); drag([[4, 2]]); take(); // (4,0) × ; (4,2) filled
+    drag([[4, 0], [4, 1], [4, 2], [4, 3]]);
+    out.fromX = [0, 1, 2, 3].map((c) => state(4, c));
+    document.getElementById("undoBtn").click(); document.getElementById("undoBtn").click(); document.getElementById("undoBtn").click();
+    document.getElementById("undoBtn").click(); take();
+    out.row4Back = [0, 1, 2, 3].map((c) => state(4, c));
+    // ■ switch: a tap fills an empty square directly, a drag from an empty square paints fill (row 4 is .XXX.).
+    document.querySelector('#modeSw [data-mode="fill"]').click(); take();
+    out.modeOn = document.querySelector('#modeSw [data-mode="fill"]').getAttribute("aria-checked");
+    drag([[3, 1]]);
+    drag([[3, 2], [3, 3]]);
+    out.fillMode = [0, 1, 2, 3, 4].map((c) => state(3, c));
+    take();
+    // Tap a clue when the line is right: × into every other empty square, a few light ticks then the firm one;
+    // one Undo takes the whole fill back.
+    const clue = (sel) => { const el = document.querySelector(sel), b = el.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
+      el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt)); };
+    clue('.rc[data-r="3"]');
+    out.swept = !!document.querySelector('.nc[data-r="3"][data-c="4"].sw');
+    await wait(600);
+    out.clueRow = [0, 1, 2, 3, 4].map((c) => state(3, c));
+    out.clueBuzz = take();
+    document.getElementById("undoBtn").click(); take();
+    out.clueUndo = [0, 1, 2, 3, 4].map((c) => state(3, c));
+    // Column 1 (index 0) is 2 (rows 2-3) but row 4 is wrong: fill (4,0), then tap the column's clue: it only shakes.
+    drag([[4, 0]]); take();
+    const before = JSON.stringify(window.sbNono.state().marks);
+    clue('.cc[data-c="0"]');
+    await wait(400);
+    out.wrongShake = document.querySelector('.cc[data-c="0"]').classList.contains("shake");
+    out.wrongSame = JSON.stringify(window.sbNono.state().marks) === before;
+    out.wrongBuzz = take();
+    document.getElementById("undoBtn").click(); take();
     out.rowGrey = document.querySelector('.rc[data-r="1"]').classList.contains("done");
     out.otherGrey = document.querySelector('.rc[data-r="2"]').classList.contains("done");
     // Hint: names a row or column, then explains why with its technique.
@@ -389,15 +435,32 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     out.winBuzz = take().includes("success");
     return out;
   });
-  check(`Nonogram tap cycles fill → × → clear (${nn.cycle.join(" → ")}), one light buzz each (${nn.cycleBuzz})`,
-    same(nn.cycle, ["fill", "x", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
-  check(`Nonogram drag locks to its row (${nn.dragged.join(", ")}), one light buzz per square (${nn.dragBuzz}), one Undo takes it all back (${nn.afterUndo})`,
-    same(nn.dragged, ["fill", "fill", "fill", "blank"]) && same(nn.dragBuzz, ["tap", "tap", "tap"]) && same(nn.afterUndo, ["blank", "blank", "blank"]));
-  check(`Nonogram row complete and right: firmer buzz (${nn.rowBuzz}), its clue greys (${nn.rowGrey}, unfinished row ${nn.otherGrey})`,
-    same(nn.rowBuzz, ["tap", "tap", "tap", "tap", "thud"]) && nn.rowGrey && !nn.otherGrey);
+  check(`Nonogram tap cycles × → fill → clear like Star Battle (${nn.cycle.join(" → ")}), one light buzz each (${nn.cycleBuzz})`,
+    same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
+  check(`Nonogram: no blue row/column highlight while touching a square (${nn.noHl})`, nn.noHl);
+  check(`Nonogram drag from an empty square paints × and locks to its row (${nn.dragged.join(", ")}), one light buzz per square (${nn.dragBuzz}), one Undo takes it all back (${nn.afterUndo})`,
+    same(nn.dragged, ["x", "x", "x", "blank"]) && same(nn.dragBuzz, ["tap", "tap", "tap"]) && same(nn.afterUndo, ["blank", "blank", "blank"]));
+  check(`Nonogram drag from a filled square paints fill (${nn.fillRow.join(", ")}); row complete and right: firmer buzz (${nn.rowBuzz}), its clue greys (${nn.rowGrey}, unfinished row ${nn.otherGrey})`,
+    same(nn.fillRow, ["fill", "fill", "fill", "fill", "fill"]) && same(nn.rowBuzz, ["tap", "tap", "tap", "thud"]) && nn.rowGrey && !nn.otherGrey);
+  check(`Nonogram drag from an × paints × and never clears a filled square (${nn.fromX.join(", ")}); Undo back (${nn.row4Back})`,
+    same(nn.fromX, ["x", "x", "fill", "x"]) && same(nn.row4Back, ["blank", "blank", "blank", "blank"]));
+  check(`Nonogram ■ switch (${nn.modeOn}): a tap fills, a drag from an empty square paints fill (${nn.fillMode.join(", ")})`,
+    nn.modeOn === "true" && same(nn.fillMode, ["blank", "fill", "fill", "fill", "blank"]));
+  check(`Nonogram tap a right line's clue: × sweeps in (${nn.clueRow.join(", ")}; sweep ${nn.swept}), light ticks then firm (${nn.clueBuzz}); one Undo restores (${nn.clueUndo.join(", ")})`,
+    same(nn.clueRow, ["x", "fill", "fill", "fill", "x"]) && nn.swept && same(nn.clueBuzz, ["tap", "tap", "thud"]) && same(nn.clueUndo, ["blank", "fill", "fill", "fill", "blank"]));
+  check(`Nonogram tap a wrong line's clue: it shakes (${nn.wrongShake}), nothing changes (${nn.wrongSame}), no buzz (${nn.wrongBuzz.length})`,
+    nn.wrongShake && nn.wrongSame && nn.wrongBuzz.length === 0);
   check(`Nonogram hint: "${nn.nudge}" → ${nn.chip}: "${nn.why.slice(0, 60)}…"`, /^Look at (row|column) \d+/.test(nn.nudge) && nn.chip.length > 0 && nn.why.length > 20);
   check(`Nonogram solved by hints: the picture card says "${nn.heading}" with the picture as the medal, colour sweep on, win buzz`,
     nn.heading === "A heart!" && nn.medal && nn.boardWon && nn.winBuzz);
+  // The ■ switch is remembered for this puzzle (and isn't on for another).
+  await p.reload();
+  await p.waitForTimeout(1500);
+  const modeKept = await p.evaluate(() => document.querySelector('#modeSw [data-mode="fill"]').getAttribute("aria-checked"));
+  await p.goto(`${BASE}nonogram.html?pack=easy&p=2`);
+  await p.waitForTimeout(1500);
+  const modeOther = await p.evaluate(() => document.querySelector('#modeSw [data-mode="x"]').getAttribute("aria-checked"));
+  check(`Nonogram ■ switch remembered per puzzle (this one ${modeKept}, another starts on × ${modeOther})`, modeKept === "true" && modeOther === "true");
   // A puzzle with no picture name gets the usual card (future imports).
   const plainCard = await p.evaluate(async () => {
     const { celebrate } = await import("./celebrate.js");
@@ -457,12 +520,23 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const box = await p.evaluate(() => { const r = document.querySelector(".ngwrap").getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
   const mid = [box.x + box.w / 2, box.y + box.h / 2];
   const fitTip = await p.evaluate(() => ({ tip: document.getElementById("tip").textContent, ctl: !document.getElementById("zoomCtl").hidden }));
+  // The board's window vs the free space (Colin 10/23): between the hint line under Fit and the dock, 16px gutters.
+  const win = (sel) => p.evaluate((sel) => { const w = document.querySelector(sel).getBoundingClientRect(), d = document.querySelector(".dock").getBoundingClientRect(),
+    c = document.querySelector(".zcap").getBoundingClientRect(), s = document.querySelector(".screen").getBoundingClientRect();
+    return { h: Math.round(w.height), w: Math.round(w.width), free: Math.round(d.top - c.bottom), gl: Math.round(w.left - s.left), gr: Math.round(s.right - w.right),
+      tipClear: document.getElementById("tip").getBoundingClientRect().top >= w.bottom - 1 }; }, sel);
+  const fitWin = await win("#board");
+  check(`Nonogram 15×15 at fit fills the width (${fitWin.w}px, gutters ${fitWin.gl}/${fitWin.gr}), centred, tip line clear of it (${fitWin.tipClear})`,
+    Math.abs(fitWin.gl - 16) <= 3 && Math.abs(fitWin.gr - 16) <= 3 && fitWin.tipClear);
   const scroll0 = await p.evaluate(() => [scrollY, document.querySelector(".screen").scrollTop]);
   await two([mid[0] - 30, mid[1] - 30], [mid[0] + 30, mid[1] + 30], [mid[0] - 80, mid[1] - 80], [mid[0] + 80, mid[1] + 80]);
   await p.waitForTimeout(500);
   const z1 = await p.evaluate(() => ({ ...window.sbNono.view(), ctl: !document.getElementById("zoomCtl").hidden, cap: document.querySelector(".zcap").innerText,
     capShown: !document.querySelector(".zcap").hidden, tipHidden: document.getElementById("tip").hidden, fits: [...document.querySelectorAll(".nc.f")].length }));
   check(`15×15 at fit says "${fitTip.tip}" with no Fit control (${!fitTip.ctl})`, fitTip.tip === "Pinch with two fingers to zoom" && !fitTip.ctl);
+  const zWin = await win("#board");
+  check(`Nonogram zoomed (${z1.z.toFixed(2)}×): the window fills the free space, ${zWin.h}px tall of ${zWin.free}px between the hint line and the dock, ${zWin.w}px wide (gutters ${zWin.gl}/${zWin.gr})`,
+    Math.abs(zWin.h - zWin.free) <= 8 && Math.abs(zWin.gl - 16) <= 1 && Math.abs(zWin.gr - 16) <= 1);
   check(`two-finger pinch zooms (${z1.z.toFixed(2)}×) without marking (${z1.fits} filled); Fit control + "${z1.cap}" shown`,
     z1.z > 1.6 && z1.fits === 0 && z1.ctl && z1.capShown && z1.cap === "Two fingers to move · pinch to zoom out" && z1.tipHidden);
   // Two fingers slide: the board moves, the zoom stays.
@@ -485,19 +559,19 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   for (let i = 1; i <= 6; i++) await touch("touchMove", [[a[0] + ((b2[0] - a[0]) * i) / 6, a[1] + 3]]);
   await touch("touchEnd", []);
   await p.waitForTimeout(150);
-  const marked = await p.evaluate(([r, c]) => ({ tap: document.querySelector(`.nc[data-r="${r}"][data-c="${c}"]`).classList.contains("f"),
-    row: [0, 1, 2].map((i) => document.querySelector(`.nc[data-r="${r + 1}"][data-c="${c + i}"]`).classList.contains("f")), z: window.sbNono.view().z }), [r0, c0]);
-  check(`zoomed in (${marked.z.toFixed(1)}×), one finger still marks: tap fills (${marked.tap}), drag fills a row (${marked.row})`, marked.tap && marked.row.every(Boolean) && marked.z > 1.5);
+  const marked = await p.evaluate(([r, c]) => ({ tap: !!document.querySelector(`.nc[data-r="${r}"][data-c="${c}"] .xm`),
+    row: [0, 1, 2].map((i) => !!document.querySelector(`.nc[data-r="${r + 1}"][data-c="${c + i}"] .xm`)), z: window.sbNono.view().z }), [r0, c0]);
+  check(`zoomed in (${marked.z.toFixed(1)}×), one finger still marks: tap marks × (${marked.tap}), drag marks a row (${marked.row})`, marked.tap && marked.row.every(Boolean) && marked.z > 1.5);
   // A one-finger drag that a second finger joins doesn't count.
-  const before = await p.evaluate(() => document.querySelectorAll(".nc.f").length);
+  const before = await p.evaluate(() => document.querySelectorAll(".nc.f, .nc .xm").length);
   const d0 = await cellAt(r0 + 2, c0), d1 = await cellAt(r0 + 2, c0 + 2);
   await touch("touchStart", [d0]);
   for (let i = 1; i <= 4; i++) await touch("touchMove", [[d0[0] + ((d1[0] - d0[0]) * i) / 4, d0[1]]]);
   await touch("touchMove", [d1, [d1[0] + 60, d1[1] + 60]]);
   await touch("touchEnd", []);
   await p.waitForTimeout(500);
-  const after = await p.evaluate(() => document.querySelectorAll(".nc.f").length);
-  check(`a second finger cancels the first finger's drag (${before} filled before, ${after} after)`, after === before);
+  const after = await p.evaluate(() => document.querySelectorAll(".nc.f, .nc .xm").length);
+  check(`a second finger cancels the first finger's drag (${before} marked before, ${after} after)`, after === before);
   // Fit button.
   await p.click(".zfit");
   await p.waitForTimeout(600);
@@ -544,13 +618,18 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await p.waitForTimeout(500);
   const sbz = await p.evaluate(() => ({ t: document.getElementById("board").style.transform, ctl: !document.getElementById("zoomCtl").hidden,
     count: document.getElementById("zcount").textContent, marks: document.querySelectorAll(".cell .xm, .cell svg").length }));
+  const sbWin = await p.evaluate(() => { const w = document.getElementById("zview").getBoundingClientRect(), d = document.querySelector(".dock").getBoundingClientRect(),
+    c = document.querySelector(".zcap").getBoundingClientRect(), s = document.querySelector(".screen").getBoundingClientRect(), n = document.getElementById("zcount").getBoundingClientRect();
+    return { h: Math.round(w.height), free: Math.round(d.top - c.bottom), gl: Math.round(w.left - s.left), gr: Math.round(s.right - w.right), countAbove: n.bottom <= w.top + 1 && n.height > 0 }; });
+  check(`Star Battle 12×12 zoomed: the window fills the free space, ${sbWin.h}px tall of ${sbWin.free}px, gutters ${sbWin.gl}/${sbWin.gr}; star count sits above it (${sbWin.countAbove})`,
+    Math.abs(sbWin.h - sbWin.free) <= 8 && Math.abs(sbWin.gl - 16) <= 1 && Math.abs(sbWin.gr - 16) <= 1 && sbWin.countAbove);
   const sbCell = await p.evaluate(() => { const w = document.getElementById("zview").getBoundingClientRect();
     const c = [...document.querySelectorAll(".cell")].find((e) => { const b = e.getBoundingClientRect(); return b.left > w.left + 5 && b.top > w.top + 5 && b.right < w.right - 5 && b.bottom < w.bottom - 5; });
     const b = c.getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2, r: c.dataset.r, c: c.dataset.c }; });
   await touch("touchStart", [[sbCell.x, sbCell.y]]); await touch("touchEnd", []);
   await p.waitForTimeout(150);
   const sbMarked = await p.evaluate(({ r, c }) => !!document.querySelector(`.cell[data-r="${r}"][data-c="${c}"] .xm`), sbCell);
-  check(`Star Battle 12×12: pinch zooms (${sbz.t}), Fit control shows, count moves under the board ("${sbz.count}"), no marks from the pinch (${sbz.marks}), one finger marks × (${sbMarked})`,
+  check(`Star Battle 12×12: pinch zooms (${sbz.t}), Fit control shows, count moves to the hint line ("${sbz.count}"), no marks from the pinch (${sbz.marks}), one finger marks × (${sbMarked})`,
     /scale\((1\.[5-9]|2)/.test(sbz.t) && sbz.ctl && sbz.count.endsWith("stars") && sbz.marks === 0 && sbMarked);
   await ctx.close();
 }
