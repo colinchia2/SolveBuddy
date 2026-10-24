@@ -4,8 +4,8 @@ Top item = what's next.
 
 ## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
 **From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
-- **⏰ Colin runs the pending OTA** (tap the Library tab → Library home, app `b029133`); command in the primer's
-  "Right now". After it lands: check the tab tap on the phone, then do the next OTA below.
+- **⏰ Colin runs the pending OTA when home** (Library tab → home, app `b029133`, + Nonogram and Shikaku in GAMES,
+  item below; steps in the primer's "Right now"). Ask him whether to fold in the haptic items below too.
 - **Next app OTA** (App.js + `src/GlassBack.js`, JS only, no build while the fingerprint holds): the glass back
   button uses `impactAsync(Light)`, which Colin doesn't feel; make it `selectionAsync`. In App.js map light
   impacts to `selectionAsync` and "warn" to `notificationAsync(Warning)`. Pages already send only "pick"/"success"

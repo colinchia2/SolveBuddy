@@ -1,5 +1,9 @@
 # SolveBuddy — project status
 
+**As of 2026-10-24 (evening):** 6 games live; Shikaku added 10/24 (pages only, inside the Star Battle page in the app; Colin: "Looks great!").
+
+---
+
 **As of 2026-10-24:** 5 games live (Nonogram added 10/23, inside the Star Battle page in the app until the next
 app OTA). 10/24 round confirmed by Colin: Nonogram clue bar, stronger haptics, no "New"/"zoom" labels. Tapping the
 Library tab again → Library home is pushed on the page side; the app side waits for Colin's OTA. Checks: run_all

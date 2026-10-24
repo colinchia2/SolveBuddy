@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 2026-10-24 — Save point (evening)
+- Colin on Shikaku: "Looks great!" Open: the app OTA when he's home (primer "Right now" has the steps).
+
 ## 2026-10-24 — Shikaku (pages only; reaches the current app with no OTA)
 - Colin 10/24 (away from his computer): put Shikaku on the app he has now. Mockup `docs/design/shikaku_mockup.html`
   v2 (https://claude.ai/artifact/Rkf7HkDm6iCgjRy31cBXYt). His answers: a different colour per patch; 8×8 Easy,
