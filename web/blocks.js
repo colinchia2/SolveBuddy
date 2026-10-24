@@ -208,14 +208,15 @@ function cleared(res) {
   }
   const mid = res.rows.reduce((a, b) => a + b, 0) / n;
   add(n > 1 ? "pts big" : "pts", { top: `${Math.max(0, mid * CELL - 30)}px` }, `+${res.points.toLocaleString()}`);
-  // Stronger than a piece landing (Colin 10/24): a medium thud, then the success buzz, then a tap per extra row.
+  // Stronger than a piece landing (Colin 10/24): a medium thud, then the success buzz (after the thud's second tick in
+  // the app), then a tap per extra row.
   haptic("thud");
-  setTimeout(() => haptic("success"), 80);
+  setTimeout(() => haptic("success"), 150);
   if (n === 4) {
     add("banner", {}, "Four lines!");
     bump(well, "pulse");
-    [200, 300, 400].forEach((ms) => setTimeout(() => haptic("tap"), ms));
-  } else if (n > 1) setTimeout(() => haptic("tap"), 200);
+    [270, 370, 470].forEach((ms) => setTimeout(() => haptic("tap"), ms));
+  } else if (n > 1) setTimeout(() => haptic("tap"), 270);
   bump($("score"), "pop");
 }
 // One short-lived effect on the well; it removes itself when its animation ends.

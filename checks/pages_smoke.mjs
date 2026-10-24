@@ -196,7 +196,7 @@ for (const h of [844, 750]) {
     window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
     window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
     window.__buzz = [];
-    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") { (window.__raw ??= []).push({ ...o, t: performance.now() }); if (!o.again) window.__buzz.push(o.as ?? o.kind); } } }; // what the game meant (the app gets ticks, checked below)
   });
   const p = await ctx.newPage();
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -384,7 +384,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
     window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
     window.__buzz = [];
-    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") { (window.__raw ??= []).push({ ...o, t: performance.now() }); if (!o.again) window.__buzz.push(o.as ?? o.kind); } } }; // what the game meant (the app gets ticks, checked below)
   });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
@@ -924,7 +924,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
     window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
     window.__buzz = [];
-    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") { (window.__raw ??= []).push({ ...o, t: performance.now() }); if (!o.again) window.__buzz.push(o.as ?? o.kind); } } }; // what the game meant (the app gets ticks, checked below)
   });
   const p = await ctx.newPage();
   p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
@@ -983,7 +983,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const dragRow = (r, pace) => p.evaluate(async ([r, pace]) => {
     window.SB_HAPTIC_GAP = undefined;
     const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
-    await wait(60);
+    await wait(200); // past any earlier buzz (a firm one's second tick lands 70ms later)
     window.__buzz = [];
     const at = (c) => { const b = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).getBoundingClientRect(); return { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true }; };
     document.querySelector(`.cell[data-r="${r}"][data-c="0"]`).dispatchEvent(new PointerEvent("pointerdown", at(0)));
@@ -1024,6 +1024,26 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`Water Sort: empty tube ${ws.empty}, pick up ${ws.up}, put down ${ws.down}; ${plain.length} pours "tap,thud", ${fillMoves.length} that finish a tube (${fillMoves.map((m) => m.buzz).join(" / ")}), last pour ${last.buzz}`,
     same(ws.empty, ["warn"]) && same(ws.up, ["tap"]) && same(ws.down, ["pick"]) && plain.every((m) => same(m.buzz, ["tap", "thud"]))
     && fillMoves.length > 0 && fillMoves.every((m) => same(m.buzz, ["tap", "thud", "thud"])) && last.buzz.includes("success") && !last.buzz.slice(2).includes("thud"));
+  const sentKinds = await p.evaluate(() => [...new Set(window.__raw.map((o) => o.kind))]);
+  // What the app actually gets (Colin 10/24: he feels the selection tick and the success buzz, not impactAsync): only
+  // "pick" and "success". tap = one tick; thud = two ticks ~70ms apart; warn = two ticks ~140ms apart.
+  await fresh("stats.html"); // a quiet page, so nothing else buzzes meanwhile (the Solved card does)
+  const wire = await p.evaluate(async () => {
+    const { haptic } = await import("./bridge.js");
+    const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    const out = {};
+    for (const k of ["tap", "thud", "warn", "success"]) {
+      await wait(200);
+      window.__raw = [];
+      haptic(k);
+      await wait(250);
+      out[k] = { kinds: window.__raw.map((o) => o.kind), gap: window.__raw.length > 1 ? Math.round(window.__raw[1].t - window.__raw[0].t) : 0 };
+    }
+    return out;
+  });
+  check(`the app only gets ticks and success (${sentKinds.join(", ")} during play): tap ${wire.tap.kinds}, thud ${wire.thud.kinds} (${wire.thud.gap}ms), warn ${wire.warn.kinds} (${wire.warn.gap}ms), success ${wire.success.kinds}`,
+    sentKinds.every((k) => k === "pick" || k === "success") && same(wire.tap.kinds, ["pick"]) && same(wire.thud.kinds, ["pick", "pick"])
+    && wire.thud.gap >= 55 && wire.thud.gap <= 120 && same(wire.warn.kinds, ["pick", "pick"]) && wire.warn.gap >= 120 && same(wire.success.kinds, ["success"]));
   await ctx.close();
 }
 

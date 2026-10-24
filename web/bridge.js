@@ -40,17 +40,24 @@ export function openPack(g, set) {
 }
 globalThis.sbLeave = goHome; // the app's glass back button calls this
 // Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle,
-// "warn" = a soft no (a move that isn't allowed; an app that doesn't know it yet plays it as a light tap).
+// "warn" = a soft no (a move that isn't allowed).
 // A fast drag can ask for a buzz every few ms: light ones (tap, pick) closer than HAPTIC_GAP ms to the last buzz are
 // dropped (Colin 10/24: ~every 40ms at most). Firmer ones always play. Checks set SB_HAPTIC_GAP = 0 to count each one.
+// In the app (Colin's phone test 10/24): the app plays "pick" as the selection tick and "success" as the success
+// notification, which he feels; everything else goes to impactAsync, which he doesn't. So the pages send only those
+// two: tap = one tick, thud = two ticks (APP_ECHO_MS apart, so they don't merge), warn = two ticks further apart,
+// success = success. The message keeps what was meant in "as"; the second tick is marked "again". No app change.
 const HAPTIC_GAP = 40;
+const APP_ECHO_MS = { thud: 70, warn: 140 };
 let lastBuzz = -Infinity;
 export function haptic(kind = "tap") {
   const now = performance.now(), light = kind === "tap" || kind === "pick";
   if (light && now - lastBuzz < (globalThis.SB_HAPTIC_GAP ?? HAPTIC_GAP)) return;
   lastBuzz = now;
-  if (inApp) post({ type: "haptic", kind });
-  else navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : kind === "warn" ? [8, 50, 8] : 10);
+  if (!inApp) return void navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : kind === "warn" ? [8, 50, 8] : 10);
+  const sent = kind === "success" ? "success" : "pick";
+  post({ type: "haptic", kind: sent, as: kind });
+  if (APP_ECHO_MS[kind]) setTimeout(() => { lastBuzz = performance.now(); post({ type: "haptic", kind: "pick", as: kind, again: true }); }, APP_ECHO_MS[kind]);
 }
 export const buzz = (ms = 10) => haptic(ms >= 30 ? "thud" : "tap");
 
