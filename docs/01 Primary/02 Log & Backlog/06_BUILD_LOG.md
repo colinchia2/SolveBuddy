@@ -2,6 +2,19 @@
 
 Newest first.
 
+## 2026-10-23 — Hints used, shown during the game (not pushed)
+- Colin (10/23): a small quiet line just above the Hint button, "You've used ⅓ of a hint" · "⅔ of a hint" · "1 hint" ·
+  "1⅓ hints" … on Sudoku (incl. Killer/Thermo), Star Battle, Nonogram and Water Sort (Block Drop has no hints). Hidden
+  until the first hint, updates live, stays on Undo (the hint was used), clears on Restart, hidden once solved.
+- Counting is unchanged: each hint step (Nudge, Explain, Show me) is ⅓ (10/22). One formatter in `web/bridge.js`
+  (`hintAmount`, `showHintsUsed`), and the Solved card uses it too, so it now says "1⅓ hints used" instead of
+  "1.33 hints used" and always matches the line.
+- Layout: the line floats in the gap over the bar (`common.css .hints-used`), centred on Hint, so it adds no height;
+  zoomable boards (Star Battle 10×10+, Nonogram 15×15) give up 12px of their area once it shows.
+- Page checks: formatter cases (0 hidden, ⅓, ⅔, 1, 1⅓, 1⅔, 2, 4⅓, and Solved card wording); on every game the line
+  appears on the first hint, ⅓ → ⅔, kept on Undo, gone after Restart, over the Hint button, no height added,
+  covers nothing; a Sudoku solved by hints shows the same amount on the card as the line. `pages_smoke.mjs` 92 PASS.
+
 ## 2026-10-23 — Water Sort: pours overlap; tapping a pour's tubes speeds it up (not pushed)
 - Colin (10/23 screenshot): taps during a pour used to interfere. Now (`web/watersort.js`): the board changes the moment
   a pour starts and the animation only plays on top, so you can pick up another tube and pour again straight away;
