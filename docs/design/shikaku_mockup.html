@@ -1,0 +1,261 @@
+<title>Shikaku Mockup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!--
+  SolveBuddy Shikaku mockup (Colin 10/24). Patches-style: every patch has a number, the patch follows the finger, a drag from a patch grows it,
+  a hatched red error, a finish that turns the grid into a picture. Colours and fonts are SolveBuddy's own
+  (web/common.css, docs/design/nonogram_clues_mockup.html). Single light look on purpose: it mirrors the app.
+-->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #F6F4F1; --page: #ECE8E2; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52;
+  --brand: #2F6FD6; --brand-soft: #DCEAFE;
+  --accent: #C24E2A; --accent-soft: #FBE3D6;
+  --board: #FFFDF9; --line: #E6DACD; --grid: #D9CCBD;
+  --err: #D23B2F; --err-soft: #FDE4E1;
+  --follow: cubic-bezier(0.25, 0.8, 0.3, 1); /* no overshoot: the patch follows the finger steadily, like the other games' drags */
+  --sheet-ease: cubic-bezier(0.2, 1.12, 0.36, 1);
+}
+html, body { overscroll-behavior: none; margin: 0; background: var(--page); color: var(--ink); font-family: Inter, system-ui, sans-serif; }
+.doc { max-width: 1060px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px; }
+.doc > header h1 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 30px; text-wrap: balance; }
+.doc > header p { margin: 8px 0 0; color: var(--body); font-size: 15px; line-height: 1.5; max-width: 68ch; }
+.stage { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+.notes { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.card { background: rgba(255,255,255,0.65); border-radius: 16px; padding: 14px 16px; color: var(--body); font-size: 14px; line-height: 1.55; }
+.card h2 { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.card ol, .card ul { margin: 0; padding-left: 18px; }
+.card li + li { margin-top: 5px; }
+.card b { color: var(--ink); }
+.btn { border: 0; border-radius: 10px; padding: 9px 14px; background: var(--ink); color: #fff; font: 600 13px Inter, sans-serif; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--grid); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Phone */
+.phone { width: 380px; max-width: 100%; flex: 0 0 auto; background: var(--bg); border-radius: 44px; padding: 14px 14px 18px;
+  box-shadow: 0 30px 60px -30px rgba(42,33,27,0.45), 0 0 0 8px #1D1814; position: relative; overflow: hidden; box-sizing: border-box; }
+.status { display: flex; justify-content: space-between; font: 600 13px Inter; padding: 4px 18px 8px; }
+.top { display: flex; align-items: center; gap: 10px; padding: 4px 4px 10px; }
+.back { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.8); display: grid; place-items: center;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.9) inset, 0 2px 8px rgba(42,33,27,0.12); }
+.top h3 { margin: 0; font: 800 20px 'Bricolage Grotesque', sans-serif; flex: 1; }
+.timer { font: 600 14px Inter; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sizes { display: flex; gap: 4px; background: rgba(42,33,27,0.06); border-radius: 12px; padding: 3px; margin: 0 4px 10px; }
+.sizes button { flex: 1; border: 0; background: transparent; border-radius: 9px; padding: 7px 0; font: 600 13px Inter; color: var(--body); cursor: pointer; }
+.sizes button[aria-pressed="true"] { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(42,33,27,0.15); }
+.info { display: flex; justify-content: space-between; padding: 0 6px 8px; font: 500 13px Inter; color: var(--muted); }
+
+.board { position: relative; aspect-ratio: 1; max-width: 100%; background: var(--board); border-radius: 14px;
+  box-shadow: 0 0 0 1.5px var(--grid); touch-action: none; user-select: none; -webkit-user-select: none; overflow: hidden; }
+.cells, .patches, .nums { position: absolute; inset: 0; display: grid; }
+.cells div { box-shadow: 0 0 0 0.5px var(--line); }
+.cells div::after { content: ""; }
+.patches { display: block; pointer-events: none; }
+.nums { pointer-events: none; }
+.nums span { display: grid; place-items: center; font: 700 var(--fs, 16px) Inter; color: var(--ink); }
+.nums span.dot::before { content: ""; }
+
+.patch { position: absolute; box-sizing: border-box; border-radius: 9px; border: 2px solid var(--pc); background: var(--pf);
+  transition: left .09s var(--follow), top .09s var(--follow), width .09s var(--follow), height .09s var(--follow), background .2s, border-color .2s;
+  margin: 2px; }
+.patch.preview { background: color-mix(in srgb, var(--brand-soft) 70%, transparent); border: 2px dashed var(--brand); }
+.patch .size { position: absolute; right: 4px; bottom: 2px; font: 700 11px Inter; color: var(--brand); background: #fff; border-radius: 6px; padding: 0 5px; }
+.patch.err { border-color: var(--err); background: repeating-linear-gradient(135deg, var(--err-soft) 0 5px, #fff 5px 9px); }
+.patch.land { animation: land .25s ease-out; }
+.patch.win { animation: win .6s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+.board.solved .patch { background: var(--pc); }
+.board.solved .nums span { color: #fff; transition: color .3s .3s; }
+@keyframes land { 0% { opacity: .55; } 100% { opacity: 1; } }
+@keyframes win { 0% { transform: scale(1); } 45% { transform: scale(0.82) rotate(-3deg); } 100% { transform: scale(1); } }
+
+.msg { min-height: 40px; margin: 10px 4px 0; display: flex; align-items: center; gap: 8px; font: 600 13px Inter; color: var(--err);
+  opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .25s var(--sheet-ease); }
+.msg.on { opacity: 1; transform: none; }
+.msg i { width: 18px; height: 18px; border-radius: 4px; flex: 0 0 auto; background: repeating-linear-gradient(135deg, var(--err-soft) 0 3px, var(--err) 3px 5px); }
+.dock { display: flex; gap: 8px; margin: 6px 4px 0; }
+.dock button { flex: 1; border: 0; border-radius: 14px; padding: 12px 0; background: #fff; font: 600 14px Inter; color: var(--ink); cursor: pointer;
+  box-shadow: 0 1px 3px rgba(42,33,27,0.12); }
+
+.done { position: absolute; left: 14px; right: 14px; bottom: 18px; background: #fff; border-radius: 20px; padding: 12px 12px 12px 18px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 -10px 40px rgba(42,33,27,0.18); transform: translateY(130%); transition: transform .55s var(--sheet-ease); }
+.done.on { transform: none; }
+.done > div { flex: 1; min-width: 0; }
+.done h4 { margin: 0; font: 800 20px 'Bricolage Grotesque', sans-serif; }
+.done p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.done .btn { padding: 12px 16px; font-size: 15px; background: var(--brand); }
+@media (prefers-reduced-motion: reduce) { .patch, .msg, .done { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="doc">
+  <header>
+    <h1>Shikaku for SolveBuddy</h1>
+    <p>Drag from one square to another to draw a patch. Every patch needs exactly one number, and that number is how many squares it covers. Try it: switch between 8×8, 10×10 and 12×12, or press <b>Play the demo</b>.</p>
+  </header>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="status"><span>9:41</span><span>●●● ◔</span></div>
+      <div class="top">
+        <div class="back" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <h3>Shikaku</h3><span class="timer" id="timer">0:00</span>
+      </div>
+      <div class="sizes" role="group" aria-label="Size">
+        <button data-n="8" aria-pressed="true">8×8 Easy</button><button data-n="10" aria-pressed="false">10×10 Medium</button><button data-n="12" aria-pressed="false">12×12 Hard</button>
+      </div>
+      <div class="info"><span id="count">0 of 18 patches</span><span id="left">64 squares left</span></div>
+      <div class="board" id="board"><div class="cells" id="cells"></div><div class="patches" id="patches"></div><div class="nums" id="nums"></div></div>
+      <div class="msg" id="msg"><i></i><span id="msgText"></span></div>
+      <div class="dock"><button id="hint">Hint</button><button id="undo">Undo</button><button id="clear">Clear</button></div>
+      <div class="done" id="done"><div><h4>Solved!</h4><p id="doneText"></p></div><button class="btn" id="again">Next puzzle</button></div>
+    </div>
+
+    <div class="notes">
+      <div class="card"><h2>How it plays</h2><ol>
+        <li><b>Drag</b> from any square: a patch follows your finger steadily (no wobble). Its size shows in the corner (2×4 = 8). <b>Start a drag on a patch you already drew and it grows</b> from there; it never starts over.</li>
+        <li><b>Let go:</b> a right-sized patch lands in its own colour. A drag over other patches replaces them.</li>
+        <li><b>Wrong?</b> The patch turns hatched red and says why ("This patch needs 8 squares. It has 6."). Nothing is ever checked against the answer, only against its own number.</li>
+        <li><b>Tap a patch</b> to remove it. Undo and Clear work as in the other games.</li>
+        <li><b>Finish:</b> the patches dip and pop in a wave from the top-left corner, fill in solid, and the grid becomes a picture.</li>
+        <li><b>Buzzes:</b> a tick for each new square while dragging, medium when a patch lands, warn on red, success on the finish.</li>
+      </ol></div>
+      <div class="card"><h2>Questions for you</h2><ol>
+        <li><b>Colours:</b> every patch has its own colour (like Patches, shown here), or all in SolveBuddy blue?</li>
+        <li><b>Packs:</b> 8×8 Easy, 10×10 Medium and 12×12 Hard, 10 puzzles each, every one with exactly one answer?</li>
+        <li><b>Hint:</b> it draws one patch that has to be right, with a short reason (like Star Battle).</li>
+      </ol></div>
+      <div class="row"><button class="btn" id="demo">Play the demo</button><button class="btn ghost" id="reset">Start over</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // [row, col, number] clues and [row, col, width, height] answers, each puzzle checked for exactly one answer.
+  const PUZ = {"8":{"clues":[[0,2,8],[2,4,5],[2,6,6],[0,7,2],[2,1,4],[5,7,5],[4,1,4],[4,2,3],[4,3,5],[6,5,4],[3,6,2],[5,1,2],[5,4,3],[5,6,2],[6,0,2],[6,1,2],[7,1,2],[7,6,3]],"sol":[[0,0,4,2],[0,4,1,5],[0,5,2,3],[0,7,1,2],[2,0,4,1],[2,7,1,5],[3,0,2,2],[3,2,1,3],[3,3,1,5],[3,5,1,4],[3,6,1,2],[5,0,2,1],[5,4,1,3],[5,6,1,2],[6,0,1,2],[6,1,2,1],[7,1,2,1],[7,5,3,1]]},"10":{"clues":[[1,1,8],[0,4,3],[0,6,2],[0,7,2],[2,9,6],[2,2,4],[2,4,3],[1,5,5],[1,6,4],[4,7,3],[3,2,3],[5,3,3],[4,8,5],[6,9,5],[4,1,8],[6,4,5],[5,6,2],[6,2,4],[7,3,4],[7,5,3],[6,6,3],[6,7,4],[8,0,2],[8,9,4],[9,0,2],[9,5,2],[9,6,1]],"sol":[[0,0,2,4],[0,2,3,1],[0,5,2,1],[0,7,1,2],[0,8,2,3],[1,2,2,2],[1,4,1,3],[1,5,1,5],[1,6,1,4],[2,7,1,3],[3,2,1,3],[3,3,1,3],[3,8,1,5],[3,9,1,5],[4,0,2,4],[4,4,1,5],[5,6,2,1],[6,2,1,4],[6,3,1,4],[6,5,1,3],[6,6,1,3],[6,7,1,4],[8,0,2,1],[8,8,2,2],[9,0,2,1],[9,4,2,1],[9,6,1,1]]},"12":{"clues":[[2,0,9],[1,3,4],[0,7,3],[2,11,12],[5,6,12],[3,7,4],[3,3,10],[4,1,9],[3,8,3],[4,11,12],[6,7,3],[7,0,4],[8,1,12],[7,8,2],[8,4,6],[8,5,2],[8,6,2],[7,10,10],[9,11,5],[8,7,6],[9,6,4],[10,0,2],[10,4,2],[11,6,4],[11,7,2]],"sol":[[0,0,3,3],[0,3,2,2],[0,5,3,1],[0,8,4,3],[1,5,2,6],[1,7,1,4],[2,3,2,5],[3,0,3,3],[3,8,1,3],[3,9,3,4],[5,7,1,3],[6,0,1,4],[6,1,2,6],[6,8,1,2],[7,3,2,3],[7,5,1,2],[7,6,1,2],[7,9,2,5],[7,11,1,5],[8,7,2,3],[9,5,2,2],[10,0,1,2],[10,3,2,1],[11,3,4,1],[11,7,2,1]]}};
+  // Soft fill + border pairs; the solved picture uses the border colour as a solid fill.
+  const COLORS = [["#DCEAFE","#2F6FD6"],["#FBE3D6","#C24E2A"],["#DDF1E4","#2E8B57"],["#EEE3FB","#7B4FC9"],["#FFF1C7","#C9930E"],["#DDF2F4","#1E8C99"],["#FBE0EC","#C2477D"]];
+  const $ = (id) => document.getElementById(id);
+  const board = $("board"), cellsEl = $("cells"), patchesEl = $("patches"), numsEl = $("nums");
+  let N, P, clueAt, patches, history, drag, startT, tick, demoing = false;
+
+  function load(n) {
+    N = n; P = PUZ[n]; clueAt = new Map(P.clues.map(([r, c, v]) => [r * N + c, v]));
+    patches = []; history = []; drag = null; board.classList.remove("solved"); $("done").classList.remove("on"); $("done").style.transition = "none"; requestAnimationFrame(() => requestAnimationFrame(() => { $("done").style.transition = ""; })); say("");
+    for (const el of [cellsEl, numsEl]) { el.style.gridTemplate = `repeat(${N},1fr) / repeat(${N},1fr)`; el.innerHTML = ""; }
+    numsEl.style.setProperty("--fs", (n === 12 ? 13 : n === 10 ? 15 : 17) + "px");
+    for (let i = 0; i < N * N; i++) { cellsEl.appendChild(document.createElement("div")); const s = document.createElement("span"); s.textContent = clueAt.get(i) || ""; numsEl.appendChild(s); }
+    document.querySelectorAll(".sizes button").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.n === n)));
+    startT = Date.now(); render();
+  }
+  const pct = (v) => (v / N) * 100 + "%";
+  function place(el, R) { el.style.left = `calc(${pct(R.c)})`; el.style.top = `calc(${pct(R.r)})`; el.style.width = `calc(${pct(R.w)} - 4px)`; el.style.height = `calc(${pct(R.h)} - 4px)`; }
+  const cluesIn = (R) => P.clues.filter(([r, c]) => r >= R.r && r < R.r + R.h && c >= R.c && c < R.c + R.w);
+  const overlaps = (a, b) => a.r < b.r + b.h && b.r < a.r + a.h && a.c < b.c + b.w && b.c < a.c + a.w;
+  const touches = (a, b) => a.r <= b.r + b.h && b.r <= a.r + a.h && a.c <= b.c + b.w && b.c <= a.c + a.w;
+  function verdict(R) {
+    const k = cluesIn(R), area = R.w * R.h;
+    if (k.length === 0) return "Each patch needs one number.";
+    if (k.length > 1) return `This patch has ${k.length} numbers. It can only have one.`;
+    if (k[0][2] !== area) return `This patch needs ${k[0][2]} squares. It has ${area}.`;
+    return "";
+  }
+  function colorFor(R) {
+    const used = new Set(patches.filter((p) => touches(p, R)).map((p) => p.color));
+    const start = (R.r * 7 + R.c * 3) % COLORS.length;
+    for (let i = 0; i < COLORS.length; i++) { const k = (start + i) % COLORS.length; if (!used.has(k)) return k; }
+    return start;
+  }
+  function render(landed) {
+    patchesEl.querySelectorAll(".patch:not(.preview)").forEach((e) => e.remove());
+    for (const p of patches) {
+      const el = document.createElement("div"); el.className = "patch" + (p.err ? " err" : "") + (p === landed && !p.err ? " land" : "");
+      el.style.setProperty("--pf", COLORS[p.color][0]); el.style.setProperty("--pc", COLORS[p.color][1]);
+      place(el, p); p.el = el; patchesEl.prepend(el);
+    }
+    const good = patches.filter((p) => !p.err), covered = good.reduce((s, p) => s + p.w * p.h, 0);
+    $("count").textContent = `${good.length} of ${P.clues.length} patches`;
+    $("left").textContent = `${N * N - covered} squares left`;
+    if (good.length === P.clues.length && covered === N * N) win();
+  }
+  function say(t) { $("msgText").textContent = t; $("msg").classList.toggle("on", !!t); }
+  function rectOf(a, b) { return { r: Math.min(a[0], b[0]), c: Math.min(a[1], b[1]), h: Math.abs(a[0] - b[0]) + 1, w: Math.abs(a[1] - b[1]) + 1 }; }
+  function cellAt(e) {
+    const b = board.getBoundingClientRect();
+    return [Math.max(0, Math.min(N - 1, Math.floor(((e.clientY - b.top) / b.height) * N))), Math.max(0, Math.min(N - 1, Math.floor(((e.clientX - b.left) / b.width) * N)))];
+  }
+  function showPreview(R) {
+    let el = patchesEl.querySelector(".preview");
+    if (!el) { el = document.createElement("div"); el.className = "patch preview"; el.innerHTML = '<span class="size"></span>'; patchesEl.appendChild(el); place(el, R); }
+    place(el, R); el.querySelector(".size").textContent = R.w * R.h === 1 ? "1" : `${R.h}×${R.w} = ${R.w * R.h}`;
+  }
+  // A drag that starts on a patch grows that patch (it covers the patch plus every square up to the finger);
+  // a drag from an empty square draws a new one (Colin 10/24: "always adds to the shape").
+  const inside = (p, [r, c]) => r >= p.r && r < p.r + p.h && c >= p.c && c < p.c + p.w;
+  function shape(d) {
+    const R = rectOf(d.a, d.b); if (!d.base) return R;
+    const B = d.base, r = Math.min(R.r, B.r), c = Math.min(R.c, B.c);
+    return { r, c, h: Math.max(R.r + R.h, B.r + B.h) - r, w: Math.max(R.c + R.w, B.c + B.w) - c };
+  }
+  function begin(cell) { drag = { a: cell, b: cell, moved: false, base: patches.find((p) => inside(p, cell)) }; if (!drag.base) showPreview(shape(drag)); }
+  function move(cell) { if (!drag || (cell[0] === drag.b[0] && cell[1] === drag.b[1])) return; drag.b = cell; drag.moved = true; showPreview(shape(drag)); }
+  function end() {
+    if (!drag) return; const d = drag, R = shape(d), wasTap = !d.moved; drag = null;
+    patchesEl.querySelector(".preview")?.remove();
+    if (wasTap && d.base) { history.push(patches.slice()); patches = patches.filter((p) => p !== d.base); say(""); render(); return; }
+    if (wasTap && clueAt.get(R.r * N + R.c) !== 1) return; // a tap only draws on a 1
+    if (d.base && R.r === d.base.r && R.c === d.base.c && R.w === d.base.w && R.h === d.base.h) return; // dragged within the patch: no change
+    history.push(patches.slice());
+    patches = patches.filter((p) => !overlaps(p, R));
+    const why = verdict(R); const p = { ...R, err: !!why, color: d.base ? d.base.color : colorFor(R) };
+    patches.push(p); say(why); render(p);
+  }
+  function win() {
+    clearInterval(tick); const s = Math.round((Date.now() - startT) / 1000);
+    patches.forEach((p) => { p.el.style.animationDelay = (p.r + p.c) * 45 + "ms"; p.el.classList.remove("land"); p.el.classList.add("win"); });
+    setTimeout(() => board.classList.add("solved"), 250);
+    $("doneText").textContent = `${N}×${N} · ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")} · ${P.clues.length} patches`;
+    setTimeout(() => $("done").classList.add("on"), 900);
+  }
+  function startClock() { clearInterval(tick); tick = setInterval(() => { const s = Math.round((Date.now() - startT) / 1000); $("timer").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }, 500); }
+
+  board.addEventListener("pointerdown", (e) => { if (demoing) return; board.setPointerCapture(e.pointerId); begin(cellAt(e)); });
+  board.addEventListener("pointermove", (e) => { if (drag && !demoing) move(cellAt(e)); });
+  board.addEventListener("pointerup", () => { if (!demoing) end(); });
+  board.addEventListener("pointercancel", () => { drag = null; patchesEl.querySelector(".preview")?.remove(); });
+  document.querySelectorAll(".sizes button").forEach((b) => b.addEventListener("click", () => { load(+b.dataset.n); startClock(); }));
+  $("undo").onclick = () => { if (history.length) { patches = history.pop(); say(""); board.classList.remove("solved"); render(); } };
+  $("clear").onclick = () => { history.push(patches.slice()); patches = []; say(""); render(); };
+  $("hint").onclick = () => {
+    const todo = P.sol.map(([r, c, w, h]) => ({ r, c, w, h })).find((R) => !patches.some((p) => !p.err && p.r === R.r && p.c === R.c && p.w === R.w && p.h === R.h));
+    if (!todo) return; history.push(patches.slice()); patches = patches.filter((p) => !overlaps(p, todo));
+    const p = { ...todo, err: false, color: colorFor(todo) }; patches.push(p); say(""); render(p);
+  };
+  $("again").onclick = $("reset").onclick = () => { load(N); startClock(); };
+
+  // Demo: one right patch, one too small (red), fixed, then the rest drawn quickly to show the finish.
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function drawDemo(a, b, step = 150) {
+    begin(a); await wait(step);
+    let cur = a.slice();
+    while (cur[0] !== b[0] || cur[1] !== b[1]) { if (cur[1] !== b[1]) cur[1] += Math.sign(b[1] - cur[1]); else cur[0] += Math.sign(b[0] - cur[0]); move(cur.slice()); await wait(step); }
+    end(); await wait(step * 2);
+  }
+  $("demo").onclick = async () => {
+    if (demoing) return; demoing = true; load(8); startClock(); await wait(400);
+    await drawDemo([0, 0], [1, 3], 170);            // 8: right
+    await drawDemo([0, 4], [2, 4], 170); await wait(900);   // 5 drawn as 3: red
+    await drawDemo([0, 4], [4, 4], 170);            // fixed by drawing over it
+    for (const [r, c, w, h] of PUZ[8].sol) {
+      if (patches.some((p) => !p.err && p.r === r && p.c === c)) continue;
+      await drawDemo([r, c], [r + h - 1, c + w - 1], 45);
+    }
+    demoing = false;
+  };
+
+  load(8); startClock();
+})();
+</script>

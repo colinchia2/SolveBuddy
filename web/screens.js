@@ -55,7 +55,32 @@ export const LOOK = {
   blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z", size: "Endless" },
   // Nonogram (Colin 10/23): a grid with a filled corner block and a clue tick, in its own slate blue.
   nonogram: { bg: "#E2E6F4", ink: "#3D4C8F", path: "M4 4h16v16H4z M4 12h16 M12 4v16 M6.5 6.5h3v3h-3z M14.5 14.5h3v3h-3z", size: "5–15" },
+  // Shikaku (Colin 10/24): a square cut into rectangles, in its own green.
+  shikaku: { bg: "#DDF1E4", ink: "#2E7D4F", path: "M4 4h16v16H4z M4 11h9 M13 4v16 M13 15h7", size: "8–12" },
 };
+// Shikaku's patch colours (docs/design/shikaku_mockup.html): [soft fill, strong colour]; touching patches never share
+// one, and a solved puzzle shows each patch solid in its strong colour.
+export const SHK_COLORS = [["#DCEAFE", "#2F6FD6"], ["#FBE3D6", "#C24E2A"], ["#DDF1E4", "#2E8B57"], ["#EEE3FB", "#7B4FC9"], ["#FFF1C7", "#C9930E"],
+  ["#DDF2F4", "#1E8C99"], ["#FBE0EC", "#C2477D"]];
+// A Shikaku board, small: patches = [{ r, c, w, h, k }] (k = colour). solid = the finished picture.
+export function shikakuPicture(n, patches, size, solid = true) {
+  const u = size / n;
+  const rects = patches.map((P) => `<rect x="${(P.c * u + 0.6).toFixed(2)}" y="${(P.r * u + 0.6).toFixed(2)}" width="${(P.w * u - 1.2).toFixed(2)}" height="${(P.h * u - 1.2).toFixed(2)}" rx="${Math.max(1, u * 0.18).toFixed(2)}" fill="${SHK_COLORS[P.k % SHK_COLORS.length][solid ? 1 : 0]}"${solid ? "" : ` stroke="${SHK_COLORS[P.k % SHK_COLORS.length][1]}" stroke-width="1"`}/>`).join("");
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block;background:#FFFDF9">${rects}</svg>`;
+}
+// Colour the answer's patches so no two touching ones match (for pictures of a puzzle nobody coloured by hand).
+export function shikakuColors(rects) {
+  const touch = (a, b) => a.r <= b.r + b.h && b.r <= a.r + a.h && a.c <= b.c + b.w && b.c <= a.c + a.w
+    && !((a.r + a.h === b.r || b.r + b.h === a.r) && (a.c + a.w === b.c || b.c + b.w === a.c)); // corners don't count
+  const out = [];
+  rects.forEach((R, i) => {
+    const used = new Set(out.filter((P, j) => j < i && touch(P, R)).map((P) => P.k));
+    let k = (R.r * 7 + R.c * 3) % SHK_COLORS.length;
+    for (let t = 0; t < SHK_COLORS.length && used.has(k); t++) k = (k + 1) % SHK_COLORS.length;
+    out.push({ ...R, k });
+  });
+  return out;
+}
 // A solved Nonogram picture, small (pack rows, the Resume sheet): the filled squares in the puzzle's colour.
 export function nonoPicture(sol, size, color) {
   const n = sol.length, u = size / n;

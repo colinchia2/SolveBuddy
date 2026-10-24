@@ -3,7 +3,7 @@
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
 import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { boardPreview } from "./preview.js";
-import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, nonoPicture, ring, setParts, streaks, tabs } from "./screens.js";
+import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, nonoPicture, ring, setParts, shikakuColors, shikakuPicture, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
 for (const [g, game] of Object.entries(GAMES))
@@ -17,6 +17,7 @@ const TILES = [
   { id: "watersort", rules: "Tap a tube, then another, to pour its top colour across. You can only pour onto the same colour or into an empty tube, and only if there's room. Finish when every tube holds one colour." },
   { id: "blocks", rules: "Blocks fall one at a time. Move and turn them so they fill whole rows: a full row clears and scores. It gets faster as you go. The game ends when the blocks reach the top." },
   { id: "nonogram", rules: "The numbers beside each row and above each column say how many squares are filled, in order, with a gap between each group. Tap to fill, tap again for ×. Fill them all and a picture appears. 15×15 zooms with two fingers." },
+  { id: "shikaku", rules: "Cut the square into rectangles. Each one holds exactly one number and covers that many squares. Drag to draw a patch, drag from a patch to make it bigger, tap one to take it away." },
 ];
 // Games on the list but not built yet: one quiet line under the tiles (calmer screens, Colin 10/23). Never a game
 // that's playable (the page test checks).
@@ -28,6 +29,14 @@ function nonoThumb(k) {
   const pz = last && data[`nonogram/${k}`].puzzles[last.p - 1];
   if (pz) return nonoPicture(pz.solution, 30, pz.color ?? "#2A211B");
   const n = data[`nonogram/${k}`].size;
+  return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
+}
+// Shikaku's pack rows (Colin 10/24): the last puzzle you solved in that pack as its coloured picture, or an empty grid.
+function shikThumb(k) {
+  const last = solves().filter((e) => e.g === "shikaku" && e.pack === k).sort((a, b) => b.at - a.at)[0];
+  const pz = last && data[`shikaku/${k}`].puzzles[last.p - 1];
+  if (pz) return shikakuPicture(pz.size, finalBoard("shikaku", k, last.p)?.patches ?? shikakuColors(pz.solution), 30);
+  const n = data[`shikaku/${k}`].size;
   return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
 }
 const ICON = {
@@ -120,10 +129,10 @@ function renderView(moved) {
       ${groups.map(({ group, rows }) => `<div class="c-group"><div class="c-ghead">${esc(group || "Packs")}</div>
         <div class="c-list">${rows.map(({ s, i, short }) => {
           const n = setSize(g, s), d = setDone(g, s);
-          if (g === "nonogram") { // thumb = last solved picture; size is the level (no "zoom" label, Colin 10/24)
+          if (g === "nonogram" || g === "shikaku") { // thumb = last solved picture; size is the level (no "zoom" label, Colin 10/24)
             const k = s.levels[0];
             return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
-              <span class="nthumb">${nonoThumb(k)}</span>
+              <span class="nthumb">${g === "shikaku" ? shikThumb(k) : nonoThumb(k)}</span>
               <span class="g"><b>${esc(short)}</b><small class="nsub">${bars(LEVEL_BARS[k], [5, 7, 9, 11])}${esc(label(g, k))} · ${n} puzzles</small></span>
               <span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
           }
@@ -132,6 +141,7 @@ function renderView(moved) {
             <span class="g"><b>${esc(short)}</b><small>${esc(sub)}</small></span><span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
         }).join("")}</div></div>`).join("")}
       ${g === "nonogram" ? `<p class="c-lead">Size is the level: bigger pictures, longer clues. Each row shows the last picture you solved in it.</p>` : ""}
+      ${g === "shikaku" ? `<p class="c-lead">Size is the level: bigger boards, more patches. Each row shows the last puzzle you solved in it.</p>` : ""}
       ${moreLink(`Get more ${game.name} packs`)}`;
   } else {
     const s = game.sets[at.set];
@@ -182,6 +192,7 @@ function tapTile(g, k, p, state) {
   const note = state === "solved" ? `Your best time: ${fmt(t.ms)}`
     : g === "watersort" ? `${fmt(saved.ms ?? 0)} so far · ${saved.moves ?? 0} moves`
     : g === "nonogram" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 1).length} squares filled`
+    : g === "shikaku" ? `${fmt(saved.ms ?? 0)} so far · ${(saved.patches ?? []).length} of ${puzzle.clues.length} patches drawn`
     : g === "starbattle" ? `${fmt(saved.ms ?? 0)} so far · ${Object.values(saved.marks ?? {}).filter((v) => v === 2).length} of ${puzzle.regions.length * (data[`${g}/${k}`].stars ?? 1)} stars`
     : `${fmt(saved.ms ?? 0)} so far · ${puzzle.givens.flat().filter(Boolean).length + Object.keys(saved.entries ?? {}).length} of 81 filled`;
   $("tile").querySelector(".sheet").innerHTML = `

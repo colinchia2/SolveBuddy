@@ -11,7 +11,7 @@ page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
 let failed = 0;
 const check = (name, ok) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}`); if (!ok) failed++; };
 
-for (const p of ["home", "packs", "stats", "import", "sudoku", "starbattle", "watersort", "blocks", "nonogram"]) {
+for (const p of ["home", "packs", "stats", "import", "sudoku", "starbattle", "watersort", "blocks", "nonogram", "shikaku"]) {
   await page.goto(`${BASE}${p}.html`);
   await page.waitForTimeout(800);
   check(`${p} page opens with no errors`, !errors.some((e) => e.includes(`/${p}.html`)));
@@ -367,7 +367,7 @@ async function hintLine(url) {
   });
 }
 for (const url of ["sudoku.html?pack=easy&p=2", "sudoku.html?pack=killer&p=1", "sudoku.html?pack=thermo&p=1", "starbattle.html?pack=easy&p=2",
-  "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1", "watersort.html?pack=easy&p=2"]) {
+  "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1", "watersort.html?pack=easy&p=2", "shikaku.html?pack=easy&p=2"]) {
   const r = await hintLine(url);
   check(`${url}: hints line "${r.fresh || "(hidden)"}" → "${r.one}" → "${r.two}", after Undo "${r.undo}", after Restart "${r.reset || "(hidden)"}"; over Hint ${r.over}, no height ${r.sameDock}, covers nothing ${r.clear}`,
     r.fresh === "" && r.one === "You've used ⅓ of a hint" && r.two === "You've used ⅔ of a hint" && r.undo === r.two && r.reset === "" && r.over && r.sameDock && r.clear);
@@ -804,6 +804,195 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     asNono.title === "Nonogram" && asNono.cells === 225 && asNono.url.includes("game=nonogram") && asSb.title === "Star Battle" && asSb.cells === 64
     && open.page === "starbattle" && open.query === "?game=nonogram&pack=easy&p=2" && errs.length === 0);
   if (errs.length) console.log(errs.join("\n"));
+  await ctx.close();
+}
+
+// Shikaku (Colin 10/24, docs/design/shikaku_mockup.html v2) on Easy #1, every buzz counted: (1) a drag draws a patch
+// that lands with a medium buzz, a tick for each new shape on the way; (2) a drag that starts on a patch grows it (one
+// patch, same colour, never starts over); a drag inside it changes nothing; (3) too small = dashed with a quiet line,
+// two numbers = red with a plain line why and the warn buzz; (4) a tap takes a patch away, Undo brings it back;
+// (5) hints alone finish it, drawing full and partial patches; the finish is the wave and the Solved card. Then the
+// built app page hosts it (?game=shikaku), the Library/Packs/Stats list it, and its bottom bar matches Nonogram's.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.SB_HAPTIC_GAP = 0;
+    window.__buzz = [];
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic" && !o.again) window.__buzz.push(o.as ?? o.kind); } };
+  });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}shikaku.html?pack=easy&p=1`);
+  await p.waitForTimeout(1200);
+  await p.evaluate(() => localStorage.clear());
+  await p.reload();
+  await p.waitForTimeout(1500);
+  const pz = await p.evaluate(() => window.sbShik.puzzle());
+  const box = await p.locator("#board").boundingBox(), cs = box.width / pz.size;
+  const at = (r, c) => [box.x + (c + 0.5) * cs, box.y + (r + 0.5) * cs];
+  const drag = async (a, z) => { await p.mouse.move(...at(...a)); await p.mouse.down(); await p.mouse.move(...at(...z), { steps: 8 }); await p.mouse.up(); await p.waitForTimeout(150); };
+  const tap = async (a) => { await p.mouse.move(...at(...a)); await p.mouse.down(); await p.mouse.up(); await p.waitForTimeout(150); };
+  const st = () => p.evaluate(() => ({ patches: window.sbShik.state().patches.map((q) => ({ ...q })), count: document.getElementById("count").textContent,
+    tip: document.getElementById("tip").textContent, bad: document.getElementById("tip").classList.contains("bad"),
+    cls: [...document.querySelectorAll("#patches .patch:not(.preview)")].map((e) => e.className) }));
+  const take = () => p.evaluate(() => { const o = window.__buzz; window.__buzz = []; return o; });
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // A two-square-or-bigger answer patch that's wider than its number's column, to grow from the number.
+  const i = pz.solution.findIndex((R) => R.w * R.h >= 4 && R.w >= 2);
+  const S = pz.solution[i], [cr, cc] = pz.clues[i];
+  await take();
+  // (3) too small first: just the number's own square and one more inside the answer.
+  const nb = cc + 1 < S.c + S.w ? [cr, cc + 1] : [cr, cc - 1];
+  await drag([cr, cc], nb);
+  const small = await st(), smallBuzz = await take();
+  // (2) grow: from the small patch out to the answer's far corners.
+  const far = [cr === S.r ? S.r + S.h - 1 : S.r, cc === S.c ? S.c + S.w - 1 : S.c];
+  await drag(nb, far);
+  let grown = await st();
+  if (!grown.patches.some((q) => q.r === S.r && q.c === S.c && q.w === S.w && q.h === S.h)) { await drag(nb, [S.r, S.c]); await drag(nb, [S.r + S.h - 1, S.c + S.w - 1]); grown = await st(); }
+  const growBuzz = await take();
+  // dragging inside it changes nothing
+  await drag([S.r, S.c], [S.r + S.h - 1, S.c + S.w - 1]);
+  const inside = await st();
+  // (3) red: a patch over two numbers (a row of the board that holds two clues next to each other horizontally, gap free).
+  const pair = pz.clues.map((a, x) => pz.clues.slice(x + 1).find((b) => b[0] === a[0]) && [a, pz.clues.slice(x + 1).find((b) => b[0] === a[0])]).find((t) => t && !(t[0][0] >= S.r && t[0][0] < S.r + S.h));
+  await take();
+  await drag([pair[0][0], pair[0][1]], [pair[1][0], pair[1][1]]);
+  const red = await st(), redBuzz = await take();
+  // (4) tap removes; Undo brings it back; Undo again leaves the grown one alone.
+  await tap([pair[0][0], pair[0][1]]);
+  const removed = await st();
+  await p.click("#undoBtn"); await p.waitForTimeout(150);
+  const undone = await st();
+  check(`Shikaku draw: too small = dashed (${small.cls.at(-1)}), a quiet "${small.tip}" (${!small.bad}); a tick per new shape, medium on landing (${smallBuzz.join(" ")})`,
+    small.patches.length === 1 && /part/.test(small.cls.at(-1)) && /needs \d+ more square/.test(small.tip) && !small.bad && smallBuzz.at(-1) === "L2" && smallBuzz.slice(0, -1).every((b) => b === "L1") && smallBuzz.length >= 2);
+  check(`Shikaku grow: a drag from the patch grows it to the ${S.h}×${S.w} answer, one patch, same colour (${grown.patches.length} patch, k ${small.patches[0].k} → ${grown.patches[0]?.k}), "${grown.count}"; ticks on the way (${growBuzz.join(" ")})`,
+    grown.patches.length === 1 && grown.patches[0].k === small.patches[0].k && grown.count === `1 of ${pz.clues.length} patches` && growBuzz.includes("L1") && growBuzz.at(-1) === "L2");
+  check(`Shikaku: a drag inside a patch changes nothing (${same(inside.patches, grown.patches)})`, same(inside.patches, grown.patches));
+  check(`Shikaku red: a patch over two numbers is hatched red (${/err/.test(red.cls.at(-1))}) with "${red.tip}" in red (${red.bad}), the warn buzz (${redBuzz.at(-1)})`,
+    /err/.test(red.cls.at(-1)) && /2 numbers/.test(red.tip) && red.bad && redBuzz.at(-1) === "warn");
+  check(`Shikaku: a tap takes a patch away (${red.patches.length} → ${removed.patches.length}), Undo brings it back (${undone.patches.length})`,
+    removed.patches.length === red.patches.length - 1 && undone.patches.length === red.patches.length);
+  // (5) hints alone finish it; note each hint's kind before Show me and the class of what it drew.
+  const run = await p.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const kinds = [], drawn = [];
+    for (let n = 0; n < 120 && !$("won"); n++) {
+      if (!window.sbShik.state().hint) { $("hintBtn").click(); await wait(20); }
+      const h = window.sbShik.state().hint;
+      if (!h) break;
+      kinds.push(h.data.kind);
+      $("hintNext").click(); $("hintNext").click();
+      if (h.data.kind === "partial") drawn.push(document.querySelector(".patch.land")?.className ?? "");
+      $("hintNext").click();
+      await wait(10);
+    }
+    await wait(2600);
+    return { kinds, drawn, won: !!$("won"), wave: $("board").classList.contains("won"), card: $("won")?.innerText.split("\n")[0] ?? "",
+      logged: JSON.parse(localStorage.getItem("solvebuddy.solves") || "[]").some((e) => e.g === "shikaku" && e.pack === "easy" && e.p === 1),
+      solid: getComputedStyle(document.querySelector("#patches .patch")).backgroundColor };
+  });
+  const tally = run.kinds.reduce((o, k) => ({ ...o, [k]: (o[k] ?? 0) + 1 }), {});
+  check(`Shikaku hints alone finish it (${Object.entries(tally).map(([k, n]) => `${k} ${n}`).join(", ")}); the first points at the red patch; partial patches drawn dashed (${run.drawn.length}); solved: wave + solid (${run.solid}), card "${run.card}", logged (${run.logged})`,
+    run.kinds[0] === "mistake" && tally.full > 0 && run.won && run.wave && run.logged && run.card === "Solved!" && !/253, 253, 249/.test(run.solid)
+    && (tally.partial ? run.drawn.every((c) => /part/.test(c)) : true));
+  // A puzzle whose first blank-board hints include a partial patch (checks/shikaku.ts counts them in every pack).
+  await p.goto(`${BASE}shikaku.html?pack=hard&p=1`);
+  await p.waitForTimeout(1200);
+  const partial = await p.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    for (let n = 0; n < 200 && !$("won"); n++) {
+      $("hintBtn").click(); await wait(10);
+      const h = window.sbShik.state().hint;
+      if (!h) return null;
+      $("hintNext").click(); $("hintNext").click();
+      if (h.data.kind === "partial") {
+        const el = document.querySelector(".patch.land");
+        const out = { cls: el?.className ?? "", tech: h.data.technique, text: $("hintBody").textContent };
+        $("hintNext").click();
+        return out;
+      }
+      $("hintNext").click();
+    }
+    return null;
+  });
+  check(`Shikaku partial hint: "${partial?.tech}", draws a dashed patch (${partial?.cls}): "${partial?.text.slice(0, 70)}…"`,
+    !!partial && /part/.test(partial.cls) && partial.text.length > 20);
+  // Its bottom bar is Nonogram's: the same four buttons in the same places.
+  const dockOf = async (url) => { await p.goto(`${BASE}${url}`); await p.waitForTimeout(1200);
+    return p.evaluate(() => [...document.querySelectorAll(".dock .tool")].map((b) => { const r = b.getBoundingClientRect(); return `${b.id}:${Math.round(r.left)},${Math.round(r.top)},${Math.round(r.width)}x${Math.round(r.height)}`; })); };
+  const dS = await dockOf("shikaku.html?pack=easy&p=3"), dN = await dockOf("nonogram.html?pack=easy&p=3");
+  check(`Shikaku's bottom bar matches Nonogram's (${dS.join(" ")})`, dS.length === 4 && same(dS, dN));
+  await ctx.close();
+}
+
+// In the phone app, Shikaku opens inside the app's Star Battle page like Nonogram (?game=shikaku); the same page is
+// still Nonogram with ?game=nonogram and Star Battle without.
+{
+  const { pathToFileURL } = await import("node:url");
+  const { join } = await import("node:path");
+  const file = pathToFileURL(join(import.meta.dirname, "..", "_site", "app", "starbattle.html")).href;
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.__sent = [];
+    window.ReactNativeWebView = { postMessage: (m) => window.__sent.push(JSON.parse(m)) };
+  });
+  const p = await ctx.newPage();
+  const errs = [];
+  p.on("pageerror", (e) => errs.push(e.message));
+  const look = async (q) => { await p.goto(`${file}${q}`); await p.waitForTimeout(1500);
+    return p.evaluate(() => ({ title: document.querySelector(".title b")?.textContent, shk: document.querySelectorAll(".scells i").length, nono: document.querySelectorAll(".nc").length, sb: document.querySelectorAll(".cell").length })); };
+  const asShk = await look("?game=shikaku&pack=medium&p=2"), asNono = await look("?game=nonogram&pack=easy&p=1"), asSb = await look("?pack=easy&p=1");
+  await p.goto(`${BASE}home.html`);
+  await p.waitForTimeout(800);
+  const open = await p.evaluate(async () => { const { openGame } = await import("./bridge.js"); openGame("shikaku", "?pack=easy&p=2"); return window.__sent.at(-1); });
+  check(`app: starbattle page becomes Shikaku with ?game=shikaku (${asShk.title}, ${asShk.shk} squares), Nonogram with ?game=nonogram (${asNono.title}, ${asNono.nono}), Star Battle without (${asSb.title}, ${asSb.sb}); Library opens ${open.page}${open.query}; no errors (${errs.length})`,
+    asShk.title === "Shikaku" && asShk.shk === 100 && asNono.title === "Nonogram" && asNono.nono === 25 && asSb.title === "Star Battle" && asSb.sb === 64
+    && open.page === "starbattle" && open.query === "?game=shikaku&pack=easy&p=2" && errs.length === 0);
+  if (errs.length) console.log(errs.join("\n"));
+  await ctx.close();
+}
+
+// Library: Shikaku is the sixth tile and no longer "coming soon"; its packs are 8×8 / 10×10 / 12×12 with a thumb each
+// (the last solved picture: Easy #1 above); a half-done one's sheet shows its board; Packs tab and Stats list it.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}home.html`);
+  await p.waitForTimeout(800);
+  await p.evaluate(() => {
+    localStorage.setItem("solvebuddy.solves", JSON.stringify([{ g: "shikaku", pack: "easy", p: 1, ms: 61000, hints: 0, at: Date.now() }]));
+    localStorage.setItem("solvebuddy.saved", JSON.stringify({ "shikaku/easy/2": { p: 2, patches: [{ r: 0, c: 0, w: 2, h: 1, k: 0 }], ms: 5000, hints: 0 } }));
+  });
+  await p.reload();
+  await p.waitForTimeout(900);
+  const lib = await p.evaluate(async () => {
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const tiles = [...document.querySelectorAll(".tile")].map((t) => t.dataset.game);
+    const soon = document.getElementById("soon").innerText;
+    document.querySelector('.tile[data-game="shikaku"]').click();
+    await wait(400);
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), rects: r.querySelectorAll(".nthumb rect").length }));
+    document.querySelector('.c-row[data-set="0"]').click();
+    await wait(400);
+    document.querySelector('.ptile[data-p="2"]').click();
+    await wait(400);
+    const sheet = document.getElementById("tile");
+    return { tiles, soon, rows, sheet: !sheet.hidden && !!sheet.querySelector(".pv-shk svg rect"), note: sheet.querySelector("p")?.textContent ?? "" };
+  });
+  check(`Library: Shikaku is tile 6 (${lib.tiles.join(", ")}), not under Coming soon ("${lib.soon.replace(/\n/g, " ")}")`, lib.tiles[5] === "shikaku" && !/Shikaku/.test(lib.soon));
+  check(`Shikaku packs: ${lib.rows.map((r) => `${r.name}${r.rects ? ` (${r.rects} patches)` : ""}`).join(", ")}, each with a thumb; a half-done one's sheet shows its board ("${lib.note}")`,
+    lib.rows.map((r) => r.name).join() === "8×8,10×10,12×12" && lib.rows.every((r) => r.thumb) && lib.rows[0].rects > 5 && lib.sheet && /1 of \d+ patches drawn/.test(lib.note));
+  await p.goto(`${BASE}packs.html`);
+  await p.waitForTimeout(700);
+  const blk = await p.evaluate(() => [...document.querySelectorAll('.btile[data-g="shikaku"]')].map((b) => `${b.querySelector(".n").textContent}: ${b.querySelectorAll(".c")[1].textContent}`));
+  await p.goto(`${BASE}stats.html`);
+  await p.waitForTimeout(500);
+  const stat = await p.evaluate(() => document.getElementById("games").innerText.includes("Shikaku"));
+  check(`Packs tab Shikaku block (${blk.join(" / ")}); Stats lists Shikaku (${stat})`, blk.length === 3 && blk[0] === "8×8: Easy" && stat);
   await ctx.close();
 }
 

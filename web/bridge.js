@@ -5,8 +5,9 @@ export const post = (msg) => globalThis.ReactNativeWebView?.postMessage(JSON.str
 
 // Games the phone app doesn't know as pages yet ride inside one it does (the app opens only the game pages built into
 // it, App.js GAMES). The app's offline starbattle page carries Nonogram too and switches on ?game=nonogram
-// (scripts/build_site.ts). Once the app lists "nonogram" itself, drop it from here.
-export const HOSTED = { nonogram: "starbattle" };
+// (scripts/build_site.ts); Shikaku rides in it the same way (?game=shikaku, Colin 10/24). Once the app lists them
+// itself, drop them from here.
+export const HOSTED = { nonogram: "starbattle", shikaku: "starbattle" };
 export function openGame(game, query) {
   if (inApp && HOSTED[game]) post({ type: "open", page: HOSTED[game], query: `?game=${game}${query ? `&${query.replace(/^\?/, "")}` : ""}` });
   else if (inApp) post({ type: "open", page: game, query });
@@ -106,6 +107,10 @@ export const GAMES = {
   nonogram: { name: "Nonogram", packs: [
     ["easy", "nonogram5-easy.json", "Easy"], ["medium", "nonogram10-medium.json", "Medium"], ["hard", "nonogram15-hard.json", "Hard"]],
     sets: [{ name: "5×5", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "15×15", levels: ["hard"] }] },
+  // Shikaku (Colin 10/24): size is the level, 10 each.
+  shikaku: { name: "Shikaku", packs: [
+    ["easy", "shikaku8-easy.json", "Easy"], ["medium", "shikaku10-medium.json", "Medium"], ["hard", "shikaku12-hard.json", "Hard"]],
+    sets: [{ name: "8×8", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "12×12", levels: ["hard"] }] },
 };
 // Block Drop (Colin, 10/22) is endless, with no packs: its tile opens the game, and it keeps its own best scores.
 export const BLOCKS_KEY = "solvebuddy.blocks";

@@ -207,3 +207,4 @@ html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on scre
 .c-lead { margin: 4px 2px 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 .pv-nono { background: #FFFDF9; }
 .pv-nono .pv-c { background: #FFFDF9; }
+.pv-shk { box-shadow: 0 6px 18px rgba(30,30,30,0.1), 0 0 0 1.5px #D9CCBD; line-height: 0; } /* Shikaku (10/24) */

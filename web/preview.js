@@ -1,5 +1,6 @@
 // A small picture of a puzzle's board for the Resume / View solved sheet (Colin, 10/22: "add a photo of the current
 // board"). Drawn from the save (or your finished board / the answer when solved), the same colours as each game.
+import { shikakuColors, shikakuPicture } from "./screens.js";
 
 const SB_COLORS = { A: "#D8C3EA", B: "#FFD08A", C: "#A6D8D0", D: "#C6E2A6", E: "#F5C2C9", F: "#FFB48A", G: "#BFD3F2", H: "#E9D9B8",
   I: "#E2EA98", J: "#D3D0C8", K: "#CDB497", L: "#E7AEDB" };
@@ -40,6 +41,11 @@ export function boardPreview(g, puzzle, board) {
       cells.push(`<i class="pv-c" style="${m === 1 ? `background:${fill}` : ""}">${m === 2 ? "×" : ""}</i>`);
     }
     return `<div class="pv pv-sb pv-nono" style="--n:${n}">${cells.join("")}</div>`;
+  }
+  if (g === "shikaku") {
+    // Solved: the finished picture, each patch solid; in progress: your patches, soft.
+    const patches = board?.patches ?? shikakuColors(puzzle.solution);
+    return `<div class="pv pv-shk">${shikakuPicture(puzzle.size, patches, 200, !board || !!board.done)}</div>`;
   }
   if (g === "watersort") {
     const tubes = board?.tubes ?? sortedTubes(puzzle.tubes);

@@ -38,7 +38,7 @@ const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f,
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
 const built: Record<string, { html: string; code: string }> = {};
-for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram"]) {
+for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram", "shikaku"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")
@@ -51,30 +51,38 @@ for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort
 }
 
 // A game the phone app doesn't know as a page yet rides inside one it does (bridge.js HOSTED): the app opens only the
-// game pages built into it (App.js GAMES), so the app's starbattle page also carries Nonogram and becomes it when
-// opened with ?game=nonogram. No app change; once the app lists "nonogram", this can go.
-for (const [guest, host] of [["nonogram", "starbattle"]]) {
-  const g = built[guest].html, h = built[host].html;
-  const styles = (g.slice(0, g.indexOf("</head>")).match(/<style>[\s\S]*?<\/style>/g) ?? []).join("");
-  const body = g.slice(g.indexOf("<body>") + 6, g.indexOf("<script>window.SB_PACKS="));
-  const title = g.match(/<title>(.*?)<\/title>/)![1];
+// game pages built into it (App.js GAMES), so the app's starbattle page also carries Nonogram and Shikaku and becomes
+// one of them when opened with ?game=nonogram or ?game=shikaku. No app change; once the app lists them, this can go.
+const HOSTS: Record<string, string[]> = { starbattle: ["nonogram", "shikaku"] };
+for (const [host, guests] of Object.entries(HOSTS)) {
+  const h = built[host].html;
   const tail = h.indexOf("<script type=\"module\">");
-  if (!styles || !body.includes('class="phone"') || tail < 0) throw new Error(`app/${host}.html: couldn't host ${guest}`);
+  if (tail < 0) throw new Error(`app/${host}.html: couldn't host ${guests}`);
   const asText = (id: string, code: string) => `<script type="text/plain" id="${id}">${noClose(code)}</script>`;
+  let parts = "";
+  const titles: Record<string, string> = {};
+  for (const guest of guests) {
+    const g = built[guest].html;
+    const styles = (g.slice(0, g.indexOf("</head>")).match(/<style>[\s\S]*?<\/style>/g) ?? []).join("");
+    const body = g.slice(g.indexOf("<body>") + 6, g.indexOf("<script>window.SB_PACKS="));
+    if (!styles || !body.includes('class="phone"')) throw new Error(`app/${host}.html: couldn't host ${guest}`);
+    titles[guest] = g.match(/<title>(.*?)<\/title>/)![1];
+    parts += `<template id="sbHostStyles-${guest}">${styles}</template><template id="sbHostBody-${guest}">${body}</template>` + asText(`sbCode-${guest}`, built[guest].code);
+  }
   const swap = `<script>(function () {
-  var d = document, guest = new URLSearchParams(location.search).get("game") === "${guest}";
-  var code = d.getElementById(guest ? "sbCode-${guest}" : "sbCode-${host}").textContent;
+  var d = document, titles = ${JSON.stringify(titles)}, want = new URLSearchParams(location.search).get("game");
+  var guest = Object.prototype.hasOwnProperty.call(titles, want) ? want : null;
+  var code = d.getElementById(guest ? "sbCode-" + guest : "sbCode-${host}").textContent;
   if (guest) {
     d.querySelectorAll("head style").forEach(function (s) { s.remove(); });
-    d.head.appendChild(d.getElementById("sbHostStyles").content.cloneNode(true));
-    d.body.replaceChildren(d.getElementById("sbHostBody").content.cloneNode(true));
-    d.title = ${JSON.stringify(title)};
+    d.head.appendChild(d.getElementById("sbHostStyles-" + guest).content.cloneNode(true));
+    d.body.replaceChildren(d.getElementById("sbHostBody-" + guest).content.cloneNode(true));
+    d.title = titles[guest];
   }
   var s = d.createElement("script"); s.type = "module"; s.textContent = code; d.body.appendChild(s);
 })();</script>`;
-  const hosted = h.slice(0, tail).replace("</head>", `<script>if (new URLSearchParams(location.search).get("game") === "${guest}") document.documentElement.classList.add("hosted")</script><style>html.hosted body { visibility: hidden; }</style></head>`)
-    + `<template id="sbHostStyles">${styles}</template><template id="sbHostBody">${body}</template>`
-    + asText(`sbCode-${host}`, built[host].code) + asText(`sbCode-${guest}`, built[guest].code) + swap + "\n</body>\n</html>\n";
+  const hosted = h.slice(0, tail).replace("</head>", `<script>if (${JSON.stringify(guests)}.indexOf(new URLSearchParams(location.search).get("game")) >= 0) document.documentElement.classList.add("hosted")</script><style>html.hosted body { visibility: hidden; }</style></head>`)
+    + parts + asText(`sbCode-${host}`, built[host].code) + swap + "\n</body>\n</html>\n";
   writeFileSync(join(OUT, "app", `${host}.html`), hosted);
 }
 
