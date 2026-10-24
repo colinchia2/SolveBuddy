@@ -2,6 +2,20 @@
 
 Newest first.
 
+## 2026-10-23 — Water Sort: pours overlap; tapping a pour's tubes speeds it up (not pushed)
+- Colin (10/23 screenshot): taps during a pour used to interfere. Now (`web/watersort.js`): the board changes the moment
+  a pour starts and the animation only plays on top, so you can pick up another tube and pour again straight away;
+  several pours play at once. The two tubes of a playing pour can't be picked up or poured into until it ends:
+  tapping either one (or above it in its column, or its number) finishes that pour in ~120ms. Other taps no longer
+  speed anything up or get swallowed.
+- Undo, Hint, Restart and the other dock buttons finish every playing pour first, then act (Undo takes back the
+  latest pour cleanly). The win (and its haptics) counts once the last pour has played; each pour keeps its own
+  "thud". "Show me" still says "Poured!" after its pour, unless a pour of your own closed the card meanwhile.
+  The 10/23 look (stream from the lip, colour shrinks from the top) is unchanged.
+- New page checks: a third tube picks up mid-pour and its pour plays alongside the first (2 at once), end board as
+  the rules say with 2 moves; the pouring tube can't be picked up; tapping the target (and above it) ends the pour in
+  ~290ms vs ~1010ms untouched; Undo mid-pour goes straight back to the start with nothing left moving.
+
 ## 2026-10-23 — Nonogram phone-test tweaks: tap × first, ■ switch, tap a clue to finish a line, no highlight; zoom uses the whole screen
 - Colin's phone test (10/23). **Pushed** (this ships Nonogram + zoom, the Water Sort pour fix and these tweaks).
 - **Tap** (`web/nonogram.js`): × → fill → clear, like Star Battle. A small quiet **"× · ■" switch** in the info row

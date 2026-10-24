@@ -55,11 +55,13 @@ function flipSetting(name) {
   render();
 }
 
-// The pour on screen, if any (Colin, 10/22): the tube lifts, moves over the other and tilts, a stream runs in while
-// one level drops and the other rises, then it goes back. A tap anywhere speeds it up.
-let anim = null;
+// The pours on screen (Colin, 10/22): the tube lifts, moves over the other and tilts, a stream runs in while one level
+// drops and the other rises, then it goes back. Colin 10/23: the board changes the moment a pour starts, so you can pick
+// up another tube and pour again while it plays (pours overlap; the animations are only for show). The two tubes of a
+// pour can't be picked up or poured into until it ends: tapping either (or above it, in its column) speeds it up.
+const anims = [];
 const calm = matchMedia("(prefers-reduced-motion: reduce)");
-const POUR_MS = 1000, FAST_MS = 150, TILT = 100; // TILT > 90°: the mouth dips below the bottom, so it pours
+const POUR_MS = 1000, FAST_MS = 120, TILT = 100; // TILT > 90°: the mouth dips below the bottom, so it pours
 const clamp = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
 
@@ -70,7 +72,7 @@ let s; // game state
 const undoStack = []; // earlier tube states, one per pour
 
 function load(i, name = packName, first = false) {
-  settle();
+  anims.splice(0).forEach((A) => A.stream?.remove()); // a new board: drop any pour still playing
   packName = name;
   pack = PACKS[name];
   idx = i;
@@ -107,10 +109,12 @@ function load(i, name = packName, first = false) {
   render();
 }
 
-// Tap a tube: pick it up, pour into it, or put it down.
+// Tap a tube: pick it up, pour into it, or put it down. A tube in a pour still playing speeds that pour up instead.
+const busy = (i) => anims.find((A) => A.from === i || A.to === i);
 function tap(i) {
-  if (anim) return speedUp();
   if (s.solved || s.pausedAt) return;
+  const playing = busy(i);
+  if (playing) return speedUp(playing);
   const from = s.picked;
   if (from == null) {
     if (!s.tubes[i].length || (isDone(s.tubes[i]))) return shake(i);
@@ -130,26 +134,15 @@ function tap(i) {
   startPour(from, i);
 }
 
-// Pour `from` into `to` with the animation, then update the board. done = what the hint does after "Show me".
+// Pour `from` into `to`: the board changes now (so the next move works from it), then the animation plays on top.
+// done = what the hint does after "Show me", once the animation ends.
 function startPour(from, to, done) {
   const board = $("board");
   const src = board.querySelector(`.tube[data-i="${from}"]`), dst = board.querySelector(`.tube[data-i="${to}"]`);
   const after = pour(s.tubes, from, to);
   const had = s.tubes[to].length, k = after[to].length - had;
   const c = s.tubes[from][s.tubes[from].length - 1];
-  undoStack.push(s.tubes.map((t) => [...t]));
-  s.picked = null;
-  if (!done) { // your own pour closes an open hint
-    s.hint = null;
-    $("hint").hidden = true;
-    $("hintBtn").classList.remove("pressed");
-  }
-  const lift = src.classList.contains("up") ? -16 : 0;
-  src.classList.remove("up", "ring", "shake", "intro", "won"); // the opening hop holds its own transform
-  dst.classList.remove("ring", "target");
-  src.style.transition = "none";
-  src.style.zIndex = 50;
-  src.style.transform = `translateY(${lift}px)`;
+  const lift = s.picked === from ? -16 : 0;
   const br = board.getBoundingClientRect(), sr = src.getBoundingClientRect(), tr = dst.getBoundingClientRect();
   const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift;
   // Tilted, the LOWEST corner of the tube's mouth (its lip) sits just above the middle of the other tube's opening, and
@@ -162,46 +155,69 @@ function startPour(from, to, done) {
   // The mouth's two corners (a little in from the rounded rim), turned with the tube; the lower one is the lip.
   const lip = [-1, 1].map((sx) => { const x = sx * (sr.width / 2 - 4), y = -sr.height / 2 + 4; return { x: x * cos - y * sin, y: x * sin + y * cos }; })
     .sort((a, b) => b.y - a.y)[0];
-  const drain = [...src.querySelectorAll(".u")].slice(-k).reverse(); // top unit first
-  const liquid = dst.querySelector(".liquid");
-  const fill = Array.from({ length: k }, () => {
-    const u = document.createElement("span");
-    u.className = "u";
-    u.style.cssText = `height:0px;background-color:${COLORS[c]}`;
-    liquid.appendChild(u);
-    return u;
-  });
   const quiet = calm.matches;
   let stream = null;
   if (!quiet) {
     stream = document.createElement("span");
     stream.className = "stream";
     stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${COLORS[c]}`;
-    board.appendChild(stream);
   }
   // Inside the pouring tube the liquid stays against its closed bottom (tube space, as it sits upright): the colour being
   // poured shrinks from its top, so empty space only ever shows at the open end (Colin 10/23).
-  const A = anim = { from, to, after, done, src, drain, fill, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
+  const A = { from, to, c, done, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
     D: quiet ? 260 : POUR_MS, tx: mx - lip.x - cx, ty: my - lip.y - cy,
-    deg: dir * TILT, base: liquid.getBoundingClientRect().bottom - br.top, my: my - br.top };
+    deg: dir * TILT, base: dst.querySelector(".liquid").getBoundingClientRect().bottom - br.top, my: my - br.top };
+  undoStack.push(s.tubes.map((t) => [...t]));
+  s.tubes = after;
+  s.moves++;
+  s.picked = null;
+  if (!done) { // your own pour closes an open hint
+    s.hint = null;
+    $("hint").hidden = true;
+    $("hintBtn").classList.remove("pressed");
+  }
+  anims.push(A);
+  render(); // draws the new board and puts every playing pour back on it (bindPour)
   if (quiet) haptic("thud");
   const step = (now) => {
-    if (anim !== A) return;
+    if (!anims.includes(A)) return;
     A.t = Math.min(1, A.t + ((now - (A.last ?? now)) / A.D) * A.speed);
     A.last = now;
     drawPour(A);
-    if (A.t >= 1) finishPour();
+    if (A.t >= 1) finishPour(A);
     else requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
-  // If the screen stops drawing frames (the app goes to the background), finish the pour anyway.
+  // If the screen stops drawing frames (the app goes to the background), finish the pours anyway.
   A.seen = performance.now();
   const guard = () => {
-    if (anim !== A) return;
+    if (!anims.includes(A)) return;
     if (performance.now() - (A.last ?? A.seen) > 400) settle();
     else setTimeout(guard, 400);
   };
   setTimeout(guard, 400);
+}
+// render() redraws the board from the state (already after every pour), so each playing pour puts its look back: the
+// pouring tube gets the poured units back on top (to drain), the other tube's new top units become the ones filling.
+function bindPour(A) {
+  const board = $("board");
+  A.src = board.querySelector(`.tube[data-i="${A.from}"]`);
+  A.dst = board.querySelector(`.tube[data-i="${A.to}"]`);
+  A.src.classList.remove("up", "ring", "target", "shake", "intro", "won"); // the opening hop holds its own transform
+  A.dst.classList.remove("ring", "target");
+  A.src.style.transition = "none";
+  A.src.style.zIndex = 50;
+  const liquid = A.src.querySelector(".liquid");
+  A.drain = Array.from({ length: A.k }, () => {
+    const u = document.createElement("span");
+    u.className = "u";
+    u.style.cssText = `height:${UNIT}px;background-color:${COLORS[A.c]}`;
+    liquid.appendChild(u);
+    return u;
+  }).reverse(); // top unit first
+  A.fill = [...A.dst.querySelectorAll(".liquid .u")].slice(-A.k);
+  if (A.stream) board.appendChild(A.stream);
+  drawPour(A);
 }
 function drawPour(A) {
   const t = A.t;
@@ -220,26 +236,35 @@ function drawPour(A) {
   }
   if (!A.thud && !A.quiet && t >= 0.28) { A.thud = true; haptic("thud"); }
 }
-function finishPour() {
-  const A = anim;
-  anim = null;
+// One pour's animation is over: its tubes sit as the board says. The win counts once the last pour has played.
+function finishPour(A) {
+  const at = anims.indexOf(A);
+  if (at < 0) return;
+  anims.splice(at, 1);
   A.stream?.remove();
-  s.tubes = A.after;
-  s.moves++;
-  s.hint = null;
   render();
-  checkSolved();
+  if (!anims.length) checkSolved();
   A.done?.();
 }
-// A tap during a pour: finish it in FAST_MS. settle() = finish it right now (before Undo, a hint, Restart…).
-function speedUp() {
-  if (anim) anim.speed = Math.max(anim.speed, ((1 - anim.t) * anim.D) / FAST_MS);
+// A tap on a pour's tubes: finish it in FAST_MS. settle() = finish every pour right now (before Undo, a hint, Restart…).
+function speedUp(A) {
+  A.speed = Math.max(A.speed, ((1 - A.t) * A.D) / FAST_MS);
 }
 function settle() {
-  if (!anim) return;
-  anim.t = 1;
-  drawPour(anim);
-  finishPour();
+  for (const A of [...anims]) {
+    A.t = 1;
+    finishPour(A);
+  }
+}
+// A tap off the tubes during a pour: if it's in the column of a tube in a pour (above it, or its number), speed that up.
+function columnPour(x, y) {
+  let best = null;
+  for (const w of $("board").querySelectorAll(".tube-wrap")) {
+    const r = w.getBoundingClientRect();
+    if (x < r.left - 6 || x > r.right + 6 || y > r.bottom) continue;
+    if (!best || r.bottom < best.r.bottom) best = { w, r };
+  }
+  return best && busy(Number(best.w.querySelector(".tube").dataset.i));
 }
 function shake(i) {
   haptic("tap");
@@ -304,13 +329,15 @@ function advanceHint() {
   if (h.level === 2) { // "Show me": the pour plays, then the card says so (unless that pour finished the level)
     s.hints = (s.hints ?? 0) + 1 / 3;
     const [a, b] = h.move;
+    let key = null; // the board right after this pour (it changes as the pour starts)
     startPour(a, b, () => {
-      if (s.solved) return;
-      s.nextPlan = { key: JSON.stringify(s.tubes), plan: h.plan.slice(1) };
+      if (s.solved || isSolved(s.tubes) || s.hint !== h) return; // a pour of your own since then closed the card
+      s.nextPlan = { key, plan: h.plan.slice(1) };
       h.level = 3;
       s.hint = h;
       render();
     });
+    key = JSON.stringify(s.tubes);
     return;
   }
   h.level++;
@@ -352,6 +379,7 @@ function render() {
     rows.push(`<div class="tube-row">${cells.join("")}</div>`);
   }
   $("board").innerHTML = rows.join("");
+  anims.forEach(bindPour);
   $("count").textContent = `${s.moves} move${s.moves === 1 ? "" : "s"}`;
   $("hintBtn").classList.toggle("pressed", !!h);
 
@@ -411,22 +439,15 @@ function undo() {
   render();
 }
 
-// While a pour plays, a tap anywhere speeds it up and does nothing else; the dock and hint buttons finish it first.
+// While pours play, the other tubes work as usual (tap() speeds up a pour's own tubes); the dock and hint buttons
+// finish every pour first; a tap in a playing pour's column, above its tube or on its number, speeds that pour up.
 const FINISH_FIRST = "#undoBtn, #hintBtn, #hintNext, #hintClose, #restartBtn, #settingsBtn, #backBtn, #rulesBtn, #timer, #picker";
-let swallow = false;
-document.addEventListener("pointerdown", (e) => {
-  swallow = false;
-  if (!anim || e.target.closest(FINISH_FIRST)) return;
-  swallow = true;
-  speedUp();
-}, true);
 document.addEventListener("click", (e) => {
+  if (!anims.length) return;
   if (e.target.closest(FINISH_FIRST)) return settle();
-  if (swallow || anim) {
-    swallow = false;
-    e.stopPropagation();
-    e.preventDefault();
-  }
+  if (e.target.closest(".tube, button, #hint, #rules, #settings, #paused")) return;
+  const A = columnPour(e.clientX, e.clientY);
+  if (A) speedUp(A);
 }, true);
 $("board").addEventListener("click", (e) => {
   const b = e.target.closest(".tube");

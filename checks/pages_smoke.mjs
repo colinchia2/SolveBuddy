@@ -754,6 +754,102 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`Water Sort pour: the other tube fills upward to meet the stream (${a.fill} → ${b.fill}px)`, b.fill > a.fill);
 }
 
+// Water Sort overlapping pours (Colin 10/23): the board changes as a pour starts, so a third tube can be picked up and
+// poured mid-pour (both animations play at once, the end board is right); the pour's own tubes can't be picked up,
+// and tapping the tube being poured into (or above it) speeds the pour up; Undo mid-pour is clean.
+{
+  const fresh = async () => { // the page saves the board as it closes, so clear the save after that too
+    await page.evaluate(() => { localStorage.removeItem("solvebuddy.saved"); addEventListener("pagehide", () => localStorage.removeItem("solvebuddy.saved")); });
+    await page.reload();
+    await page.waitForTimeout(1800);
+  };
+  await page.goto(`${BASE}watersort.html?pack=easy&p=1`);
+  await page.waitForTimeout(800);
+  await fresh();
+  // Shared in-page helpers: two pours with no tube in common, and the board as unit counts + colours.
+  const setup = `(async () => {
+    const { canPour, pour } = await import("../engine/watersort/rules.ts");
+    const state = (await (await fetch("../packs/watersort-easy.json")).json()).puzzles[0].tubes;
+    const moves = (st) => st.flatMap((_, a) => st.map((_, b) => [a, b])).filter(([a, b]) => a !== b && canPour(st, a, b));
+    let p1, p2;
+    for (const m of moves(state)) {
+      const next = pour(state, m[0], m[1]);
+      const m2 = moves(next).find(([a, b]) => ![a, b].some((x) => m.includes(x)));
+      if (m2) { p1 = m; p2 = m2; break; }
+    }
+    const end = pour(pour(state, ...p1), ...p2);
+    window.__ws = { state, p1, p2, end,
+      tube: (i) => document.querySelector('.tube[data-i="' + i + '"]'),
+      board: () => [...document.querySelectorAll(".tube")].map((t) => [...t.querySelectorAll(".u")].map((u) => u.style.backgroundColor).join("|")),
+      want: (st) => { const el = document.createElement("span"); return st.map((t) => t.map((c) => { el.style.backgroundColor = ({ A: "#E8574F", B: "#3E86E8", C: "#F4C542", D: "#4CB86A", E: "#9B6BD6", F: "#F28C38", G: "#EE7BB0", H: "#2BB3B1", I: "#9C6B4E", J: "#A8D45A", K: "#2F4A8A", L: "#9AA3AD" })[c]; return el.style.backgroundColor; }).join("|")); },
+      pouring: () => document.querySelectorAll('.tube[style*="z-index"]').length,
+      wait: (ms) => new Promise((r) => setTimeout(r, ms)) };
+  })()`;
+  await page.evaluate(setup);
+  const lap = await page.evaluate(async () => {
+    const { p1, p2, end, tube, board, want, pouring, wait } = window.__ws;
+    tube(p1[0]).click(); await wait(60); tube(p1[1]).click();
+    await wait(200);
+    tube(p2[0]).click(); await wait(30);
+    const picked = tube(p2[0]).classList.contains("up"), firstStill = pouring() === 1;
+    tube(p2[1]).click(); await wait(80);
+    const both = pouring();
+    tube(p1[0]).click(); await wait(30); // the pouring tube can't be picked up (it speeds its pour instead)
+    const busyPicked = !!document.querySelector(".tube.up");
+    await wait(1400);
+    return { busyPicked, picked, firstStill, both, after: pouring(), streams: document.querySelectorAll(".stream").length,
+      right: JSON.stringify(board()) === JSON.stringify(want(end)), moves: document.getElementById("count").textContent };
+  });
+  check(`Water Sort mid-pour: the pouring tube can't be picked up (${!lap.busyPicked}); a third tube picks up (${lap.picked}) while the first pour plays (${lap.firstStill}), and its pour plays alongside (${lap.both} at once)`,
+    !lap.busyPicked && lap.picked && lap.firstStill && lap.both === 2);
+  check(`Water Sort overlapping pours end right: board as the rules say (${lap.right}), ${lap.moves}, nothing left playing (${lap.after} tubes, ${lap.streams} streams)`,
+    lap.right && lap.moves === "2 moves" && lap.after === 0 && lap.streams === 0);
+
+  // Tapping the tube being poured into, or the space above it, finishes the pour quickly.
+  await fresh();
+  await page.evaluate(setup);
+  const fast = await page.evaluate(async () => {
+    const { p1, end, state, tube, pouring, wait } = window.__ws;
+    const timed = async (speed) => {
+      tube(p1[0]).click(); await wait(60);
+      const t0 = performance.now();
+      tube(p1[1]).click();
+      await wait(150);
+      speed();
+      while (pouring() && performance.now() - t0 < 3000) await wait(10);
+      return Math.round(performance.now() - t0);
+    };
+    const onTube = await timed(() => tube(p1[1]).click());
+    document.getElementById("undoBtn").click(); await wait(100);
+    const above = await timed(() => {
+      const r = tube(p1[1]).closest(".tube-wrap").getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top - 30;
+      document.elementFromPoint(x, y).dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: x, clientY: y }));
+    });
+    document.getElementById("undoBtn").click(); await wait(100);
+    const slow = await timed(() => {});
+    return { onTube, above, slow };
+  });
+  check(`Water Sort: tapping the tube being poured into speeds the pour up (${fast.onTube}ms, above it ${fast.above}ms, untouched ${fast.slow}ms)`,
+    fast.onTube < 450 && fast.above < 450 && fast.slow > 850);
+
+  // Undo mid-pour: the animation stops cleanly and the board goes back to the start.
+  await fresh();
+  await page.evaluate(setup);
+  const un = await page.evaluate(async () => {
+    const { p1, state, tube, board, want, pouring, wait } = window.__ws;
+    tube(p1[0]).click(); await wait(60); tube(p1[1]).click();
+    await wait(400);
+    document.getElementById("undoBtn").click(); await wait(30);
+    const now = { right: JSON.stringify(board()) === JSON.stringify(want(state)), playing: pouring(), streams: document.querySelectorAll(".stream").length,
+      moves: document.getElementById("count").textContent, moved: [...document.querySelectorAll(".tube")].some((t) => t.style.transform) };
+    await wait(1200);
+    return { ...now, later: JSON.stringify(board()) === JSON.stringify(want(state)) && !pouring() };
+  });
+  check(`Water Sort Undo mid-pour: back to the start (${un.right}, still ${un.later} a second later), ${un.moves}, nothing playing (${un.playing} tubes, ${un.streams} streams, moved ${un.moved})`,
+    un.right && un.later && un.moves === "0 moves" && !un.playing && !un.streams && !un.moved);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();
