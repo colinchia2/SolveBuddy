@@ -194,6 +194,7 @@ for (const h of [844, 750]) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(() => {
     window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
     window.__buzz = [];
     window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
   });
@@ -381,6 +382,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(() => {
     window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
     window.__buzz = [];
     window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
   });
@@ -486,8 +488,9 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     out.winBuzz = take().includes("success");
     return out;
   });
-  check(`Nonogram tap cycles × → fill → clear like Star Battle (${nn.cycle.join(" → ")}), one light buzz each (${nn.cycleBuzz})`,
-    same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "tap", "tap"]));
+  // (the fill crosses off the last row's [1] clue, so it's the crisp tick, Colin 10/24)
+  check(`Nonogram tap cycles × → fill → clear like Star Battle (${nn.cycle.join(" → ")}), one buzz each (${nn.cycleBuzz})`,
+    same(nn.cycle, ["x", "fill", "blank"]) && same(nn.cycleBuzz, ["tap", "pick", "tap"]));
   check(`Nonogram: no blue row/column highlight while touching a square (${nn.noHl})`, nn.noHl);
   check(`Nonogram drag from an empty square paints × and locks to its row (${nn.dragged.join(", ")}), one light buzz per square (${nn.dragBuzz}), one Undo takes it all back (${nn.afterUndo})`,
     same(nn.dragged, ["x", "x", "x", "blank"]) && same(nn.dragBuzz, ["tap", "tap", "tap"]) && same(nn.afterUndo, ["blank", "blank", "blank"]));
@@ -905,6 +908,123 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   });
   check(`Water Sort Undo mid-pour: back to the start (${un.right}, still ${un.later} a second later), ${un.moves}, nothing playing (${un.playing} tubes, ${un.streams} streams, moved ${un.moved})`,
     un.right && un.later && un.moves === "0 moves" && !un.playing && !un.streams && !un.moved);
+}
+
+// Haptics on every game (Colin 10/24: he felt none in Nonogram, Water Sort, Star Battle, Block Drop). First: each built
+// app page (the file the phone runs, Nonogram inside app/starbattle.html too) sends the app a haptic on a first move.
+// Then, with every buzz counted (SB_HAPTIC_GAP = 0): Nonogram's clue crossed off = the tick; Star Battle's finished
+// region = medium; Water Sort pick up / put down / soft no / pour / tube done / win; and the throttle: a fast drag
+// buzzes at most every ~40ms.
+{
+  const { pathToFileURL } = await import("node:url");
+  const { join } = await import("node:path");
+  const app = (f) => { const [page, q = ""] = f.split("?"); return `${pathToFileURL(join(import.meta.dirname, "..", "_site", "app", page)).href}${q && `?${q}`}`; };
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: "reduce" });
+  await ctx.addInitScript(() => {
+    window.SOLVEBUDDY_APP = { haptics: true, nativeBack: true, splash: false };
+    window.SB_HAPTIC_GAP = 0; // count every buzz (the 40ms throttle has its own check)
+    window.__buzz = [];
+    window.ReactNativeWebView = { postMessage: (m) => { const o = JSON.parse(m); if (o.type === "haptic") window.__buzz.push(o.kind); } };
+  });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const wired = {};
+  for (const [name, file, sel] of [["sudoku", "sudoku.html?pack=easy&p=1", ".cell"], ["starbattle", "starbattle.html?pack=easy&p=1", ".cell"],
+    ["nonogram", "starbattle.html?game=nonogram&pack=easy&p=1", ".nc"], ["watersort", "watersort.html?pack=easy&p=1", ".tube"], ["blocks", "blocks.html", null]]) {
+    await p.goto(app(file));
+    await p.waitForTimeout(2600); // Block Drop's 3-2-1 countdown buzzes on its own
+    if (sel) {
+      await p.evaluate((sel) => {
+        window.__buzz = [];
+        const el = document.querySelector(sel), b = el.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
+        el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt)); el.click();
+      }, sel);
+      await p.waitForTimeout(100);
+    }
+    wired[name] = await p.evaluate(() => window.__buzz.length);
+  }
+  check(`every game's app page sends the app a haptic (${Object.entries(wired).map(([g, n]) => `${g} ${n}`).join(", ")})`,
+    Object.values(wired).every((n) => n > 0));
+
+  // The rest on the test pages, every buzz counted.
+  await ctx.addInitScript(() => { window.SB_HAPTIC_GAP = 0; });
+  const fresh = async (url) => {
+    await p.goto(`${BASE}${url}`);
+    await p.waitForTimeout(1000); // let the page finish loading before the reload
+    await p.evaluate(() => { localStorage.removeItem("solvebuddy.saved"); localStorage.removeItem("solvebuddy.nonogramMode"); });
+    await p.reload();
+    await p.waitForTimeout(2200);
+  };
+  const tapAt = (sel) => p.evaluate((sel) => {
+    const el = document.querySelector(sel), b = el.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
+    el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt));
+  }, sel);
+  const take = () => p.evaluate(() => { const o = window.__buzz; window.__buzz = []; return o; });
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  // Nonogram heart: the last row's clue is [1] (its square is the middle one). × then fill its first square: the fill
+  // crosses the clue off (it greys) without the row being right.
+  await fresh("nonogram.html?pack=easy&p=1");
+  await take();
+  for (let i = 0; i < 2; i++) await tapAt('.nc[data-r="4"][data-c="0"]');
+  const nono = { buzz: await take(), grey: await p.evaluate(() => document.querySelector('.rc[data-r="4"]').classList.contains("done")) };
+  check(`Nonogram: × = light tap, then fill = the tick as its clue is crossed off (${nono.buzz}; clue greys ${nono.grey})`,
+    same(nono.buzz, ["tap", "pick"]) && nono.grey);
+
+  // Star Battle easy #1: region D's star is 4th row, 3rd column. Star first, then × the rest: the last × finishes it.
+  await fresh("starbattle.html?pack=easy&p=1");
+  await take();
+  for (const [r, c] of [[3, 2], [3, 2], [1, 2], [2, 2], [0, 0], [0, 1], [0, 2], [3, 3]]) await tapAt(`.cell[data-r="${r}"][data-c="${c}"]`);
+  const region = await take();
+  check(`Star Battle: ×, star, then × on the region's other squares; the last one finishes the region with a firmer buzz (${region})`,
+    same(region, ["tap", "thud", "tap", "tap", "tap", "tap", "tap", "thud"]));
+  // Throttle: a drag across 6 squares in one instant buzzes once; the same drag at a finger's pace (50ms a square), 5
+  // (the first move marks the start square and the next one together, so one of those two is inside 40ms).
+  const dragRow = (r, pace) => p.evaluate(async ([r, pace]) => {
+    window.SB_HAPTIC_GAP = undefined;
+    const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    await wait(60);
+    window.__buzz = [];
+    const at = (c) => { const b = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`).getBoundingClientRect(); return { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true }; };
+    document.querySelector(`.cell[data-r="${r}"][data-c="0"]`).dispatchEvent(new PointerEvent("pointerdown", at(0)));
+    for (let c = 1; c < 6; c++) { if (pace) await wait(pace); document.dispatchEvent(new PointerEvent("pointermove", at(c))); }
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+    const n = window.__buzz.length;
+    window.SB_HAPTIC_GAP = 0;
+    return n;
+  }, [r, pace]);
+  const fast = await dragRow(7, 0), paced = await dragRow(6, 50);
+  check(`haptics throttle: a 6-square drag in one instant buzzes ${fast} time(s); at 50ms a square, ${paced}`, fast === 1 && paced === 5);
+
+  // Water Sort easy #1 (reduced motion: pours are quick): an empty tube = the soft no; pick up = tap; put down = tick;
+  // then the solver's moves: each pour thuds, a pour that finishes a tube thuds again as it lands, the last one wins.
+  await fresh("watersort.html?pack=easy&p=1");
+  const ws = await p.evaluate(async () => {
+    const { solve } = await import("../engine/watersort/solve.ts");
+    const { pour, isDone } = await import("../engine/watersort/rules.ts");
+    const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    const take = () => { const o = window.__buzz; window.__buzz = []; return o; };
+    const tube = (i) => document.querySelector(`.tube[data-i="${i}"]`);
+    let state = (await (await fetch("../packs/watersort-easy.json")).json()).puzzles[0].tubes;
+    const out = {};
+    take();
+    tube(state.findIndex((t) => !t.length)).click(); out.empty = take();
+    tube(0).click(); out.up = take();
+    tube(0).click(); out.down = take();
+    out.moves = [];
+    for (const [a, b] of solve(state).path) {
+      const after = pour(state, a, b), fills = after[b].length > 0 && isDone(after[b]);
+      tube(a).click(); await wait(30); tube(b).click(); await wait(400);
+      out.moves.push({ fills, buzz: take() });
+      state = after;
+    }
+    return out;
+  });
+  const fillMoves = ws.moves.slice(0, -1).filter((m) => m.fills), plain = ws.moves.filter((m) => !m.fills), last = ws.moves.at(-1);
+  check(`Water Sort: empty tube ${ws.empty}, pick up ${ws.up}, put down ${ws.down}; ${plain.length} pours "tap,thud", ${fillMoves.length} that finish a tube (${fillMoves.map((m) => m.buzz).join(" / ")}), last pour ${last.buzz}`,
+    same(ws.empty, ["warn"]) && same(ws.up, ["tap"]) && same(ws.down, ["pick"]) && plain.every((m) => same(m.buzz, ["tap", "thud"]))
+    && fillMoves.length > 0 && fillMoves.every((m) => same(m.buzz, ["tap", "thud", "thud"])) && last.buzz.includes("success") && !last.buzz.slice(2).includes("thud"));
+  await ctx.close();
 }
 
 check("no page errors anywhere", errors.length === 0);

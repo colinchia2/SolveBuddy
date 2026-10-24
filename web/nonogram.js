@@ -201,15 +201,17 @@ function render() {
 }
 
 // ---- Playing ----
-// Set one square; the buzz is light, or firmer when it finishes a row or column correctly (Colin 10/23).
+// Set one square; one buzz each (fill, × or clear; every square a drag paints): light, or firmer when it finishes a
+// row or column correctly (Colin 10/23), or the crisp tick when it only crosses off a clue (it greys) (Colin 10/24).
 function setMark(r, c, m) {
   const was = mark(r, c);
   if (was === m) return false;
-  const before = [lineDone("row", r) && lineRight("row", r), lineDone("col", c) && lineRight("col", c)];
+  const state = () => ["row", "col"].map((axis) => { const i = axis === "row" ? r : c, done = lineDone(axis, i); return done && lineRight(axis, i) ? 2 : done ? 1 : 0; });
+  const before = state();
   if (m === BLANK) delete s.marks[key(r, c)];
   else s.marks[key(r, c)] = m;
-  const after = [lineDone("row", r) && lineRight("row", r), lineDone("col", c) && lineRight("col", c)];
-  haptic((after[0] && !before[0]) || (after[1] && !before[1]) ? "thud" : "tap");
+  const after = state();
+  haptic(after.some((v, j) => v === 2 && before[j] !== 2) ? "thud" : after.some((v, j) => v === 1 && !before[j]) ? "pick" : "tap");
   return true;
 }
 function tap(r, c) {

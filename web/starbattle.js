@@ -163,14 +163,27 @@ function change(fn) {
   render();
 }
 
+// A region is done when it holds its stars and every other square in it is ×'d (yours or auto). Finishing one is a
+// firmer buzz than the mark's own (Colin 10/24); one buzz per action either way.
+function regionsDone() {
+  const b = board(), n = {};
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const g = (n[s.regions[r][c]] ??= { stars: 0, open: 0 });
+    if (b[r][c] === STAR) g.stars++;
+    else if (b[r][c] !== CROSS) g.open++;
+  }
+  return new Set(Object.keys(n).filter((g) => n[g].stars === K && !n[g].open));
+}
+const finishesRegion = (before) => [...regionsDone()].some((g) => !before.has(g));
+
 function tap(r, c) {
-  const k = key(r, c);
-  haptic((s.marks[k] || EMPTY) === CROSS ? "thud" : "tap"); // a firmer one when it becomes a star
+  const k = key(r, c), before = regionsDone(), star = (s.marks[k] || EMPTY) === CROSS;
   change(() => {
     const next = ((s.marks[k] || EMPTY) + 1) % 3; // empty → × → star → empty
     if (next) s.marks[k] = next;
     else delete s.marks[k];
   });
+  if (!s.solved) haptic(star || finishesRegion(before) ? "thud" : "tap"); // a firmer one when it becomes a star or finishes a region
 }
 
 function checkSolved() {
@@ -466,10 +479,11 @@ function paint(r, c) {
   const k = key(r, c);
   if (drag.cells.has(k)) return;
   drag.cells.add(k);
-  const was = s.marks[k];
+  const was = s.marks[k], before = regionsDone();
   if (drag.mode === "paint" && !s.marks[k]) s.marks[k] = CROSS;
   if (drag.mode === "wipe" && s.marks[k] === CROSS) delete s.marks[k];
-  if (s.marks[k] !== was) haptic("tap"); // a tap for each cell the drag marks or clears (Colin, 10/23)
+  // a tap for each cell the drag marks or clears (Colin, 10/23); firmer when that × finishes a region (10/24)
+  if (s.marks[k] !== was) haptic(finishesRegion(before) ? "thud" : "tap");
   s.hint = null;
   render();
 }

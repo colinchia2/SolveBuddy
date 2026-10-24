@@ -39,10 +39,18 @@ export function openPack(g, set) {
   post({ type: "tab", name: "Library" });
 }
 globalThis.sbLeave = goHome; // the app's glass back button calls this
-// Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle.
+// Haptics (Colin, 10/21): "tap" = light, "pick" = the selection tick, "thud" = medium, "success" = solving a puzzle,
+// "warn" = a soft no (a move that isn't allowed; an app that doesn't know it yet plays it as a light tap).
+// A fast drag can ask for a buzz every few ms: light ones (tap, pick) closer than HAPTIC_GAP ms to the last buzz are
+// dropped (Colin 10/24: ~every 40ms at most). Firmer ones always play. Checks set SB_HAPTIC_GAP = 0 to count each one.
+const HAPTIC_GAP = 40;
+let lastBuzz = -Infinity;
 export function haptic(kind = "tap") {
+  const now = performance.now(), light = kind === "tap" || kind === "pick";
+  if (light && now - lastBuzz < (globalThis.SB_HAPTIC_GAP ?? HAPTIC_GAP)) return;
+  lastBuzz = now;
   if (inApp) post({ type: "haptic", kind });
-  else navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : 10);
+  else navigator.vibrate?.(kind === "success" ? [20, 60, 30] : kind === "thud" ? 30 : kind === "warn" ? [8, 50, 8] : 10);
 }
 export const buzz = (ms = 10) => haptic(ms >= 30 ? "thud" : "tap");
 

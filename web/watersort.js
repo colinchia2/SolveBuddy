@@ -123,6 +123,7 @@ function tap(i) {
     return render();
   }
   if (from === i) {
+    haptic("pick"); // put it back down
     s.picked = null;
     return render();
   }
@@ -164,7 +165,8 @@ function startPour(from, to, done) {
   }
   // Inside the pouring tube the liquid stays against its closed bottom (tube space, as it sits upright): the colour being
   // poured shrinks from its top, so empty space only ever shows at the open end (Colin 10/23).
-  const A = { from, to, c, done, stream, k, had, lift, quiet, t: 0, speed: 1, last: null,
+  // fills = this pour makes the other tube one colour, full: a firmer buzz when it lands (Colin 10/24).
+  const A = { from, to, c, done, stream, k, had, lift, quiet, t: 0, speed: 1, last: null, fills: after[to].length > 0 && isDone(after[to]),
     D: quiet ? 260 : POUR_MS, tx: mx - lip.x - cx, ty: my - lip.y - cy,
     deg: dir * TILT, base: dst.querySelector(".liquid").getBoundingClientRect().bottom - br.top, my: my - br.top };
   undoStack.push(s.tubes.map((t) => [...t]));
@@ -244,6 +246,7 @@ function finishPour(A) {
   A.stream?.remove();
   render();
   if (!anims.length) checkSolved();
+  if (A.fills && !s.solved) haptic("thud"); // a tube finished (the win has its own buzz)
   A.done?.();
 }
 // A tap on a pour's tubes: finish it in FAST_MS. settle() = finish every pour right now (before Undo, a hint, Restart…).
@@ -267,7 +270,7 @@ function columnPour(x, y) {
   return best && busy(Number(best.w.querySelector(".tube").dataset.i));
 }
 function shake(i) {
-  haptic("tap");
+  haptic("warn"); // a soft no: an empty or finished tube, or a pour that can't go there (Colin 10/24)
   const el = document.querySelector(`.tube[data-i="${i}"]`);
   el?.classList.remove("shake");
   void el?.offsetWidth;
