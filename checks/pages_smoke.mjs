@@ -865,6 +865,22 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const removed = await st();
   await p.click("#undoBtn"); await p.waitForTimeout(150);
   const undone = await st();
+  // (5) Colin 10/24: sliding into a patch from an empty square joins it (never redraws it), and a drag never wipes out
+  // another patch (a red preview, then nothing changes).
+  const inA = (q, r, c) => r >= q.r && r < q.r + q.h && c >= q.c && c < q.c + q.w;
+  const outside = [[S.r, S.c - 1], [S.r, S.c + S.w], [S.r - 1, S.c], [S.r + S.h, S.c]].find(([r, c]) => r >= 0 && c >= 0 && r < pz.size && c < pz.size && !undone.patches.some((q) => inA(q, r, c)));
+  await drag(outside, [S.r, S.c]);
+  const joined = await st();
+  const J = joined.patches.find((q) => inA(q, outside[0], outside[1]));
+  await p.click("#undoBtn"); await p.waitForTimeout(150);
+  const redP = undone.patches.find((q) => !(q.r === S.r && q.c === S.c && q.w === S.w && q.h === S.h));
+  await take();
+  await drag([redP.r, redP.c], [S.r, S.c]);
+  const blocked = await st(), blockedBuzz = await take();
+  check(`Shikaku join: a slide from an empty square into a patch grows it (${undone.patches.length} → ${joined.patches.length} patches, covers both: ${!!J && inA(J, S.r, S.c) && inA(J, S.r + S.h - 1, S.c + S.w - 1)})`,
+    joined.patches.length === undone.patches.length && !!J && inA(J, S.r, S.c) && inA(J, S.r + S.h - 1, S.c + S.w - 1));
+  check(`Shikaku: a drag never removes another patch (${same(blocked.patches, undone.patches)}), says "${blocked.tip}", warn (${blockedBuzz.at(-1)})`,
+    same(blocked.patches, undone.patches) && /can't overlap/.test(blocked.tip) && blockedBuzz.at(-1) === "warn");
   check(`Shikaku draw: too small = dashed (${small.cls.at(-1)}), a quiet "${small.tip}" (${!small.bad}); a tick per new shape, medium on landing (${smallBuzz.join(" ")})`,
     small.patches.length === 1 && /part/.test(small.cls.at(-1)) && /needs \d+ more square/.test(small.tip) && !small.bad && smallBuzz.at(-1) === "L2" && smallBuzz.slice(0, -1).every((b) => b === "L1") && smallBuzz.length >= 2);
   check(`Shikaku grow: a drag from the patch grows it to the ${S.h}×${S.w} answer, one patch, same colour (${grown.patches.length} patch, k ${small.patches[0].k} → ${grown.patches[0]?.k}), "${grown.count}"; ticks on the way (${growBuzz.join(" ")})`,
@@ -1018,7 +1034,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const at = (r, c) => [bx.x + (c + 0.5) * cs, bx.y + (r + 0.5) * cs];
   const drag = async (a, z, look) => {
     await p.mouse.move(...at(...a)); await p.mouse.down(); await p.mouse.move(...at(...z), { steps: 5 });
-    const label = look ? await p.evaluate(() => document.querySelector(".patch.preview .size")?.textContent) : null;
+    const label = look ? await p.evaluate(() => document.querySelector(".patch.preview") ? (document.querySelector(".patch.preview").textContent || "none") : null) : null;
     await p.mouse.up(); await p.waitForTimeout(250);
     return label;
   };
@@ -1033,7 +1049,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     return { h: Q?.h, w: Q?.w, k: Q?.k, want: i % 7, part: !!document.querySelector(".patch.part"), err: !!document.querySelector(".patch.err") };
   });
   check(`Patches import: ${tiles.length} clue tiles (${tiles.join(" ")}); drag label is just the count ("${label}"); a tall clue drawn wide: "${wrongShape.tip}" (dashed ${wrongShape.part}, red ${wrongShape.err}); grown to ${grown.h} high × ${grown.w} wide it fits and takes the clue's colour (${grown.k} = ${grown.want})`,
-    tiles.length === 12 && tiles.includes("s4") && tiles.includes("a2") && tiles.includes("t") && label === "2"
+    tiles.length === 12 && tiles.includes("s4") && tiles.includes("a2") && tiles.includes("t") && label === "none"
     && /taller than it is wide/.test(wrongShape.tip) && wrongShape.part && !wrongShape.err
     && grown.h === 3 && grown.w === 2 && !grown.part && !grown.err && grown.k === grown.want);
   // Hint (Nudge → Explain → Show me) alone finishes it from there (it takes the wrong patch away first).

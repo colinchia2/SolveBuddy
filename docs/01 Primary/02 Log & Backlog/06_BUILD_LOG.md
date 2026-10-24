@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-24 — Shikaku drag fixes from Colin's phone test (pages only)
+- No size label on a patch while drawing ("no number at all on these patches").
+- A slide from an empty square INTO a patch joins it (grows it), never redraws it (his 3 + the square beside = the 4).
+- A drag never removes another patch: if the shape would cover a second patch the preview turns red and letting go
+  changes nothing ("Patches can't overlap. Tap a patch to remove it.", warn buzz). To redo a patch: tap it away first.
+- Checks: run_all 49 PASS; pages_smoke 121 PASS (new: join, never removes).
+
 ## 2026-10-24 — Shikaku Patches clues, Colin's two screenshots, the resume card (pages only, no OTA)
 - **Patches-style clues** (Colin: "Add patches style shape clues"; LinkedIn Patches). A clue can be a shape (square,
   tall = taller than wide, wide = wider than tall, any) with or without a number (`[r, c, n (0 = none), shape]`;

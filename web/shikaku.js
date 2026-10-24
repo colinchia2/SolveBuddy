@@ -1,7 +1,7 @@
 // Shikaku play page (Colin 10/24, docs/design/shikaku_mockup.html v2), wired to engine/shikaku and the packs.
-// - Drag from a square: a patch follows the finger (a short ease, no wobble) and shows its size. Let go to place it.
-// - Drag that starts on a patch grows it: it covers the patch plus every square up to the finger; it never starts
-//   over. Dragging inside a patch changes nothing. Tap a patch to take it away; tap a 1 to draw it.
+// - Drag from a square: a patch follows the finger (a short ease, no wobble), with no size label. Let go to place it.
+// - Drag that starts on a patch, or slides into one from an empty square, grows that patch: it covers the patch plus
+//   every square up to the finger; it never starts over. A drag never removes another patch (red preview, no change). Dragging inside a patch changes nothing. Tap a patch to take it away; tap a 1 to draw it.
 // - A patch with no number, two numbers or too many squares lands hatched red with one plain line why. One that holds
 //   its number but is still too small has a dashed edge (hints draw those too: "partial patches").
 // - Each patch has its own colour; touching patches never share one. Solved: a wave from the top-left, then every
@@ -189,17 +189,22 @@ const cellAt = (x, y) => {
   return [Math.max(0, Math.min(N - 1, Math.floor(((y - b.top) / b.height) * N))), Math.max(0, Math.min(N - 1, Math.floor(((x - b.left) / b.width) * N)))];
 };
 const span = (a, b) => ({ r: Math.min(a[0], b[0]), c: Math.min(a[1], b[1]), h: Math.abs(a[0] - b[0]) + 1, w: Math.abs(a[1] - b[1]) + 1 });
+// The patch a drag works on: the one it started on, or else the one patch its rectangle runs into (Colin 10/24: sliding
+// from an empty square into a patch joins it, never redraws it). A drag never removes another patch: if the shape
+// would cover a second patch it is "blocked" (red preview) and letting go changes nothing.
+const unite = (R, B) => { const r = Math.min(R.r, B.r), c = Math.min(R.c, B.c); return { r, c, h: Math.max(R.r + R.h, B.r + B.h) - r, w: Math.max(R.c + R.w, B.c + B.w) - c }; };
 function shape(d) {
   const R = span(d.a, d.b);
-  if (!d.base) return R;
-  const B = d.base, r = Math.min(R.r, B.r), c = Math.min(R.c, B.c);
-  return { r, c, h: Math.max(R.r + R.h, B.r + B.h) - r, w: Math.max(R.c + R.w, B.c + B.w) - c };
+  const hits = d.base ? [d.base] : s.patches.filter((Q) => overlaps(Q, R));
+  const join = hits.length === 1 ? hits[0] : null;
+  const S = join ? unite(R, join) : R;
+  return { ...S, join, blocked: hits.length > 1 || s.patches.some((Q) => Q !== join && overlaps(Q, S)) };
 }
 function showPreview(R) {
   let el = $("patches").querySelector(".preview");
-  if (!el) { el = document.createElement("div"); el.className = "patch preview"; el.innerHTML = '<span class="size"></span>'; $("patches").appendChild(el); }
-  place(el, R);
-  el.querySelector(".size").textContent = area(R); // just the count (Colin 10/24: no "3×2 = 6")
+  if (!el) { el = document.createElement("div"); el.className = "patch preview"; $("patches").appendChild(el); }
+  place(el, R); // no size label while drawing (Colin 10/24: "no number at all on these patches")
+  el.classList.toggle("blocked", !!R.blocked);
 }
 const dropPreview = () => $("patches").querySelector(".preview")?.remove();
 $("board").addEventListener("pointerdown", (e) => {
@@ -216,7 +221,7 @@ document.addEventListener("pointermove", (e) => {
   const before = shape(drag);
   drag.b = b; drag.moved = true;
   const now = shape(drag);
-  if (drag.base && same(now, drag.base)) return dropPreview(); // back inside the patch: nothing to show
+  if (now.join && same(now, now.join)) return dropPreview(); // back inside the patch: nothing to show
   showPreview(now);
   if (!same(before, now)) hapticLevel(1);
 });
@@ -240,10 +245,11 @@ function finish(d) {
     }
     if (cluesIn(P, R).length !== 1 || num(cluesIn(P, R)[0]) !== 1 || !fits(P, cluesIn(P, R)[0], R)) return; // a tap only draws on a 1
   }
-  if (d.base && same(R, d.base)) return; // dragged within the patch: no change
+  if (R.join && same(R, R.join)) return; // dragged within the patch: no change
+  if (R.blocked) { haptic("warn"); return afterChange(null, { text: "Patches can't overlap. Tap a patch to remove it.", bad: true }); }
   undoStack.push(snap());
-  const rest = s.patches.filter((Q) => Q !== d.base && !overlaps(Q, R));
-  const Q = { ...R, k: colorFor(R, d.base ? d.base.k : -1, rest) };
+  const rest = s.patches.filter((Q) => Q !== R.join);
+  const Q = { r: R.r, c: R.c, w: R.w, h: R.h, k: colorFor(R, R.join ? R.join.k : -1, rest) };
   s.patches = [...rest, Q];
   const st = status(Q);
   if (st.kind === "err") haptic("warn");
