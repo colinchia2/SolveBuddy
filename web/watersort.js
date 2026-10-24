@@ -3,7 +3,7 @@
 import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
-import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -354,6 +354,7 @@ function hintText(h) {
 
 // Tubes in one row, two rows when there are more than 6, three rows of 6 past 12 (imports go up to 18).
 function render() {
+  showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint;
   const n = s.tubes.length;
   const perRow = n <= 6 ? n : n <= 12 ? Math.ceil(n / 2) : 6;

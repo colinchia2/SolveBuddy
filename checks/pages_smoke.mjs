@@ -366,7 +366,7 @@ async function hintLine(url) {
   });
 }
 for (const url of ["sudoku.html?pack=easy&p=2", "sudoku.html?pack=killer&p=1", "sudoku.html?pack=thermo&p=1", "starbattle.html?pack=easy&p=2",
-  "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1"]) {
+  "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1", "watersort.html?pack=easy&p=2"]) {
   const r = await hintLine(url);
   check(`${url}: hints line "${r.fresh || "(hidden)"}" → "${r.one}" → "${r.two}", after Undo "${r.undo}", after Restart "${r.reset || "(hidden)"}"; over Hint ${r.over}, no height ${r.sameDock}, covers nothing ${r.clear}`,
     r.fresh === "" && r.one === "You've used ⅓ of a hint" && r.two === "You've used ⅔ of a hint" && r.undo === r.two && r.reset === "" && r.over && r.sameDock && r.clear);
