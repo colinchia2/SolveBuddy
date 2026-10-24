@@ -3,7 +3,7 @@
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
 import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { boardPreview } from "./preview.js";
-import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, isNew, nonoPicture, ring, setParts, streaks, tabs } from "./screens.js";
+import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, nonoPicture, ring, setParts, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
 for (const [g, game] of Object.entries(GAMES))
@@ -30,7 +30,6 @@ function nonoThumb(k) {
   const n = data[`nonogram/${k}`].size;
   return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
 }
-const PINCH_CHIP = `<span class="zchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l5 5 M5 5h4 M5 5v4 M19 19l-5-5 M19 19h-4 M19 19v-4"/></svg>zoom</span>`;
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
   help: `<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>`,
@@ -73,7 +72,7 @@ function render() {
   $("streak").hidden = current < 1;
   $("streak").innerHTML = `${FLAME}${current} day${current === 1 ? "" : "s"}`;
   $("tiles").innerHTML = TILES.map((t) => t.id === "nonogram"
-    ? `<button class="tile${isNew("nonogram") ? " new" : ""}" data-game="nonogram" aria-label="Open Nonogram">${isNew("nonogram") ? `<span class="newdot">New</span>` : ""}${gameIcon(LOOK.nonogram, 38, 21)}<span><span class="name">Nonogram</span><span class="count">${total("nonogram")} puzzles</span></span></button>`
+    ? `<button class="tile" data-game="nonogram" aria-label="Open Nonogram">${gameIcon(LOOK.nonogram, 38, 21)}<span><span class="name">Nonogram</span><span class="count">${total("nonogram")} puzzles</span></span></button>`
     : t.id === "blocks"
     ? `<button class="tile" data-game="blocks" aria-label="Play Block Drop">${gameIcon(LOOK.blocks, 38, 21)}<span><span class="name">Block Drop</span><span class="count">${blockScores().best ? `Best ${blockScores().best.toLocaleString()}` : "Endless"}</span></span></button>`
     : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 38, 21)}<span><span class="name">${GAMES[t.id].name}</span><span class="count">${total(t.id)} ${t.id === "watersort" ? "levels" : "puzzles"}</span></span></button>`).join("");
@@ -121,11 +120,11 @@ function renderView(moved) {
       ${groups.map(({ group, rows }) => `<div class="c-group"><div class="c-ghead">${esc(group || "Packs")}</div>
         <div class="c-list">${rows.map(({ s, i, short }) => {
           const n = setSize(g, s), d = setDone(g, s);
-          if (g === "nonogram") { // thumb = last solved picture; size is the level; only 15×15 zooms
+          if (g === "nonogram") { // thumb = last solved picture; size is the level (no "zoom" label, Colin 10/24)
             const k = s.levels[0];
             return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
               <span class="nthumb">${nonoThumb(k)}</span>
-              <span class="g"><b>${esc(short)}</b><small class="nsub">${bars(LEVEL_BARS[k], [5, 7, 9, 11])}${esc(label(g, k))} · ${n} puzzles${data[`${g}/${k}`].size >= 15 ? ` · ${PINCH_CHIP}` : ""}</small></span>
+              <span class="g"><b>${esc(short)}</b><small class="nsub">${bars(LEVEL_BARS[k], [5, 7, 9, 11])}${esc(label(g, k))} · ${n} puzzles</small></span>
               <span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
           }
           const sub = [setBoard(g, s), s.note ?? s.levels.map((k) => label(g, k)).join(", ")].filter(Boolean).join(" · ");

@@ -63,14 +63,6 @@ export function nonoPicture(sol, size, color) {
   sol.forEach((row, r) => [...row].forEach((v, c) => { if (v === "X") o += `<rect x="${(c * u).toFixed(2)}" y="${(r * u).toFixed(2)}" width="${(u + 0.05).toFixed(2)}" height="${(u + 0.05).toFixed(2)}" fill="${color}"/>`; }));
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block;background:#FFFDF9">${o}</svg>`;
 }
-// "New" on a game's Library tile for 7 days from the first time this phone showed it (Colin 10/23).
-const SEEN_KEY = "solvebuddy.firstSeen";
-export function isNew(id, days = 7, now = Date.now()) {
-  let seen = {};
-  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || "{}"); } catch {}
-  if (!seen[id]) { seen[id] = now; try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch {} }
-  return now - seen[id] < days * 86400000;
-}
 export const gameIcon = (look, box, icon) => `<span class="gico" style="width:${box}px;height:${box}px;border-radius:${Math.round(box / 4.5)}px;background:${look.bg}" aria-hidden="true">
 <svg width="${icon}" height="${icon}" viewBox="0 0 24 24" fill="none" stroke="${look.ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${look.path}"/></svg></span>`;
 

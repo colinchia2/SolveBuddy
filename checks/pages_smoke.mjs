@@ -718,28 +718,34 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await ctx.close();
 }
 
-// Library: Nonogram is a fifth tile with "New" (7 days from first seen); its pack page lists 5×5 / 10×10 / 15×15 with
-// a picture thumb each and "zoom" only on 15×15; the Packs tab has its block; Stats lists it.
+// Library: Nonogram is a fifth tile, with no "New" tag (Colin 10/24); its pack page lists 5×5 / 10×10 / 15×15 with
+// a picture thumb each and no "zoom" label (Colin 10/24), nor on any other game's pack list; the Packs tab has its
+// block; Stats lists it.
 {
   await page.goto(`${BASE}home.html`);
   await page.waitForTimeout(800);
-  await page.evaluate(() => localStorage.removeItem("solvebuddy.firstSeen"));
-  await page.reload();
-  await page.waitForTimeout(700);
   const lib = await page.evaluate(async () => {
     const tiles = [...document.querySelectorAll(".tile")].map((t) => t.dataset.game);
-    const isNewNow = !!document.querySelector('.tile[data-game="nonogram"] .newdot');
-    const { isNew } = await import("./screens.js");
-    const later = isNew("nonogram", 7, Date.now() + 8 * 86400000);
+    const tagged = !!document.querySelector(".newdot, .tile.new") || [...document.querySelectorAll(".tile")].some((t) => /new/i.test(t.innerText));
     document.querySelector('.tile[data-game="nonogram"]').click();
     await new Promise((r) => setTimeout(r, 400));
-    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), zoom: !!r.querySelector(".zchip") }));
-    return { tiles, isNewNow, later, rows };
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), zoom: /zoom/i.test(r.innerText) || !!r.querySelector(".zchip") }));
+    // every other game's pack list: no "zoom" either
+    const others = [];
+    for (const g of ["sudoku", "starbattle", "watersort"]) {
+      document.querySelector('[data-act="back"]')?.click();
+      await new Promise((r) => setTimeout(r, 300));
+      document.querySelector(`.tile[data-game="${g}"]`).click();
+      await new Promise((r) => setTimeout(r, 400));
+      const v = document.querySelector("#view:not([hidden])") ?? document.body;
+      if (/zoom/i.test(v.innerText) || v.querySelector(".zchip")) others.push(g);
+    }
+    return { tiles, tagged, rows, others };
   });
-  check(`Library: Nonogram is tile 5 of ${lib.tiles.length} (${lib.tiles.join(", ")}), "New" now (${lib.isNewNow}) and gone after 7 days (${!lib.later})`,
-    lib.tiles[4] === "nonogram" && lib.isNewNow && !lib.later);
-  check(`Nonogram packs: ${lib.rows.map((r) => `${r.name}${r.zoom ? " (zoom)" : ""}`).join(", ")}, each with a thumb`,
-    lib.rows.map((r) => r.name).join() === "5×5,10×10,15×15" && lib.rows.every((r) => r.thumb) && lib.rows.map((r) => r.zoom).join() === "false,false,true");
+  check(`Library: Nonogram is tile 5 of ${lib.tiles.length} (${lib.tiles.join(", ")}), no "New" tag (${!lib.tagged})`,
+    lib.tiles[4] === "nonogram" && !lib.tagged);
+  check(`Nonogram packs: ${lib.rows.map((r) => `${r.name}${r.zoom ? " (zoom)" : ""}`).join(", ")}, each with a thumb, no "zoom" label here or on other games' packs (${lib.others.join(", ") || "none"})`,
+    lib.rows.map((r) => r.name).join() === "5×5,10×10,15×15" && lib.rows.every((r) => r.thumb) && lib.rows.every((r) => !r.zoom) && lib.others.length === 0);
   await page.goto(`${BASE}packs.html`);
   await page.waitForTimeout(700);
   const blk = await page.evaluate(() => [...document.querySelectorAll('.btile[data-g="nonogram"]')].map((b) => `${b.querySelector(".n").textContent}: ${b.querySelectorAll(".c")[1].textContent}`));
