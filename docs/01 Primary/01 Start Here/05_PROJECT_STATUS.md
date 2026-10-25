@@ -1,5 +1,11 @@
 # SolveBuddy — project status
 
+**As of 2026-10-25:** 6 games live, all built into the app (OTA from app `948e38d`: Nonogram + Shikaku in GAMES,
+Library tab → home). Colin: "SolveBuddy is all good." Nothing in progress; next = bigger backlog features (A: Packs vs
+Library talk first). Checks: run_all 49 PASS, pages_smoke 121 PASS.
+
+---
+
 **As of 2026-10-24 (evening):** 6 games live; Shikaku added 10/24 (pages only, inside the Star Battle page in the app; Colin: "Looks great!").
 
 ---

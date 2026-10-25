@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-25 — Save point: app OTA landed, Colin: "SolveBuddy is all good"
+- App `948e38d` (pushed): App.js GAMES adds "nonogram" + "shikaku"; `scripts/pull-pages.mjs` lists them; `src/pages.js`
+  refreshed (10 pages). Fingerprint unchanged (`513e3eaf…`), so no build. Carries the earlier Library-tab tap → home (`b029133`).
+- Colin ran `eas update` (production channel) and confirmed on the phone: Library tab → home, Nonogram and Shikaku
+  open as their own games, Shikaku Patches clues, imports, resume card and drag fixes all good.
+- Open (optional): drop `bridge.js` HOSTED + `build_site.ts` hosting. Next: bigger backlog features (A first).
+
 ## 2026-10-24 — Shikaku drag fixes from Colin's phone test (pages only)
 - No size label on a patch while drawing ("no number at all on these patches").
 - A slide from an empty square INTO a patch joins it (grows it), never redraws it (his 3 + the square beside = the 4).

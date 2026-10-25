@@ -2,7 +2,20 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (save point 2026-10-24, evening)
+## Right now (save point 2026-10-25)
+- **Done + Colin confirmed 10/25: "SolveBuddy is all good."** He ran the app OTA (app `948e38d`): tapping the
+  Library tab again goes home; Nonogram and Shikaku are built into the app (GAMES + packed pages). Also confirmed on
+  the phone: Shikaku Patches clues, his imports, the resume card, and the drag fixes (`24b6c02`). Build log 2026-10-25.
+- **Nothing in progress.** No OTA waiting.
+- **Next (Colin picks): the bigger features already in the backlog.** First the talk about Packs vs Library (backlog
+  A), then D Stats tab, E Killer hint speed, in-app photo reading, new games.
+- **Small, optional:** drop `bridge.js` HOSTED + the hosting in `scripts/build_site.ts` (safe now; keeping it only
+  helps an older app copy). The haptic OTA items (glass back → selection, etc.) are still parked; ask Colin first.
+- **Rules:** never `eas build`/`eas update` without Colin's go (he runs it); one app folder (`C:\dev\SolveBuddyApp`).
+- **To pick up, read:** 1) this section + Key rules; 2) `../02 Log & Backlog/08_BACKLOG.md`, "Next";
+  3) `../02 Log & Backlog/06_BUILD_LOG.md`, the 2026-10-25 and 2026-10-24 entries; 4) `Buddies\00 Family\00_PRIMER.md` "How Colin works".
+
+### Earlier: save point 2026-10-24, evening
 - **Done + Colin confirmed 10/24:** Nonogram clue bar, no "New"/"zoom" labels, stronger haptics, and **Shikaku**
   ("Looks great!"; pages only, inside the app's Star Battle page via `?game=shikaku`; 8×8 / 10×10 / 12×12, 10 each;
   hints may draw partial patches; build log 2026-10-24 "Shikaku").

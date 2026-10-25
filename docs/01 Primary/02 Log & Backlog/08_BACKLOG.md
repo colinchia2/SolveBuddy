@@ -4,18 +4,16 @@ Top item = what's next.
 
 ## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
 **From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
-- **⏰ Colin runs the pending OTA when home** (Library tab → home, app `b029133`, + Nonogram and Shikaku in GAMES,
-  item below; steps in the primer's "Right now"). Ask him whether to fold in the haptic items below too.
+- **DONE 10/25: Colin ran the OTA** (app `948e38d`: Library tab → home, Nonogram + Shikaku in GAMES) and confirmed it.
+- **Optional cleanup:** drop `bridge.js` HOSTED + the hosting in `scripts/build_site.ts` now the OTA is confirmed
+  (keeping it only helps an older app copy; no rush).
 - **Next app OTA** (App.js + `src/GlassBack.js`, JS only, no build while the fingerprint holds): the glass back
   button uses `impactAsync(Light)`, which Colin doesn't feel; make it `selectionAsync`. In App.js map light
   impacts to `selectionAsync` and "warn" to `notificationAsync(Warning)`. Pages already send only "pick"/"success"
   (`bridge.js`, 10/24), so this is for the native button and for any older page.
-- **Nonogram and Shikaku in the app's GAMES list** (not there yet: App.js GAMES is sudoku, starbattle, watersort,
-  blocks): at the next app OTA add "nonogram" and "shikaku" to GAMES + `node scripts/pull-pages.mjs` (so the
-  packed pages carry Shikaku), then drop `bridge.js` HOSTED and the hosting in `scripts/build_site.ts`.
+- **Nonogram and Shikaku in the app's GAMES list:** DONE 10/25 (app `948e38d`, in the OTA above).
 
-**From 10/24 evening (Shikaku round 2, built and pushed: build log "Shikaku Patches clues"):** waiting on Colin's phone
-test of the Patches pack, his two imported screenshots and the resume card. Not built: making Patches puzzles by hand
+**From 10/24 evening (Shikaku round 2, build log "Shikaku Patches clues"):** Colin confirmed on the phone 10/25. Not built: making Patches puzzles by hand
 in the Import tab (only Claude adds them from a screenshot for now).
 
 **From Colin 10/23 (Buddy Family chat), in this order:**
