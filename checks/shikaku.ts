@@ -102,7 +102,7 @@ check(`hints draw partial patches along the way (${partials} across the packs)`,
 { // Colin's Patches screenshot (10/24), imported: one answer, Hint alone solves it.
   const imp = JSON.parse(readFileSync("packs/imports.json", "utf8")).puzzles.filter((x: any) => x.game === "shikaku");
   check(`imports.json: ${imp.length} Shikaku import(s), each with exactly one answer that matches its stored answer, and Hint alone solves it`,
-    imp.length > 0 && imp.every((x: any) => {
+    imp.every((x: any) => {
       const found: Rect[] = [];
       return countSolutions(x, 2, found) === 1 && found.every((R, i) => same(R, x.solution[i])) && isSolved(x, x.solution) && playHints(x).steps > 0;
     }));

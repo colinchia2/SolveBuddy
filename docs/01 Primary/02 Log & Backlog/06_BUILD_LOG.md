@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-10-27 — LinkedIn screenshots removed; pack pictures mockup
+- Colin said yes: the Patches and Queens (LinkedIn) screenshots are out of packs/imports.json (4 imports left); the
+  page block that played the Patches import is gone, and the Shikaku import check allows none.
+- Pack pictures: Colin wants every pack's picture the same kind, and fun. Mockup "Pack pictures" on
+  https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK: A stack of cards, B a peek mid-solve, C board + size sticker.
+  Waiting on his pick.
+- Checks: run_all 49 PASS; pages_smoke 146 PASS.
+
 ## 2026-10-27 — Publish fix + Colin's phone notes (pages only)
 - **The F1 push (a10c32f) didn't publish:** GitHub's "Publish site" runs `npm run checks` first, and the checks load
   web/bridge.js in Node, where `document` doesn't exist; the new iPad line read it at load. Guarded

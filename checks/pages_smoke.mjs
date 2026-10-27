@@ -1018,68 +1018,6 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await ctx.close();
 }
 
-// Shikaku Patches (Colin 10/24, LinkedIn Patches): clues are tiles in their shape (square / tall / wide / dashed "any")
-// and colour, the number on them when there is one; a patch over a clue takes its colour; a patch in the wrong shape
-// that can still grow says the rule (dashed); the drag label is just the count; Hint solves Colin's imported Patches
-// screenshot; the Patches pack shows tiles and classic packs don't; his Patches and Queens screenshots are in the
-// Import tab and open.
-{
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const p = await ctx.newPage();
-  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
-  await p.goto(`${BASE}home.html`);
-  const imps = await p.evaluate(async () => (await (await fetch("../packs/imports.json")).json()).puzzles);
-  const shk = imps.find((x) => x.game === "shikaku"), q = imps.find((x) => x.game === "starbattle" && x.size === 9);
-  await p.goto(`${BASE}shikaku.html?import=${encodeURIComponent(shk.id)}`);
-  await p.waitForTimeout(800);
-  const tiles = await p.evaluate(() => [...document.querySelectorAll("#nums .tile")].map((t) => `${t.classList[1]}${t.textContent}`));
-  const bx = await p.locator("#board").boundingBox(), cs = bx.width / 8;
-  const at = (r, c) => [bx.x + (c + 0.5) * cs, bx.y + (r + 0.5) * cs];
-  const drag = async (a, z, look) => {
-    await p.mouse.move(...at(...a)); await p.mouse.down(); await p.mouse.move(...at(...z), { steps: 5 });
-    const label = look ? await p.evaluate(() => document.querySelector(".patch.preview") ? (document.querySelector(".patch.preview").textContent || "none") : null) : null;
-    await p.mouse.up(); await p.waitForTimeout(250);
-    return label;
-  };
-  // The tall clue at row 2, column 6 drawn 1 high and 2 wide (with the empty square to its left).
-  const label = await drag([1, 5], [1, 4], true);
-  const wrongShape = await p.evaluate(() => ({ tip: document.getElementById("tip").textContent, part: !!document.querySelector(".patch.part"), err: !!document.querySelector(".patch.err") }));
-  // Grow it down to 3 high, 2 wide: a tall shape, in the clue's colour.
-  await drag([1, 4], [3, 4]);
-  const grown = await p.evaluate(() => {
-    const st = globalThis.sbShik.state(), P = globalThis.sbShik.puzzle(), i = P.clues.findIndex((k) => k[0] === 1 && k[1] === 5);
-    const Q = st.patches.find((x) => x.r <= 1 && 1 < x.r + x.h && x.c <= 5 && 5 < x.c + x.w);
-    return { h: Q?.h, w: Q?.w, k: Q?.k, want: i % 7, part: !!document.querySelector(".patch.part"), err: !!document.querySelector(".patch.err") };
-  });
-  check(`Patches import: ${tiles.length} clue tiles (${tiles.join(" ")}); drag label is just the count ("${label}"); a tall clue drawn wide: "${wrongShape.tip}" (dashed ${wrongShape.part}, red ${wrongShape.err}); grown to ${grown.h} high × ${grown.w} wide it fits and takes the clue's colour (${grown.k} = ${grown.want})`,
-    tiles.length === 12 && tiles.includes("s4") && tiles.includes("a2") && tiles.includes("t") && label === "none"
-    && /taller than it is wide/.test(wrongShape.tip) && wrongShape.part && !wrongShape.err
-    && grown.h === 3 && grown.w === 2 && !grown.part && !grown.err && grown.k === grown.want);
-  // Hint (Nudge → Explain → Show me) alone finishes it from there (it takes the wrong patch away first).
-  for (let n = 0; n < 80; n++) {
-    if (await p.evaluate(() => globalThis.sbShik.state().solved)) break;
-    await p.click("#hintBtn"); await p.click("#hintNext"); await p.click("#hintNext"); await p.click("#hintNext");
-  }
-  const solved = await p.evaluate(() => globalThis.sbShik.state().solved);
-  await p.goto(`${BASE}shikaku.html?pack=easy&p=1`);
-  await p.waitForTimeout(500);
-  const classic = await p.evaluate(() => ({ tiles: document.querySelectorAll("#nums .tile").length, rules: !document.getElementById("rulesPatches").hidden }));
-  // (No Patches pack since 10/27; there's no ?pack=patches to open.)
-  const noPack = await p.evaluate(async () => !(await import("./bridge.js")).GAMES.shikaku.packs.some((x) => x[0] === "patches"));
-  check(`Patches: Hint solves the import (${solved}); no Patches pack (${noPack}); classic Easy keeps plain numbers (${classic.tiles} tiles, rules line ${classic.rules})`,
-    solved && noPack && classic.tiles === 0 && !classic.rules);
-  // Import tab: both screenshots are listed and open.
-  await p.goto(`${BASE}import.html`);
-  await p.waitForTimeout(800);
-  const list = await p.evaluate(() => [...document.querySelectorAll(".imp-open")].map((b) => b.getAttribute("aria-label")));
-  await p.goto(`${BASE}starbattle.html?import=${encodeURIComponent(q.id)}`);
-  await p.waitForTimeout(800);
-  const qs = await p.evaluate(() => document.getElementById("sub").textContent);
-  check(`Import tab lists the Patches Shikaku and the 9×9 Queens (${list.filter((l) => /Shikaku|9×9/.test(l)).join(" | ")}); the Queens one opens ("${qs}")`,
-    list.some((l) => /^Open Shikaku 8×8 · Patches, (New|Solved)/.test(l)) && list.some((l) => /^Open Star Battle 9×9 · 1 star, New/.test(l)) && /Imported · 9×9 · 1 star/.test(qs));
-  await ctx.close();
-}
-
 // Library: Nonogram is a fifth tile, with no "New" tag (Colin 10/24); its pack page lists 5×5 / 10×10 / 15×15 with
 // a picture thumb each and no "zoom" label (Colin 10/24), nor on any other game's pack list; the Packs tab has its
 // block; Stats lists it.
