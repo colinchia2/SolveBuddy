@@ -10,6 +10,9 @@ coming. Also from 10/27: Water Sort "show me a shorter way" after finishing (par
 reshades it in Settings › This puzzle; (b) Library / Import previews of an import use the usual colours, not its own
 shades; (c) own iPad layouts for Water Sort, Shikaku, Nonogram, Block Drop and the tabs (today: the phone layout
 scaled; Sudoku and Star Battle have theirs); (d) a ‹ back step in the Star Battle What if play-through.
+**iPad: a proper check (Colin, 10/27 end of day):** he only looked quickly. Go through it with him on the iPad, both
+ways up: Sudoku and Star Battle (board left / controls right; upright one column; hint card; zoom off), the tabs and
+the other games (phone layout scaled), the native back button and tab bar lining up. Fix what he finds, one at a time.
 
 **From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
 - **DONE 10/25: Colin ran the OTA** (app `948e38d`: Library tab → home, Nonogram + Shikaku in GAMES) and confirmed it.
@@ -159,6 +162,19 @@ Bigger builds (after the improvements):
   X-wing / Y-wing still write full lists in cleared cells; revisit when Colin plays Tests 5–6.
 - 10/20: design-checker warnings about Inter, glass borders and nested cards are left as-is, because they
   come from the approved mockups.
+- **10/27 (round 10/27, Colin's picks; mockups https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK):**
+  - Corner pencil marks: smallest first, 3 top right, 3 bottom left, 3 bottom right; top left left free for a cage sum.
+    (He tried the keypad layout first and didn't like it.)
+  - "Show mistakes" reds a pencil mark only when it clashes with a number you can see; never checked against the answer
+    (that would give it away).
+  - Hints used = a small number on the Hint button's corner (tap = "Hints used"); not a line above it.
+  - Hint card = the slim card in the bottom bar's spot; boards stay centred (his 10/22 rule), never moved up.
+  - Water Sort par stays visible after a hint, greyed "hint used"; it just doesn't count.
+  - Pack pictures = option C: the pack's first puzzle as it starts + a size sticker; never progress, never the answer.
+  - No Patches pack and no LinkedIn screenshots ("those come from LinkedIn, I don't want them"). Shape clues stay in the
+    engine only for imports.
+  - Shikaku: no line of text under the board, ever.
+  - Water Sort and Block Drop need no pack picture (no pack list).
 
 ## Parked
 - A real "Solved!" screen design (the test pages use a stand-in sheet).

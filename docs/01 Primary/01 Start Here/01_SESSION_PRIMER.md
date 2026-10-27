@@ -7,7 +7,7 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   pushed, or on the backlog. His checklist: https://claude.ai/artifact/3VEN9gjNrLCxQdZEwXPKvU (db `checks`); the last
   4 "doesn't" + 2 "maybe" were fixed in the final push (60e85d2). Build log 2026-10-27 has every step.
 - **Nothing in progress. No OTA waiting.** App build 545730d (iPad) is on Colin's phone; pages ship by git push.
-- **Next (Colin picks):** backlog "Next": S16 hint review (fits the Stats tab, D), Water Sort "shorter way", the 10/27
+- **Next (Colin picks):** a proper iPad check with Colin (backlog, he only looked quickly); S16 hint review (fits the Stats tab, D), Water Sort "shorter way", the 10/27
   small leftovers, then the older list (A: Packs vs Library talk, D: Stats tab, new games).
 - **Rules:** run `node checks/run_all.ts` before every push (GitHub won't publish on a FAIL); never `eas build`/
   `eas update` without Colin's go; one app folder (`C:\dev\SolveBuddyApp`).
