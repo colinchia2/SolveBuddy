@@ -235,11 +235,16 @@ function openHint() {
     return render();
   }
   s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
-  s.hint = { data: findHint(board(), s.solution, s.center, s.corner, s.extra), level: 1 };
+  const data = findHint(board(), s.solution, s.center, s.corner, s.extra);
+  // A cage's chips start on the first wrong way that has something on the board to show (S15).
+  const ways = data.ways ?? [];
+  const first = ways.findIndex((w) => !w.ok && w.blockers.length);
+  s.hint = { data, level: 1, way: first >= 0 ? first : Math.max(0, ways.findIndex((w) => !w.ok)) };
   render();
 }
 function advanceHint() {
   const h = s.hint;
+  if (!h) return; // a second tap on Done while the card slides away
   if (h.data.kind === "stuck" || h.level === 3) {
     s.hint = null;
     checkSolved();
@@ -327,7 +332,9 @@ function render() {
   const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
   // From Explain on: the numbers that block the other cells, and the row, column or box each blocks through
   // (light red, shown over the hint's own shading so the whole line stays visible).
-  const blockers = shown && step.blockers ? step.blockers : [];
+  // A cage hint (S15): at Explain, the picked way's blockers; at Show me, what decides which cell gets the number.
+  const blockers = !shown ? [] : step.ways && h.level === 2 ? step.ways[h.way]?.blockers ?? []
+    : step.where && h.level === 3 ? step.where.blockers : step.blockers ?? [];
   const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
   const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
   const [sr, sc] = s.sel || [-1, -1];
@@ -424,9 +431,15 @@ function render() {
     const red = new Set((d.remove ?? []).map(([r, c]) => `R${r + 1}C${c + 1}`));
     const paint = (t) => t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch])
       .replace(/R\dC\d/g, (n) => (h.level < 2 ? n : blue.has(n) ? `<b class="cn blue">${n}</b>` : red.has(n) ? `<b class="cn red">${n}</b>` : n));
+    // A cage with chips: Explain = the sum left, the ways, and the picked way's reason; Show me = which cell, and why.
+    if (d.ways && h.level === 2) text.splice(0, 2, d.explain, d.ways[h.way]?.why ?? "");
+    if (d.where && h.level === 3) text[1] = d.where.why;
     $("hintTitle").innerHTML = paint(text[0]);
     $("hintBody").innerHTML = paint(text[1]);
     $("hintBody").hidden = !text[1];
+    $("hintWays").hidden = !(d.ways && h.level === 2);
+    if (d.ways && h.level === 2) $("hintWays").innerHTML = d.ways.map((w, i) =>
+      `<button class="way${w.ok ? " ok" : ""}${i === h.way ? " on" : ""}" data-way="${i}" aria-pressed="${i === h.way}">${w.nums.join(" + ")}${w.ok ? " ✓" : ""}</button>`).join("");
     $("hintNextLabel").textContent = next;
   }
 
@@ -530,6 +543,13 @@ $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
 $("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
+$("hintWays").onclick = (e) => {
+  const b = e.target.closest("[data-way]");
+  if (!b || !s.hint) return;
+  s.hint.way = Number(b.dataset.way);
+  haptic("pick");
+  render();
+};
 $("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));

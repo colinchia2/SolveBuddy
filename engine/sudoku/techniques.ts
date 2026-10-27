@@ -22,7 +22,7 @@ export type Step = {
 };
 
 // Which placed n's block these empty cells? Picks few: a number that already blocks a cell is reused.
-function blockersFor(grid: Grid, cells: [number, number][], n: number): NonNullable<Step["blockers"]> {
+export function blockersFor(grid: Grid, cells: [number, number][], n: number): NonNullable<Step["blockers"]> {
   const placed: [number, number][] = [];
   for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) if (grid[r][c] === n) placed.push([r, c]);
   const sameBox = (a: [number, number], b: [number, number]) =>

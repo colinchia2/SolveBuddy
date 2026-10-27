@@ -248,6 +248,7 @@ function openHint() {
 // play 0 = the pretend star, 1..k = each forced move, k+1 = the line that ran dry. Then the real × goes in.
 function advanceHint() {
   const h = s.hint;
+  if (!h) return; // a second tap on Done while the card slides away
   const chain = h.data.chain;
   if (h.play != null) {
     if (h.play <= chain.length) h.play++;

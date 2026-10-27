@@ -3,7 +3,7 @@
 // The Hint button tries a variant trick first (Colin: "whenever there is a hint based on THOSE rules, that takes
 // priority"), then the classic ones. Classic tricks stay sound here: the extra rules only ever remove options.
 import { type Grid, fits } from "./fullGrid.ts";
-import { type RuledOut, cellName, list } from "./techniques.ts";
+import { type RuledOut, type Step, blockersFor, cellName, list } from "./techniques.ts";
 
 type Cell = [number, number];
 export type Cage = { cells: Cell[]; sum: number };
@@ -91,14 +91,60 @@ function thermoAllows(grid: Grid, line: Cell[], opts: (p: Cell) => number[]) {
   return { lo, hi, allow: line.map((p, i) => ({ cell: p, nums: A[i].filter((v) => v >= lo[i] && v <= hi[i]) })).filter((x) => !grid[x.cell[0]][x.cell[1]]) };
 }
 
+type Blockers = NonNullable<Step["blockers"]>;
+// A way to make a cage's sum, shown as a chip in the hint (Colin 10/27, S15): the wrong ones crossed out, each with
+// the number on the board that rules it out (lit red when its chip is picked).
+export type CageWay = { nums: number[]; ok: boolean; why: string; blockers: Blockers };
 export type VariantStep = {
   technique: string; focus: Cell[]; nudge: string; why: string;
   place?: { cell: Cell; value: number }; // a number to place, or…
   pencil?: { cell: Cell; marks: number[] }[]; // …what a cage or thermo leaves in these cells (written as pencil marks)
+  ways?: CageWay[]; // a cage: every way to make it, the wrong ones crossed out
+  where?: { why: string; blockers: Blockers }; // Show me: why the number goes in this cell of the cage
+  struck?: Cell[]; // cells ruled out (striped), e.g. a squeeze's other spots
 };
 
-const optsFor = (grid: Grid, out: RuledOut) => ([r, c]: Cell) => NUMS.filter((n) => fits(grid, r, c, n) && !out.has(`${r},${c},${n}`));
+// What a cell can still be by its row, column and box (and what's ruled out). Worked out once per cell per hint:
+// the cage searches ask it thousands of times (backlog E: a Killer Expert hint took 640ms). Never mutated.
+const optsFor = (grid: Grid, out: RuledOut) => {
+  const memo: number[][] = [];
+  return ([r, c]: Cell) => (memo[r * 9 + c] ??= NUMS.filter((n) => fits(grid, r, c, n) && !out.has(`${r},${c},${n}`)));
+};
 const wayText = (ways: number[][]) => list(ways.map((w) => w.join(" + ")), "or");
+
+// Every way to make what's left of a cage, right or wrong, with why each wrong one fails and what on the board shows
+// it (Colin 10/27: "9+2: there's already a 2 … 4+7: there's a 4 … so that leaves 5 and 6"). Null when there are too
+// many to show as chips.
+function cageWays(grid: Grid, cage: Cage, a: ReturnType<typeof cageAllows>, opts: (p: Cell) => number[]): CageWay[] | null {
+  const n = a.empty.length, all: number[][] = [];
+  const pick = (from: number, chosen: number[], left: number) => {
+    if (chosen.length === n) { if (left === 0) all.push(chosen); return; }
+    for (let d = from; d <= 9 && d <= left; d++) pick(d + 1, [...chosen, d], left - d);
+  };
+  pick(1, [], a.need);
+  if (all.length < 2 || all.length > 6) return null;
+  const fit = new Set(a.fitWays.map((w) => w.join()));
+  const spots = either(a.empty);
+  return all.map((nums) => {
+    const dup = nums.find((d) => a.placed.includes(d));
+    if (dup) {
+      const at = cage.cells.find(([r, c]) => grid[r][c] === dup)!;
+      return { nums, ok: false, why: `The cage already has a ${dup}.`, blockers: [{ cell: at, line: cage.cells }] };
+    }
+    if (fit.has(nums.join())) return { nums, ok: true, why: `${nums.join(" + ")} fits.`, blockers: [] };
+    const stuck = nums.find((d) => !a.empty.some((p) => opts(p).includes(d)));
+    if (stuck) {
+      const blockers = blockersFor(grid, a.empty, stuck);
+      const shown = blockers.map((b) => cellName(...b.cell));
+      return { nums, ok: false, blockers,
+        why: blockers.length
+          ? `No room for the ${stuck}: the ${stuck}${shown.length > 1 ? "s" : ""} at ${list(shown)} block${shown.length > 1 ? "" : "s"} ${n === 2 ? "both cells" : "every cell"}.`
+          : `No room for the ${stuck} in ${spots}.` };
+    }
+    return { nums, ok: false, why: `${list(nums.map(String))} won't fit: two of them need the same cell.`, blockers: [] };
+  });
+}
+const either = (cells: Cell[]) => list(cells.map((p) => cellName(...p)), "or");
 
 function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace: boolean): VariantStep | null {
   const a = cageAllows(grid, cage, opts);
@@ -113,13 +159,28 @@ function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace
           nudge: `Look at the cage at ${head}.`,
           why: `The cage adds up to ${cage.sum}. Its other cells already make ${cage.sum - v}, so ${at} is ${v}.` };
       }
-      const has = a.placed.length ? ` It already has ${list(a.placed)}, so the rest must make ${a.need}.` : "";
-      const fit = a.fitWays.length === 1 && a.fitWays[0].length === a.empty.length && own.filter((d) => a.fitWays[0].includes(d)).length === 1
-        ? `Of those, only ${v} fits at ${at}: its row, column and box rule out the others.`
-        : `Its row, column and box allow ${list(own, "or")} at ${at}, and of those only ${v} works in the cage.`;
-      return { technique: "Cage sum", focus: cage.cells, place: { cell, value: v },
+      // Short, and shown on the board (S15): the sum left, then the ways as chips; Show me says which cell gets which.
+      const taken = a.placed.reduce((s, d) => s + d, 0);
+      const sumLine = `${cage.sum}${taken ? ` − ${a.placed.join(" − ")} = ${a.need}` : ""}, from ${a.empty.length} number${a.empty.length > 1 ? "s" : ""}.`;
+      const ways = cageWays(grid, cage, a, opts) ?? undefined;
+      const which = a.fitWays.length === 1 ? ` Only ${a.fitWays[0].join(" + ")} works.` : ` It's ${wayText(a.fitWays)}.`;
+      // Why v and not the cage's other numbers here: a number on the board blocks each of them at this cell.
+      const others = [...new Set(a.fitWays.flat())].filter((d) => d !== v);
+      const wb = others.map((d) => ({ d, b: blockersFor(grid, [cell], d) }));
+      const blocked = wb.filter((x) => x.b.length);
+      // Or the other way round (Colin's R7C5 = 3): v is blocked from the cage's other cells, so it lands here.
+      const rest = a.empty.filter((p) => !same(p, cell));
+      const vb = blockersFor(grid, rest, v);
+      const vCovers = rest.every((p) => vb.some((x) => sees(x.cell, p)));
+      const where = !others.length ? { why: `So ${at} is ${v}.`, blockers: [] }
+        : blocked.length === others.length
+          ? { why: `${at} can't be ${list(others.map(String), "or")}: ${list(blocked.map((x) => `the ${x.d} at ${cellName(...x.b[0].cell)}`))} block${blocked.length > 1 ? "" : "s"} it. So it's ${v}.`, blockers: blocked.flatMap((x) => x.b) }
+          : vCovers
+            ? { why: `The ${v} can't go in ${either(rest)}: the ${v}${vb.length > 1 ? "s" : ""} at ${list(vb.map((x) => cellName(...x.cell)))} block${vb.length > 1 ? "" : "s"} ${rest.length > 1 ? "them" : "it"}. So it goes at ${at}.`, blockers: vb }
+            : { why: `Of ${list(a.fitWays[0].map(String))}, only ${v} can go at ${at}.`, blockers: blocked.flatMap((x) => x.b) };
+      return { technique: "Cage sum", focus: cage.cells, place: { cell, value: v }, ways, where,
         nudge: `Look at the cage at ${head}. What numbers can make ${cage.sum}?`,
-        why: `The cage adds up to ${cage.sum} using ${cage.cells.length} different numbers.${has} The only way${a.fitWays.length > 1 ? "s are" : " is"} ${wayText(a.fitWays)}. ${fit}` };
+        why: `${sumLine}${ways ? "" : which}` };
     }
   }
   if (wantPlace) return null;
@@ -196,7 +257,7 @@ for (const k of [2, 3]) {
   }
 }
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-const addsUp = (h: House) => `${cap(h.label)} add${h.k === 1 ? "s" : ""} up to ${45 * h.k}${h.k > 1 ? ` (45 each)` : ""}`;
+const addsUp = (h: House) => `${cap(h.label)} add${h.k === 1 ? "s" : ""} up to ${45 * h.k}`;
 const sees = (a: Cell, b: Cell) => a[0] === b[0] || a[1] === b[1] || (Math.floor(a[0] / 3) === Math.floor(b[0] / 3) && Math.floor(a[1] / 3) === Math.floor(b[1] / 3));
 const named = (cells: Cell[], grid: Grid) => list(cells.map(([r, c]) => `${cellName(r, c)} is ${grid[r][c]}`));
 
@@ -249,9 +310,9 @@ function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: b
     const outPlaced = outCells.filter(([r, c]) => grid[r][c]), outEmpty = outCells.filter(([r, c]) => !grid[r][c]);
     const oKnown = outPlaced.reduce((s, [r, c]) => s + grid[r][c], 0);
     const outie = sTouch - total - oKnown;
-    const outText = `The cages that touch it add up to ${sTouch}, which is ${sTouch - total} more than ${total}: that's what sticks out of ${h.label}`;
+    const outText = `The cages touching it add up to ${sTouch}, so the cells sticking out make the extra ${sTouch - total}`; // short (S15)
     const outSum = `${sTouch} − ${total}${outPlaced.length ? ` − ${oKnown}` : ""}`;
-    const plus = outPlaced.length ? ` Of the cells sticking out, ${named(outPlaced, grid)}` : "";
+    const plus = outPlaced.length ? ` ${cap(named(outPlaced, grid))}` : "";
     if (outEmpty.length === 1 && place) {
       const [cell] = outEmpty, own = opts(cell);
       if (outie >= 1 && outie <= 9 && own.includes(outie) && own.length > 1) {
@@ -296,9 +357,11 @@ function squeeze(grid: Grid, rules: Rules, opts: (p: Cell) => number[]): Variant
       if (spots.length !== 1 || classic.length < 2) continue;
       const [cell] = spots, others = classic.filter((p) => !same(p, cell));
       const what = thermo ? "thermometers" : "cages";
-      return { technique: thermo ? "Thermo squeeze" : "Cage squeeze", focus: h.cells, place: { cell, value: d },
+      // Short (Colin 10/27: "a wall of text"): the other spots are striped on the board; one line says why.
+      const one = others.length === 1 ? ` (${cellName(...others[0])} can only be ${list(vopts(others[0]), "or")})` : "";
+      return { technique: thermo ? "Thermo squeeze" : "Cage squeeze", focus: h.cells, place: { cell, value: d }, struck: others,
         nudge: `Where can ${d} go in ${h.label}?`,
-        why: `In ${h.label}, ${d} could go at ${list(classic.map((p) => cellName(...p)), "or")} by its row, column and box. But ${list(others.map((p) => cellName(...p)))} can't be ${d} because of their ${what} (${others.map((p) => `${cellName(...p)} can only be ${list(vopts(p), "or")}`).join("; ")}). So ${d} goes at ${cellName(...cell)}.` };
+        why: `${cap(h.label)} has ${classic.length} spots for ${d}, but the ${what} rule out the striped ${others.length > 1 ? "ones" : "one"}${one}. So ${d} goes at ${cellName(...cell)}.` };
     }
   }
   return null;

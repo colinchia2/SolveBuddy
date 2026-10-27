@@ -68,4 +68,26 @@ for (const v of ["killer", "thermo"]) {
     else check(`${p.id}: a Thermo squeeze and a harder classic trick come up`, shown.includes("Thermo squeeze") && shown.some((s) => HARDER.includes(s)));
   }
 }
+// Cage hints shown on the board (Colin 10/27, S15): every Cage sum hint over every Killer pack lists each way as a chip
+// with at least one that works; each crossed-out way says why, and most show the number that blocks it; Show me
+// says which cell gets the number; no "allow 1, 2, … 9" lists; squeezes are short.
+{
+  let hints = 0, chips = 0, bad: string[] = [], shownBlockers = 0, crossed = 0;
+  for (const f of ["sudoku9-killer-easy.json", "sudoku9-killer-expert.json"]) {
+    for (const p of JSON.parse(readFileSync(`packs/${f}`, "utf8")).puzzles) {
+      for (const h of playHints(p.givens, p.solution, 400, rulesOf(p)).shown) {
+        if (/allow 1, 2, 3/.test(h.explain) || h.explain.length > 200) bad.push(`${p.id} ${h.technique}: ${h.explain.slice(0, 60)}`);
+        if (h.technique !== "Cage sum") continue;
+        hints++;
+        if (!h.where?.why.includes(String(h.value))) bad.push(`${p.id}: no where`);
+        if (!h.ways) continue;
+        chips++;
+        if (!h.ways.some((w) => w.ok) || h.ways.some((w) => !w.why)) bad.push(`${p.id}: ways ${h.ways.map((w) => w.nums.join("+")).join(" ")}`);
+        for (const w of h.ways.filter((w) => !w.ok)) { crossed++; if (w.blockers.length) shownBlockers++; }
+      }
+    }
+  }
+  check(`cage hints: ${hints} Cage sum hints, ${chips} with chips; ${shownBlockers} of ${crossed} crossed-out ways show their blocker; ${bad.length} too long or vague${bad.length ? ` (${bad.slice(0, 2).join(" | ")})` : ""}`,
+    hints > 10 && chips > 5 && shownBlockers / crossed > 0.6 && bad.length === 0);
+}
 process.exit(failed ? 1 : 0);

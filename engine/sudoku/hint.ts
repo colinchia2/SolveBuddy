@@ -10,7 +10,7 @@
 // Each hint has three levels the player clicks through: Nudge → Explain → Show me.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
-import { type Rules, variantPlace, variantRuleOut } from "./variants.ts";
+import { type CageWay, type Rules, variantPlace, variantRuleOut } from "./variants.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -29,6 +29,8 @@ export type Hint = {
   inferred?: Cell[]; // cells ruled out by your marks rather than a number in plain sight (striped, Colin 10/21)
   pencil?: { cell: Cell; marks: number[] }[]; // a rule-out: Show me writes these center pencil marks
   corner?: { cells: Cell[]; n: number }; // a rule-out: Show me adds `n` as a corner mark in these cells
+  ways?: CageWay[]; // a cage: every way to make it (chips), the wrong ones crossed out with their blockers
+  where?: { why: string; blockers: NonNullable<Step["blockers"]> }; // Show me: why the number goes in this cell
   nudge: string;
   explain: string;
   showMe: string;
@@ -250,6 +252,7 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
     if (v) {
       const [r, c] = v.place!.cell;
       return { kind: "step", technique: v.technique, focus: v.focus, target: [r, c], value: v.place!.value, remove: null,
+        inferred: v.struck, ways: v.ways, where: v.where,
         nudge: v.nudge, explain: v.why, showMe: `It's ${v.place!.value === 8 ? "an" : "a"} ${v.place!.value}!` };
     }
   }

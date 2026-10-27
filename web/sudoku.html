@@ -38,6 +38,13 @@
   .cn { font-weight: 700; }
   .cn.blue { color: var(--sel-ring); }
   .cn.red { color: var(--accent-dark); }
+  /* A cage's ways to make its sum (S15): wrong ones crossed out; tap one to light what rules it out. */
+  .hint .ways { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+  .way { min-height: 32px; padding: 0 10px; border-radius: 9px; border: 0; font: 700 13px Inter, sans-serif; font-variant-numeric: tabular-nums;
+    background: #E6E1DA; color: var(--muted); text-decoration: line-through; transition: transform .2s cubic-bezier(.3,1.4,.5,1), background .2s ease; }
+  .way.ok { background: var(--brand-soft); color: var(--brand-dark); text-decoration: none; }
+  .way.on { background: var(--accent-soft); color: var(--accent-dark); box-shadow: inset 0 0 0 2px var(--accent-dark); transform: scale(1.06); }
+  .way.ok.on { background: var(--brand-soft); color: var(--brand-dark); box-shadow: inset 0 0 0 2px var(--sel-ring); }
   .cn.bad, .ctr b { color: var(--conflict-star); font-weight: inherit; } /* a pencil mark that clashes (S8) */
   .cell .v.wrong { color: var(--conflict-star); }
   .cell .ctr { font-size: 10px; font-weight: 600; letter-spacing: -0.02em; color: var(--pencil); }
@@ -106,6 +113,7 @@
       </div>
     </div>
     <p class="h1" id="hintTitle"></p>
+    <div class="ways" id="hintWays" hidden></div>
     <p class="h2" id="hintBody"></p>
     <button class="dark" id="hintNext"><span id="hintNextLabel"></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>
   </section>

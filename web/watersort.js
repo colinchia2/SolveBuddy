@@ -381,6 +381,7 @@ function openHint() {
 }
 function advanceHint() {
   const h = s.hint;
+  if (!h) return; // a second tap on Done while the card slides away
   if (h.stuck) {
     s.hint = null;
     if (undoStack.length) undo();

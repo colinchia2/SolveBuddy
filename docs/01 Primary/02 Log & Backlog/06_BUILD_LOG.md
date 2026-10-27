@@ -2,6 +2,25 @@
 
 Newest first.
 
+## 2026-10-27 — Hints round: slim card (S14) + Sudoku hints on the board (S15, part 1) + Killer hint speed (E)
+- Mockups (same canvas, https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK): "S14 · Hint card" (Colin picked A),
+  "S15 · Better hints" and the animated "S15 · Hints in motion" (Colin: "looks great").
+- **S14 slim card (every game, CSS only):** one top row = step · trick · [Next] [×]; then the line and its reason. The
+  card takes the bottom bar's place (the bar hides under it) and never reaches the board; boards stay centred (10/22
+  rule). The face and step dots are hidden in the card. Same markup on every page (`display: contents`).
+- **S15 Sudoku:** a Cage sum hint lists every way to make what's left as chips ("2 + 9 · 3 + 8 ✓ · 4 + 7 · 5 + 6");
+  wrong ones crossed out, each with its reason ("No room for the 9: the 9 at R1C3 blocks both cells" / "The cage
+  already has a 2"); tapping a chip lights its blocker and line on the board. Show me says which cell gets which
+  number and points at what decides it ("R1C8 can't be 8: the 8 at R4C8 blocks it" or "The 3 can't go in R6C5 or
+  R6C6: the 3 at R6C1 blocks them"). Squeeze and 45-rule text cut short; the squeeze's other spots are striped.
+  engine/sudoku/variants.ts `cageWays`, `where`, `struck`; hint.ts passes `ways`/`where`/`inferred`.
+  Moves are unchanged: the hint sequence over all four Killer/Thermo packs hashes the same before and after; the
+  variants snapshot was refreshed for the new wording only.
+- **E done:** `optsFor` remembers each cell's options per hint (the cage searches asked thousands of times).
+  Killer Expert #1's slowest hint 644ms → ~100ms; run_all is green again (49 PASS).
+- Also: a second tap on Done while the card slides away no longer throws (sudoku/starbattle/watersort guard).
+- Checks: run_all 49 PASS (new "cage hints" check); pages_smoke 144 PASS (S14 ×5, S15).
+
 ## 2026-10-27 — Hints-used tag fix (phone test) + S18 Water Sort import look (pages only)
 - **Tag fix (Colin's phone test):** the number covered the Hint button (hard to tap; its stretched touch area made it
   worse) and floated over the hint card. Now it sits on the button's top corner, mostly above it (covers ~6%), no

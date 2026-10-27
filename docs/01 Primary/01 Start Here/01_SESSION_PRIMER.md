@@ -11,8 +11,10 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   canvas https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK). Build log.
 - **Done + pushed 10/27 (last):** hints-used tag fix from Colin's phone test; S18 (Water Sort import: rows + colour
   shades in Settings › This puzzle). Colin still to check pencil marks on the phone.
-- **Next:** the hints round (S14 card covers the board, S15 better hints), mockups first. Fold in backlog E: Killer
-  Expert #1's slowest hint is 644ms (check limit 500), now failing run_all most runs.
+- **Done + pushed 10/27 (hints round, part 1):** S14 slim card on every game; S15 for Sudoku (cage chips +
+  blockers on the board, short squeeze/45 text); E (Killer hints ~100ms). Build log.
+- **Next:** S15 for Star Battle ("what if" stepped through, one numbered forced move per Next, blue R#C# labels),
+  then Water Sort (the pour + what it unlocks two moves on, as a chain). Mockup: "S15 · Hints in motion".
 - **New app build 10/27 (family chat, app `545730d`, iPad support):** OTAs now go to this build; recheck the
   fingerprint before any OTA (the old `513e3eaf…` is gone). iPad layouts belong to the family chat.
 - **Rules this round:** don't touch `C:\dev\SolveBuddyApp` or run an OTA without Colin's go (the family chat may be building).

@@ -1610,6 +1610,34 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await page.click("#hintClose"); await page.waitForTimeout(300);
 }
 
+// S15 Sudoku (10/27): a Killer cage hint shows its ways as chips; the picked wrong way lights its blocker on the board;
+// tapping another chip switches; Show me says which cell gets the number and why.
+{
+  await page.goto(`${BASE}sudoku.html?pack=killer-expert&p=2`);
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(2200);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const red = () => [...document.querySelectorAll(".cell")].filter((c) => c.style.boxShadow.includes("accent-dark")).map((c) => `${c.dataset.r},${c.dataset.c}`).join(" ");
+    for (let i = 0; i < 150; i++) { // play hints until a cage hint with 3+ ways comes up
+      $("hintBtn").click(); await wait(20); $("hintNext").click(); await wait(20);
+      if (!$("hintWays").hidden && document.querySelectorAll("#hintWays .way").length >= 3) break;
+      $("hintNext").click(); await wait(20); $("hintNext").click(); await wait(260);
+    }
+    const chips = [...document.querySelectorAll("#hintWays .way")].map((b) => b.textContent + (b.classList.contains("on") ? "*" : ""));
+    const first = { body: $("hintBody").textContent, red: red() };
+    document.querySelectorAll("#hintWays .way")[2].click(); await wait(80);
+    const third = { body: $("hintBody").textContent, red: red() };
+    $("hintNext").click(); await wait(80);
+    return { chips, first, third, show: $("hintBody").textContent, title: $("hintTitle").textContent };
+  });
+  check(`S15 Killer chips ${r.chips.join(" | ")}: "${r.first.body}" (red ${r.first.red}); 3rd: "${r.third.body}" (red ${r.third.red}); Show me "${r.title} ${r.show}"`,
+    r.chips.length >= 3 && r.chips.some((c) => c.endsWith("✓")) && r.chips[0].endsWith("*") && r.first.red && r.third.body !== r.first.body
+    && r.third.red !== r.first.red && /can't/.test(r.show));
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();
