@@ -2,6 +2,24 @@
 
 Newest first.
 
+## 2026-10-27 — Round 10/27 quick fixes S1–S6 (pages only) + the iPad build
+- **New app build (family chat, app `545730d`):** iPad support (supportsTablet, rotates on iPad, iPhone stays upright;
+  the page is told it's on an iPad and lays out at the iPad's full width). Installed on Colin's phone 10/27. App updates
+  (OTA) now go to this build; the old `513e3eaf…` fingerprint no longer applies (check the new one before any OTA).
+  Proper iPad layouts come later from the family chat, not here.
+- Round plan: `Buddies\00 Family\ROUND_1027_SolveBuddy.md` (statuses in `ROUND_1027_INTAKE.md`).
+- **S1 pause icon fixed in place:** `button.timer`'s `font: inherit` reset the same-width digits; `#time` now has
+  tabular digits and room for "00:00" (common.css).
+- **S2 rounded outline:** the cells drew the board's right/bottom edges square. A `.board::after` frame (rounded box
+  the size of the inside, dark shadow outside) curves all four corners alike (Sudoku, Star Battle); Nonogram's
+  bottom-right cell rounds itself (`.nc.kbr`).
+- **S3 line through Done/Next:** the hint card was a scroll box it never needed (every game shows it full height);
+  removed, and the button gets its own layer. Couldn't reproduce on the computer: Colin to confirm on the phone.
+- **S4 Killer cages:** right/bottom dashes now measure from the cell's own grid line (1px or 3px), so they sit 3px in
+  on all four sides (sudoku.js `lineIn`). Known leftover: inner (concave) cage corners leave a small stub, as before.
+- **S5 tap outside the board** lets go of the selected cells (sudoku.js). **S6** already existed (Sudoku settings).
+- Checks: run_all 49 PASS (Killer hint timing failed once, then passed: backlog E); pages_smoke 128 PASS (7 new).
+
 ## 2026-10-25 — Save point: app OTA landed, Colin: "SolveBuddy is all good"
 - App `948e38d` (pushed): App.js GAMES adds "nonogram" + "shikaku"; `scripts/pull-pages.mjs` lists them; `src/pages.js`
   refreshed (10 pages). Fingerprint unchanged (`513e3eaf…`), so no build. Carries the earlier Library-tab tap → home (`b029133`).

@@ -1,5 +1,10 @@
 # SolveBuddy — project status
 
+**As of 2026-10-27:** round 10/27 under way; quick fixes S1–S6 pushed (pages). New app build with iPad support
+(app `545730d`) is on Colin's phone; OTAs go to it. Checks: run_all 49 PASS, pages_smoke 128 PASS.
+
+---
+
 **As of 2026-10-25:** 6 games live, all built into the app (OTA from app `948e38d`: Nonogram + Shikaku in GAMES,
 Library tab → home). Colin: "SolveBuddy is all good." Nothing in progress; next = bigger backlog features (A: Packs vs
 Library talk first). Checks: run_all 49 PASS, pages_smoke 121 PASS.

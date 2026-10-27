@@ -248,6 +248,7 @@ function placeHint(d) {
 // backgrounds but under the numbers. Cells are 39px apart (their lines are inside them), after the board's 3px frame.
 const CELL = 39;
 const edgeAt = (i) => 3 + i * CELL; // left (or top) of cell i, from the board's outer corner
+const lineIn = (i) => (i % 3 === 2 ? 3 : 1); // the grid line inside cell i's right (or bottom) edge
 function extraLayer() {
   const x = s.extra;
   if (!x) return "";
@@ -265,14 +266,17 @@ function extraLayer() {
     const inCage = (r, c) => cage.cells.some(([a, b]) => a === r && b === c);
     const pad = 3;
     for (const [r, c] of cage.cells) {
-      const x0 = edgeAt(c) + pad, y0 = edgeAt(r) + pad, x1 = edgeAt(c) + CELL - pad, y1 = edgeAt(r) + CELL - pad;
+      // A cell's own grid line sits inside its right and bottom (1px, or 3px at a box edge), so those sides measure from
+      // that line: the dashes sit the same distance in on all four sides (Colin 10/27, S4: the bottom sat too low).
+      const bx = lineIn(c), by = lineIn(r);
+      const x0 = edgeAt(c) + pad, y0 = edgeAt(r) + pad, x1 = edgeAt(c) + CELL - bx - pad, y1 = edgeAt(r) + CELL - by - pad;
       // Each side with no cage neighbour gets a dashed edge; sides shared inside the cage stay open (extended to meet).
       const L = inCage(r, c - 1), R = inCage(r, c + 1), U = inCage(r - 1, c), D = inCage(r + 1, c);
-      const ext = pad + 1;
-      if (!U) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y0}" x2="${x1 + (R ? ext : 0)}" y2="${y0}"/>`);
-      if (!D) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y1}" x2="${x1 + (R ? ext : 0)}" y2="${y1}"/>`);
-      if (!L) parts.push(`<line x1="${x0}" y1="${y0 - (U ? ext : 0)}" x2="${x0}" y2="${y1 + (D ? ext : 0)}"/>`);
-      if (!R) parts.push(`<line x1="${x1}" y1="${y0 - (U ? ext : 0)}" x2="${x1}" y2="${y1 + (D ? ext : 0)}"/>`);
+      const ext = pad + 1, extR = pad + bx + 1, extD = pad + by + 1;
+      if (!U) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y0}" x2="${x1 + (R ? extR : 0)}" y2="${y0}"/>`);
+      if (!D) parts.push(`<line x1="${x0 - (L ? ext : 0)}" y1="${y1}" x2="${x1 + (R ? extR : 0)}" y2="${y1}"/>`);
+      if (!L) parts.push(`<line x1="${x0}" y1="${y0 - (U ? ext : 0)}" x2="${x0}" y2="${y1 + (D ? extD : 0)}"/>`);
+      if (!R) parts.push(`<line x1="${x1}" y1="${y0 - (U ? ext : 0)}" x2="${x1}" y2="${y1 + (D ? extD : 0)}"/>`);
     }
     const [r, c] = cage.cells[0];
     parts.push(`<text x="${edgeAt(c) + 4}" y="${edgeAt(r) + 11}" class="sum">${cage.sum}</text>`);
@@ -441,6 +445,13 @@ document.addEventListener("pointermove", (e) => {
   render();
 });
 document.addEventListener("pointerup", () => (drag = null));
+// A tap on empty space (off the board and every button) lets go of the selected cells (Colin 10/27, S5).
+document.addEventListener("pointerdown", (e) => {
+  if (!s.sel || e.target.closest("button, .board, .pad, .modes, .hint, .scrim, .sheet, .paused")) return;
+  s.sel = null;
+  s.picked = new Set();
+  render();
+});
 document.querySelectorAll(".seg[data-mode]").forEach((b) => (b.onclick = () => { s.mode = b.dataset.mode; render(); }));
 $("eraseBtn").onclick = erase;
 $("backBtn").onclick = goHome;

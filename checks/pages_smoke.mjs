@@ -1422,6 +1422,53 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await ctx.close();
 }
 
+// 10/27 quick fixes (S1–S5).
+{
+  // S1: the pause icon stays put whatever the time says.
+  await page.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`);
+  await page.waitForTimeout(1500);
+  const xs = await page.evaluate(() => ["0:52", "1:11", "9:59", "10:00", "29:06", "29:13", "38:56"].map((t) => {
+    document.getElementById("time").textContent = t;
+    return Math.round(document.querySelector(".pause-ico").getBoundingClientRect().left * 10) / 10;
+  }));
+  check(`S1 pause icon never moves (${[...new Set(xs)].join(", ")})`, new Set(xs).size === 1);
+  // S2: the three outline corners of the board round with it (Sudoku here; Star Battle and Nonogram below).
+  const frame = () => page.evaluate(() => { const st = getComputedStyle(document.getElementById("board"), "::after"); return `${st.borderRadius} ${st.boxShadow}`; });
+  const fs = await frame();
+  check(`S2 Sudoku board has its rounded frame (${fs})`, fs.startsWith("7px") && fs.includes("0px 0px 0px 4px"));
+  // S3: the hint card is no scroll box (its scroll layer drew a line through the Done button).
+  const ov = await page.evaluate(() => getComputedStyle(document.getElementById("hint")).overflowY);
+  check(`S3 hint card has no scroll layer (overflow ${ov})`, ov === "visible");
+  // S4: every cage line sits 3px in from the cell's grid line, bottom and right included.
+  const off = await page.evaluate(() => {
+    const bad = [], lineIn = (i) => (i % 3 === 2 ? 3 : 1);
+    for (const l of document.querySelectorAll("svg.extra line")) for (const [a, b] of [["y1", "y2"], ["x1", "x2"]]) {
+      const v = Number(l.getAttribute(a));
+      if (v !== Number(l.getAttribute(b))) continue; // only the coordinate the line runs along
+      const i = Math.floor((v - 3) / 39), o = v - 3 - 39 * i;
+      if (o !== 3 && o !== 39 - lineIn(i) - 3) bad.push(`${a}=${v}`);
+    }
+    return bad;
+  });
+  check(`S4 cage lines evenly inset (${off.length} off${off.length ? `: ${off.slice(0, 4).join(" ")}` : ""})`, off.length === 0);
+  // S5: tap a cell, then empty space: nothing stays selected.
+  await page.click('.cell[data-r="4"][data-c="4"]');
+  const before = await page.evaluate(() => document.querySelectorAll('.cell[style*="var(--sel)"]').length);
+  const info = await page.locator(".info").boundingBox();
+  await page.mouse.click(info.x + info.width / 2, info.y + info.height / 2);
+  await page.waitForTimeout(100);
+  const after = await page.evaluate(() => document.querySelectorAll('.cell[style*="var(--sel)"], .cell[style*="var(--peer)"]').length);
+  check(`S5 tap outside the board lets go (selected ${before} → ${after})`, before === 1 && after === 0);
+  await page.goto(`${BASE}starbattle.html?pack=double&p=1`);
+  await page.waitForTimeout(1200);
+  const fb = await frame();
+  check(`S2 Star Battle board has its rounded frame (${fb})`, fb.startsWith("7px") && fb.includes("0px 0px 0px 4px"));
+  await page.goto(`${BASE}nonogram.html`);
+  await page.waitForTimeout(1200);
+  const nr = await page.evaluate(() => getComputedStyle(document.querySelector(".nc.kbr")).borderBottomRightRadius);
+  check(`S2 Nonogram bottom-right corner rounded (${nr})`, nr === "10px");
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

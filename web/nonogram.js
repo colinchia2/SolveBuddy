@@ -141,7 +141,7 @@ function load(i, name = packName, first = false) {
 
 // The board's pieces are built once per puzzle; render() only changes classes.
 function build() {
-  const cell = (r, c) => `<div class="nc${c % 5 === 4 || c === N - 1 ? " t5r" : ""}${r % 5 === 4 || r === N - 1 ? " t5b" : ""}" data-r="${r}" data-c="${c}"></div>`;
+  const cell = (r, c) => `<div class="nc${c % 5 === 4 || c === N - 1 ? " t5r" : ""}${r % 5 === 4 || r === N - 1 ? " t5b" : ""}${r === N - 1 && c === N - 1 ? " kbr" : ""}" data-r="${r}" data-c="${c}"></div>`;
   $("board").innerHTML = `<div class="ncorner"></div>
     <div class="ntop"><div class="ntop-in">${P.cols.map((cl, c) => `<div class="cc" data-c="${c}">${cl.map((n, k) => `<span class="n" data-k="${k}">${n}</span>`).join("")}</div>`).join("")}</div></div>
     <div class="nleft"><div class="nleft-in">${P.rows.map((cl, r) => `<div class="rc" data-r="${r}">${cl.map((n, k) => `<span class="n" data-k="${k}">${n}</span>`).join("")}</div>`).join("")}</div></div>

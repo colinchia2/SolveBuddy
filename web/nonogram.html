@@ -44,6 +44,7 @@
     border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--board); }
   .nc.t5r { border-right: 2px solid var(--ink); }
   .nc.t5b { border-bottom: 2px solid var(--ink); }
+  .nc.kbr { border-bottom-right-radius: 10px; } /* the outline follows the board's round corner (S2) */
   .nc.focus { background: #FDF0E8; } /* the hint's row or column */
   .nc::before { content: ""; position: absolute; inset: 1px; border-radius: 2px; background: var(--ink); opacity: 0; transform: scale(0.6);
     transition: opacity .08s ease, transform .12s cubic-bezier(0.3,1.4,0.5,1); }

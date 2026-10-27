@@ -2,7 +2,16 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (save point 2026-10-25)
+## Right now (2026-10-27: round 10/27)
+- **Working through `Buddies\00 Family\ROUND_1027_SolveBuddy.md`** (26 photos, in
+  `C:\Users\colin\.claude\uploads\1ba59136-e2f8-4e75-95c2-c4860f650622\`). Statuses live in `ROUND_1027_INTAKE.md`.
+- **Done + pushed 10/27:** quick fixes S1–S5 (S6 already existed). S3 needs Colin's phone check. Build log 2026-10-27.
+- **Next:** the Medium batch: S7, S8, S9, S11, S12, then mockups for S10, S13, S17, plus S18. Then the hints round (S14, S15).
+- **New app build 10/27 (family chat, app `545730d`, iPad support):** OTAs now go to this build; recheck the
+  fingerprint before any OTA (the old `513e3eaf…` is gone). iPad layouts belong to the family chat.
+- **Rules this round:** don't touch `C:\dev\SolveBuddyApp` or run an OTA without Colin's go (the family chat may be building).
+
+### Earlier: save point 2026-10-25
 - **Done + Colin confirmed 10/25: "SolveBuddy is all good."** He ran the app OTA (app `948e38d`): tapping the
   Library tab again goes home; Nonogram and Shikaku are built into the app (GAMES + packed pages). Also confirmed on
   the phone: Shikaku Patches clues, his imports, the resume card, and the drag fixes (`24b6c02`). Build log 2026-10-25.
