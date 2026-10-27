@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-10-27 — Hints-used tag fix (phone test) + S18 Water Sort import look (pages only)
+- **Tag fix (Colin's phone test):** the number covered the Hint button (hard to tap; its stretched touch area made it
+  worse) and floated over the hint card. Now it sits on the button's top corner, mostly above it (covers ~6%), no
+  stretched touch area, number centred, hidden while the hint card is up. Checks updated.
+- **S18:** Water Sort imports get Settings › "This puzzle": "Tubes in each row" chips (e.g. 8 · 6 | 7 · 7 | 6 · 6 · 2 |
+  5 · 5 · 4; up to 8 a row with narrower tubes, at most 3 rows) and a swatch per colour that opens the phone's colour
+  picker to match the game in the photo; Reset colours. Kept on the phone per import (`solvebuddy.waterLook`), so it
+  works for hand-made and bundled imports alike. Not done: hint wording still uses the base colour name ("teal" for a
+  reshaded olive); Library/Import previews show base colours. Photo reading still parked (needs the key).
+- Checks: pages_smoke 138 PASS (S18 + tag checks). run_all 48 PASS + the Killer timing check FAILED twice in a row:
+  Killer Expert #1's slowest hint is now 644ms (limit 500). Engine untouched today. Backlog E: do it with the hints round.
+
 ## 2026-10-27 — Round 10/27 mockup batch: S10, S13, S17 (pages only)
 - Mockups (Design canvas): https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK. Colin picked: pencil marks B, hints
   badge A, par as drawn but still shown after a hint ("looks good").

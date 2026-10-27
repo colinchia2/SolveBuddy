@@ -42,6 +42,27 @@ const NAMES = { A: "red", B: "blue", C: "yellow", D: "green", E: "purple", F: "o
 // px per unit of colour: a little smaller with two rows of tubes, so the hint card never covers them.
 let UNIT = 38;
 
+// An imported puzzle's own look (Colin 10/27, S18), set in Settings › This puzzle and kept on this phone: the shade of
+// each colour (to match the game in the photo) and how many tubes go in a row (7 + 7 instead of 6 + 6 + 2).
+const LOOK_KEY = "solvebuddy.waterLook";
+const readLooks = () => { try { return JSON.parse(localStorage.getItem(LOOK_KEY) || "{}"); } catch { return {}; } };
+function saveLook() {
+  const all = readLooks();
+  if (s.look.perRow || Object.keys(s.look.palette ?? {}).length) all[importId] = s.look; else delete all[importId];
+  try { localStorage.setItem(LOOK_KEY, JSON.stringify(all)); } catch {}
+}
+const shade = (c) => s.look?.palette?.[c] ?? COLORS[c];
+const defaultPerRow = (n) => (n <= 6 ? n : n <= 12 ? Math.ceil(n / 2) : 6);
+// Row choices for n tubes: at most 8 in a row (narrower tubes past 6), at most 3 rows; "7 · 7", "6 · 6 · 2"…
+function rowChoices(n) {
+  const out = [];
+  for (let p = Math.min(8, n); p >= Math.ceil(n / 3); p--) {
+    const rows = Array.from({ length: Math.ceil(n / p) }, (_, r) => Math.min(p, n - r * p));
+    if (!out.some((o) => o.label === rows.join(" · "))) out.push({ p, label: rows.join(" · ") });
+  }
+  return out;
+}
+
 const SETTINGS_KEY = "solvebuddy.settings";
 const settings = { timer: true };
 try {
@@ -80,7 +101,7 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { tubes: p.tubes.map((t) => [...t]), picked: null, moves: 0, hint: null, started: Date.now(), elapsed: 0,
-    solved: false, rules: false, settingsOpen: false, par: par(p.tubes) };
+    solved: false, rules: false, settingsOpen: false, par: par(p.tubes), look: name === "import" ? readLooks()[importId] ?? {} : {} };
   // Pick up where you left off.
   const saved = savedGame("watersort", name, pid());
   if (saved) {
@@ -162,7 +183,7 @@ function startPour(from, to, done) {
   if (!quiet) {
     stream = document.createElement("span");
     stream.className = "stream";
-    stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${COLORS[c]}`;
+    stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${shade(c)}`;
   }
   // Inside the pouring tube the liquid stays against its closed bottom (tube space, as it sits upright): the colour being
   // poured shrinks from its top, so empty space only ever shows at the open end (Colin 10/23).
@@ -214,7 +235,7 @@ function bindPour(A) {
   A.drain = Array.from({ length: A.k }, () => {
     const u = document.createElement("span");
     u.className = "u";
-    u.style.cssText = `height:${UNIT}px;background-color:${COLORS[A.c]}`;
+    u.style.cssText = `height:${UNIT}px;background-color:${shade(A.c)}`;
     liquid.appendChild(u);
     return u;
   }).reverse(); // top unit first
@@ -299,6 +320,35 @@ function checkSolved() {
     onNext: () => load(idx + 1), delay: 1100 });
 }
 
+// Settings › This puzzle (imports only): tube rows as chips, and a swatch per colour that opens the phone's colour
+// picker. Changes show on the board at once; Reset puts the usual colours back.
+function drawLook() {
+  const box = $("lookGroup");
+  box.hidden = packName !== "import";
+  if (box.hidden) return;
+  const n = s.tubes.length, used = [...new Set(s.tubes.flat())].sort();
+  const cur = s.look.perRow ?? defaultPerRow(n);
+  $("lookRows").innerHTML = rowChoices(n).map((o) => `<button class="chip-btn${o.p === cur ? " on" : ""}" data-rows="${o.p}" aria-pressed="${o.p === cur}">${o.label}</button>`).join("");
+  $("lookColors").innerHTML = used.map((c) => `<label class="shade" style="background:${shade(c)}" aria-label="Change ${NAMES[c]}">
+    <input type="color" value="${shade(c)}" data-shade="${c}"></label>`).join("");
+  $("lookReset").hidden = !Object.keys(s.look.palette ?? {}).length;
+}
+$("lookRows").onclick = (e) => {
+  const b = e.target.closest("[data-rows]");
+  if (!b) return;
+  s.look = { ...s.look, perRow: Number(b.dataset.rows) };
+  haptic("pick"); saveLook(); drawLook(); render();
+};
+$("lookColors").oninput = (e) => {
+  const c = e.target.dataset.shade;
+  if (!c) return;
+  s.look = { ...s.look, palette: { ...(s.look.palette ?? {}), [c]: e.target.value } };
+  e.target.parentElement.style.background = e.target.value;
+  $("lookReset").hidden = false;
+  saveLook(); render();
+};
+$("lookReset").onclick = () => { s.look = { ...s.look, palette: {} }; haptic("tap"); saveLook(); drawLook(); render(); };
+
 // Par beside the move count (Colin 10/27, S17): "Par 18" while you're within it, "+3" past it; once a hint is used it
 // still shows, greyed: "Par 18 · hint used". No par when the search couldn't finish (a huge import).
 function parTag() {
@@ -372,9 +422,12 @@ function render() {
   showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint;
   const n = s.tubes.length;
-  const perRow = n <= 6 ? n : n <= 12 ? Math.ceil(n / 2) : 6;
-  UNIT = n > 12 ? 26 : n > 6 ? 34 : 38;
-  $("stage").classList.toggle("two", n > 6);
+  const perRow = s.look.perRow && rowChoices(n).some((o) => o.p === s.look.perRow) ? s.look.perRow : defaultPerRow(n);
+  const nRows = Math.ceil(n / perRow);
+  UNIT = nRows > 2 ? 26 : nRows > 1 ? 34 : 38;
+  $("stage").classList.toggle("two", nRows > 1);
+  $("stage").classList.toggle("seven", perRow === 7);
+  $("stage").classList.toggle("eight", perRow === 8);
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
   const ringA = h && !h.stuck ? h.move[0] : null;
@@ -385,7 +438,7 @@ function render() {
     for (let i = r * perRow; i < Math.min(n, (r + 1) * perRow); i++) {
       const t = s.tubes[i];
       // One column of liquid, bottom first, a thin line between units.
-      const liquid = `<span class="liquid">${t.map((c) => `<span class="u" style="height:${UNIT}px;background-color:${COLORS[c]}"></span>`).join("")}</span>`;
+      const liquid = `<span class="liquid">${t.map((c) => `<span class="u" style="height:${UNIT}px;background-color:${shade(c)}"></span>`).join("")}</span>`;
       const cls = [i === s.picked ? "up" : "", i === ringA && h.level < 3 ? "ring" : "", i === ringB ? "target" : "",
         intro ? "intro" : "", won && t.length ? "won" : ""].filter(Boolean).join(" ");
       const d = intro ? (s.introWait + 0.1 + i * 0.05).toFixed(2) : (i * 0.11).toFixed(2);
@@ -415,6 +468,7 @@ function render() {
   }
 
   $("rules").hidden = !s.rules;
+  if (s.settingsOpen && $("settings").hidden) drawLook(); // built as the sheet opens, so a colour picker stays put
   $("settings").hidden = !s.settingsOpen;
   document.querySelectorAll("[data-set]").forEach((b) => b.setAttribute("aria-checked", String(!!settings[b.dataset.set])));
   $("timer").classList.toggle("notime", !settings.timer);

@@ -1572,6 +1572,32 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`S17 Water Sort par: "${par0}", after a hint "${par1}"`, par0 === "Par 30" && par1 === "Par 30 · hint used|par off");
 }
 
+// S18 (10/27): an imported Water Sort's own look, in Settings › This puzzle: tube rows (7 · 7 for Colin's 14-tube
+// Level 171) and a colour's shade; both show at once and are still there after reopening. Packs don't show it.
+{
+  const T = [["B","E","K","L"],["G","C","C","D"],["G","B","E","A"],["B","J","I","F"],["L","C","H","D"],["D","J","F","I"],["A","G","J","H"],["A","G","A","K"],["J","E","H","I"],["F","C","B","K"],["D","K","F","E"],["L","H","L","I"],[],[]];
+  await page.goto(`${BASE}watersort.html?pack=easy&p=1`);
+  await page.waitForTimeout(1000);
+  await page.click("#settingsBtn"); await page.waitForTimeout(300);
+  const packHidden = await page.evaluate(() => document.getElementById("lookGroup").hidden);
+  await page.evaluate((T) => { localStorage.removeItem("solvebuddy.waterLook"); localStorage.setItem("solvebuddy.imports", JSON.stringify([{ id: "imp-171", game: "watersort", tubes: T, colors: 12, name: "Water Sort · 14 tubes", addedAt: Date.now(), source: "hand" }])); }, T);
+  await page.goto(`${BASE}watersort.html?import=imp-171`);
+  await page.waitForTimeout(2000);
+  const rows0 = await page.evaluate(() => [...document.querySelectorAll(".tube-row")].map((r) => r.children.length).join(" · "));
+  await page.click("#settingsBtn"); await page.waitForTimeout(300);
+  const chips = await page.evaluate(() => [...document.querySelectorAll("#lookRows button")].map((b) => b.textContent).join(" | "));
+  await page.click('#lookRows [data-rows="7"]');
+  await page.evaluate(() => { const i = document.querySelector('[data-shade="H"]'); i.value = "#7e9a32"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+  await page.reload();
+  await page.waitForTimeout(2000);
+  const after = await page.evaluate(() => ({ rows: [...document.querySelectorAll(".tube-row")].map((r) => r.children.length).join(" · "),
+    olive: [...document.querySelectorAll(".u")].filter((u) => u.style.backgroundColor === "rgb(126, 154, 50)").length,
+    fits: [...document.querySelectorAll(".tube")].every((t) => t.getBoundingClientRect().right <= document.querySelector(".phone").getBoundingClientRect().right) }));
+  check(`S18 import look: rows ${rows0} → ${after.rows} (choices ${chips}), reshaded olive ${after.olive}/4, fits ${after.fits}; packs don't offer it (${packHidden})`,
+    rows0 === "6 · 6 · 2" && after.rows === "7 · 7" && chips.includes("7 · 7") && after.olive === 4 && after.fits && packHidden);
+  await page.evaluate(() => { localStorage.removeItem("solvebuddy.waterLook"); localStorage.removeItem("solvebuddy.imports"); });
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();
