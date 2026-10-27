@@ -1469,6 +1469,58 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`S2 Nonogram bottom-right corner rounded (${nr})`, nr === "10px");
 }
 
+// 10/27 medium batch (S7, S8, S9, S11, S12).
+{
+  await page.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => { localStorage.removeItem("solvebuddy.saved"); localStorage.setItem("solvebuddy.settings", JSON.stringify({ mistakes: true })); });
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const lit = () => page.evaluate(() => [...document.querySelectorAll(".cell")].filter((c) => /var\(--(peer|same|sel)\)/.test(c.getAttribute("style")))
+    .map((c) => `${c.dataset.r},${c.dataset.c}`));
+  // S7: tap the placed 2 at R4C4: its row, column and box light up (21 cells); off in settings = an empty cell's usual area.
+  await page.click('.cell[data-r="3"][data-c="3"]');
+  const on = await lit();
+  const want = new Set(); for (let i = 0; i < 9; i++) { want.add(`3,${i}`); want.add(`${i},3`); want.add(`${3 + Math.floor(i / 3)},${3 + (i % 3)}`); }
+  check(`S7 tap a placed 2: its row, column and box light up (${on.length} cells)`, on.length === want.size && on.every((k) => want.has(k)));
+  // S8: pencil 2 into R4C1 (same row as the 2): it shows red; a 1 there doesn't.
+  await page.click('.cell[data-r="3"][data-c="0"]');
+  await page.click('.seg[data-mode="corner"]');
+  for (const n of [1, 2]) await page.click(`#pad [data-n="${n}"]`);
+  const marks = await page.evaluate(() => [...document.querySelectorAll('.cell[data-r="3"][data-c="0"] .cn')].map((e) => `${e.textContent}${e.classList.contains("bad") ? "!" : ""}`));
+  check(`S8 a pencil mark that clashes shows red (${marks.join(" ")})`, marks.join() === "1,2!");
+  // S9: three picked cells in a column share one outline: the middle one has no top or bottom edge.
+  await page.evaluate(() => { const d = (r) => document.querySelector(`.cell[data-r="${r}"][data-c="8"]`); const pt = (el) => { const b = el.getBoundingClientRect(); return { bubbles: true, clientX: b.x + 5, clientY: b.y + 5 }; };
+    d(6).dispatchEvent(new PointerEvent("pointerdown", pt(d(6)))); for (const r of [7, 8]) document.dispatchEvent(new PointerEvent("pointermove", pt(d(r))));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true })); });
+  const ring = await page.evaluate(() => document.querySelector('.cell[data-r="7"][data-c="8"]').style.boxShadow);
+  check(`S9 a group of picked cells has one outline (middle cell: ${ring})`, ring.includes("inset 2px 0") && ring.includes("inset -2px 0") && !/inset 0 -?2px/.test(ring));
+  // S11: Killer zooms (the board sits in a zoom window); Classic doesn't.
+  const kz = await page.evaluate(() => document.getElementById("zview").classList.contains("zoomable"));
+  await page.goto(`${BASE}sudoku.html?pack=easy&p=1`);
+  await page.waitForTimeout(1200);
+  const cz = await page.evaluate(() => document.getElementById("zview").classList.contains("zoomable"));
+  check(`S11 Killer zooms (${kz}), Classic doesn't (${cz})`, kz && !cz);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.settings"));
+  // S12: Shikaku shows the size live in the middle while drawing, and no standing "Drag to draw" line.
+  await page.goto(`${BASE}shikaku.html?pack=easy&p=1`);
+  await page.waitForTimeout(1500);
+  const tip0 = await page.evaluate(() => document.getElementById("tip").textContent);
+  const bx = await page.locator("#board").boundingBox(), n = await page.evaluate(() => window.sbShik.puzzle().size), cs = bx.width / n;
+  const free = await page.evaluate(() => { const P = window.sbShik.puzzle(), has = new Set(P.clues.map(([r, c]) => `${r},${c}`));
+    for (let r = 0; r < P.size - 1; r++) for (let c = 0; c < P.size - 2; c++) { let ok = true; for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) if (has.has(`${r + a},${c + b}`)) ok = false; if (ok) return [r, c]; }
+    return [0, 0]; });
+  await page.mouse.move(bx.x + (free[1] + 0.5) * cs, bx.y + (free[0] + 0.5) * cs); await page.mouse.down();
+  await page.mouse.move(bx.x + (free[1] + 2.5) * cs, bx.y + (free[0] + 1.5) * cs, { steps: 6 });
+  const tag = await page.evaluate(() => { const t = document.querySelector(".sizetag"); return t && { n: t.textContent, left: t.style.left, top: t.style.top }; });
+  await page.mouse.up();
+  await page.waitForTimeout(150);
+  const gone = await page.evaluate(() => !document.querySelector(".sizetag"));
+  const mid = (v) => `${(v / n) * 100}%`;
+  check(`S12 Shikaku size shows live in the middle (${JSON.stringify(tag)}), gone after; no standing tip ("${tip0}")`,
+    tag?.n === "6" && tag.left === mid(free[1] + 1.5) && tag.top === mid(free[0] + 1) && gone && tip0 === "");
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

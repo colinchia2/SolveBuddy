@@ -2,6 +2,19 @@
 
 Newest first.
 
+## 2026-10-27 — Round 10/27 medium batch: S7, S8, S9, S11, S12 (pages only)
+- **S7 tap a placed number:** the row, column and box of every copy light up (peer colour), so the open cells left
+  show where it can go. New Sudoku setting "Tap a number to see where it can't go" (`reach`, on by default).
+- **S8 red pencil marks:** with "Show mistakes as I play" on, a corner or centre mark is red when that number is
+  already in the cell's row, column or box. Chosen rule: visible clashes only (checking marks against the answer
+  would give it away). Colin may want it the other way: ask if it comes up.
+- **S9 one outline round a group:** a picked cell draws only the sides whose neighbour isn't picked.
+- **S11 Killer zoom:** two-finger zoom (web/zoom.js) inside the board's own square (`#zview`); the pad stays put. Pinch
+  tip + Fit control in the info row. Killer only. Cage sums 9px → 10px.
+- **S12 Shikaku size:** a blue size tag rides in the middle of the shape while drawing (half a square up if a clue sits
+  there); the standing "Drag to draw a patch…" line is gone (the line now only carries messages).
+- Checks: pages_smoke 133 PASS (5 new); run_all 49 PASS (the Killer timing check flaked once more: backlog E).
+
 ## 2026-10-27 — Round 10/27 quick fixes S1–S6 (pages only) + the iPad build
 - **New app build (family chat, app `545730d`):** iPad support (supportsTablet, rotates on iPad, iPhone stays upright;
   the page is told it's on an iPad and lays out at the iPad's full width). Installed on Colin's phone 10/27. App updates

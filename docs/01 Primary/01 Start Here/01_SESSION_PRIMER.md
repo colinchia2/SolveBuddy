@@ -6,7 +6,9 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Working through `Buddies\00 Family\ROUND_1027_SolveBuddy.md`** (26 photos, in
   `C:\Users\colin\.claude\uploads\1ba59136-e2f8-4e75-95c2-c4860f650622\`). Statuses live in `ROUND_1027_INTAKE.md`.
 - **Done + pushed 10/27:** quick fixes S1–S5 (S6 already existed). S3 needs Colin's phone check. Build log 2026-10-27.
-- **Next:** the Medium batch: S7, S8, S9, S11, S12, then mockups for S10, S13, S17, plus S18. Then the hints round (S14, S15).
+- **Done + pushed 10/27 (later):** S7, S8, S9, S11, S12 (build log). Waiting on Colin's phone check.
+- **Next:** mockups for S10 (pencil marks), S13 (hints-used badge), S17 (Water Sort par), then S18 (make-your-own
+  Water Sort colours/layout). Then the hints round (S14, S15).
 - **New app build 10/27 (family chat, app `545730d`, iPad support):** OTAs now go to this build; recheck the
   fingerprint before any OTA (the old `513e3eaf…` is gone). iPad layouts belong to the family chat.
 - **Rules this round:** don't touch `C:\dev\SolveBuddyApp` or run an OTA without Colin's go (the family chat may be building).

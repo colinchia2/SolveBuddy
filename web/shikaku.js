@@ -1,5 +1,5 @@
 // Shikaku play page (Colin 10/24, docs/design/shikaku_mockup.html v2), wired to engine/shikaku and the packs.
-// - Drag from a square: a patch follows the finger (a short ease, no wobble), with no size label. Let go to place it.
+// - Drag from a square: a patch follows the finger (a short ease, no wobble), its size live in the middle. Let go to place it.
 // - Drag that starts on a patch, or slides into one from an empty square, grows that patch: it covers the patch plus
 //   every square up to the finger; it never starts over. A drag never removes another patch (red preview, no change). Dragging inside a patch changes nothing. Tap a patch to take it away; tap a 1 to draw it.
 // - A patch with no number, two numbers or too many squares lands hatched red with one plain line why. One that holds
@@ -35,7 +35,7 @@ let idx = Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") ||
 const $ = (id) => document.getElementById(id);
 const pid = () => (packName === "import" ? importId : idx + 1);
 const fmt = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
-const TIP = "Drag to draw a patch · drag from a patch to grow it";
+const TIP = ""; // no standing "Drag to draw…" line (Colin 10/27, S12); the line only carries messages
 
 const SETTINGS_KEY = "solvebuddy.settings";
 const settings = { timer: true, mistakes: false };
@@ -203,10 +203,23 @@ function shape(d) {
 function showPreview(R) {
   let el = $("patches").querySelector(".preview");
   if (!el) { el = document.createElement("div"); el.className = "patch preview"; $("patches").appendChild(el); }
-  place(el, R); // no size label while drawing (Colin 10/24: "no number at all on these patches")
+  place(el, R);
   el.classList.toggle("blocked", !!R.blocked);
+  showSize(R);
 }
-const dropPreview = () => $("patches").querySelector(".preview")?.remove();
+// The size, live in the middle of the shape as you draw it (Colin 10/27, S12, like Patches). If a clue sits in the
+// middle, the size moves half a square above it (or below, at the top of the board).
+function showSize(R) {
+  let tag = $("board").querySelector(".sizetag");
+  if (!tag) { tag = document.createElement("span"); tag.className = "sizetag"; $("board").appendChild(tag); }
+  const cr = R.r + R.h / 2, cc = R.c + R.w / 2;
+  const hit = P.clues.some(([qr, qc]) => qr <= cr && cr <= qr + 1 && qc <= cc && cc <= qc + 1 && inside(R, qr, qc));
+  const y = !hit ? cr : cr - 1 >= 0.4 ? cr - 1 : cr + 1;
+  tag.style.left = pct(cc); tag.style.top = pct(y);
+  tag.textContent = area(R);
+  tag.classList.toggle("blocked", !!R.blocked);
+}
+const dropPreview = () => { $("patches").querySelector(".preview")?.remove(); $("board").querySelector(".sizetag")?.remove(); };
 $("board").addEventListener("pointerdown", (e) => {
   if (s.solved || s.pausedAt || second(e)) return;
   e.preventDefault();

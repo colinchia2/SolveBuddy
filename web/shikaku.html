@@ -35,6 +35,10 @@
     transition: left .09s cubic-bezier(0.25, 0.8, 0.3, 1), top .09s cubic-bezier(0.25, 0.8, 0.3, 1), width .09s cubic-bezier(0.25, 0.8, 0.3, 1), height .09s cubic-bezier(0.25, 0.8, 0.3, 1), background .3s ease; }
   .patch.preview { background: color-mix(in srgb, var(--brand-soft) 70%, transparent); border: 2px dashed var(--brand); z-index: 2; }
   .patch.preview.blocked { background: color-mix(in srgb, #FDE4E1 70%, transparent); border-color: var(--conflict-star); }
+  .sizetag { position: absolute; z-index: 5; transform: translate(-50%, -50%); min-width: 26px; padding: 2px 7px; border-radius: 9px; pointer-events: none;
+    text-align: center; font: 800 16px/1.2 Inter, sans-serif; color: #fff; background: var(--brand); box-shadow: 0 3px 8px rgba(30,30,30,0.18);
+    transition: left .09s cubic-bezier(0.25, 0.8, 0.3, 1), top .09s cubic-bezier(0.25, 0.8, 0.3, 1); font-variant-numeric: tabular-nums; }
+  .sizetag.blocked { background: var(--conflict-star); }
   .patch .size { position: absolute; right: 3px; bottom: 2px; font: 700 11px Inter, sans-serif; color: var(--brand); background: #fff; border-radius: 6px; padding: 0 5px; white-space: nowrap; }
   .patch.part { border-style: dashed; background: color-mix(in srgb, var(--pf) 70%, #fff); } /* holds its number, still too small */
   .patch.err { border-color: var(--conflict-star); background: repeating-linear-gradient(135deg, #FDE4E1 0 5px, #fff 5px 9px); }

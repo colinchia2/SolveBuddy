@@ -4,6 +4,7 @@ import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 import { rulesOf } from "../engine/sudoku/variants.ts";
 import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
+import { makeZoom, second } from "./zoom.js";
 
 // The phone app's offline page carries the packs inside it (SB_PACKS); otherwise fetch them.
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -48,6 +49,17 @@ const CORNER_POS = [
   "top:13px;left:3px", "top:13px;right:3px", "top:13px;left:0;right:0;text-align:center",
 ];
 
+// Two-finger zoom, the same as Star Battle's big boards (web/zoom.js), inside the board's own square: the number pad
+// below stays where it is. One finger still selects.
+const BOARD_PX = 3 + 9 * 39; // the board's 3px top/left frame + its cells
+const zoom = makeZoom({
+  view: $("zview"), ctl: $("zoomCtl"), tip: $("tip"), zmax: 2.2,
+  geom: (z) => ({ ox: 0, oy: 0, visW: BOARD_PX, visH: BOARD_PX, w: BOARD_PX * z, h: BOARD_PX * z }),
+  apply: ({ z, x, y }) => { $("board").style.transform = z === 1 && !x && !y ? "" : `translate(${-x}px, ${-y}px) scale(${z})`; },
+  mapColors: () => Array.from({ length: 9 }, (_, r) => Array.from({ length: 9 }, (_, c) => (valueAt(r, c) ? "#2A211B" : "#FFFDF9"))),
+  onTwoFingers: () => (drag = null),
+});
+
 let idx = importId ? 0 : Math.max(0, Math.min(pack.puzzles.length - 1, Number(query.get("p") || 1) - 1));
 // Which puzzle this is for saves, solves and your finished board: its number in a pack, or an import's id.
 const pid = () => (packName === "import" ? importId : idx + 1);
@@ -56,7 +68,7 @@ const undoStack = []; // board snapshots for Undo
 
 // Game settings: same names and defaults as the Settings screen mockup. Remembered in this browser.
 const SETTINGS_KEY = "solvebuddy.settings";
-const settings = { timer: true, mistakes: false, hl: true, same: true };
+const settings = { timer: true, mistakes: false, hl: true, same: true, reach: true };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {}
@@ -81,6 +93,10 @@ function load(i, name = packName, first = false) {
   if (s.extra) $("variantRuleText").innerHTML = s.extra.variant === "killer"
     ? "<strong>Killer:</strong> the numbers in each dashed cage add up to its small number, and never repeat inside a cage."
     : "<strong>Thermo:</strong> along each grey thermometer, numbers climb from the round bulb to the end.";
+  // Killer zooms with two fingers (Colin 10/27, S11: the cage sums are small): at fit for a new puzzle.
+  const zoomOn = s.extra?.variant === "killer";
+  $("zview").style.width = $("zview").style.height = zoomOn ? `${BOARD_PX}px` : "";
+  zoom.reset(zoomOn);
   // Pick up where you left off (Colin, 10/21).
   // An import starts from the numbers you'd already filled in (from the photo, or made by hand).
   const saved = savedGame("sudoku", name, pid());
@@ -117,6 +133,17 @@ function load(i, name = packName, first = false) {
 function saveUndo() {
   undoStack.push(JSON.stringify({ entries: s.entries, corner: s.corner, center: s.center }));
 }
+// The 20 cells sharing a row, column or box with (r, c).
+const peersOf = (r, c) => {
+  const out = [];
+  for (let i = 0; i < 9; i++) {
+    if (i !== c) out.push([r, i]);
+    if (i !== r) out.push([i, c]);
+    const a = Math.floor(r / 3) * 3 + Math.floor(i / 3), b = Math.floor(c / 3) * 3 + (i % 3);
+    if (a !== r && b !== c) out.push([a, b]);
+  }
+  return out;
+};
 const valueAt = (r, c) => s.givens[r][c] || s.entries[key(r, c)] || 0;
 const board = () => s.givens.map((row, r) => row.map((_, c) => valueAt(r, c)));
 
@@ -304,6 +331,28 @@ function render() {
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
 
+  // Tap a placed number: the row, column and box of every copy of it light up, so the open cells left show where it
+  // can still go (Colin 10/27, S7; a setting). An empty cell, or several picked, highlight as before.
+  // "Show mistakes as I play" also reds a pencil mark when that number is already in the cell's row, column or box
+  // (Colin 10/27, S8). Only clashes you can see: checking marks against the answer would give the answer away.
+  const bad = (r, c, d) => settings.mistakes && !s.solved && peersOf(r, c).some(([a, b]) => valueAt(a, b) === d);
+  // Several selected cells get ONE outline round the group: a side is drawn only where the next cell isn't selected
+  // (Colin 10/27, S9). A lone cell keeps its full ring.
+  const groupRing = (r, c) => {
+    const on = (a, b) => !h && s.picked.has(key(a, b));
+    const sides = [!on(r - 1, c) && "0 2px", !on(r + 1, c) && "0 -2px", !on(r, c - 1) && "2px 0", !on(r, c + 1) && "-2px 0"].filter(Boolean);
+    return sides.length ? sides.map((xy) => `inset ${xy} 0 0 var(--sel-ring)`).join(", ") : "none";
+  };
+  const reach = new Set();
+  if (settings.reach && !h && selVal && s.picked.size === 1) {
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+      if (valueAt(r, c) !== selVal) continue;
+      for (let i = 0; i < 9; i++) {
+        reach.add(key(r, i)).add(key(i, c));
+        reach.add(key(Math.floor(r / 3) * 3 + Math.floor(i / 3), Math.floor(c / 3) * 3 + (i % 3)));
+      }
+    }
+  }
   const cells = [];
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -311,7 +360,8 @@ function render() {
       const g = s.givens[r][c];
       const v = valueAt(r, c);
       const isSel = !h && s.picked.has(k);
-      const peer = settings.hl && !h && s.sel && s.picked.size === 1 && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3)));
+      const peer = (settings.hl && !h && s.sel && s.picked.size === 1 && (r === sr || c === sc || (Math.floor(r / 3) === Math.floor(sr / 3) && Math.floor(c / 3) === Math.floor(sc / 3))))
+        || reach.has(k);
       const same = settings.same && !h && selVal && v === selVal && !isSel;
       const wrong = settings.mistakes && !g && v && v !== s.solution[r][c];
       let bg = "var(--board)";
@@ -326,15 +376,15 @@ function render() {
       if (blockerCells.has(k)) bg = "color-mix(in srgb, var(--accent-mid) 70%, var(--board))";
       if (k === target) bg = "var(--sel)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--sel-ring)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--accent-dark)" : isSel ? "inset 0 0 0 2px var(--sel-ring)" : "none";
+      const ring = k === target || spots.has(k) ? "inset 0 0 0 3px var(--sel-ring)" : blockerCells.has(k) ? "inset 0 0 0 2px var(--accent-dark)" : isSel ? groupRing(r, c) : "none";
       let inner = "";
       if (v) {
         const cls = g ? "v given" : wrong ? "v wrong" : k === target && h.level === 3 ? "v shown" : "v";
         inner += `<span class="${cls}">${v}</span>`;
       } else if (s.center[k]) {
-        inner += `<span class="ctr">${s.center[k].join("")}</span>`;
+        inner += `<span class="ctr">${s.center[k].map((d) => (bad(r, c, d) ? `<b>${d}</b>` : d)).join("")}</span>`;
       }
-      if (!v && s.corner[k]) inner += s.corner[k].map((d, i) => `<span class="cn" style="${CORNER_POS[i]}">${d}</span>`).join("");
+      if (!v && s.corner[k]) inner += s.corner[k].map((d, i) => `<span class="cn${bad(r, c, d) ? " bad" : ""}" style="${CORNER_POS[i]}">${d}</span>`).join("");
       const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : "", intro ? "drop" : "", won ? "won wave" : ""].join(" ");
       const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
       const d = intro ? s.introWait + 0.15 + box * 0.09 + ((r % 3) * 3 + (c % 3)) * 0.025 : (r + c) * 0.03;
@@ -417,7 +467,7 @@ let drag = null; // { last: [r, c] }
 const cellAt = (x, y) => document.elementFromPoint(x, y)?.closest?.(".cell");
 $("board").addEventListener("pointerdown", (e) => {
   const b = e.target.closest(".cell");
-  if (!b) return;
+  if (!b || zoom.busy || second(e)) return; // two fingers zoom; only the first finger selects
   e.preventDefault();
   const r = Number(b.dataset.r), c = Number(b.dataset.c);
   if (e.ctrlKey || e.metaKey || e.shiftKey) s.picked.add(key(r, c)), (s.sel = [r, c]);
@@ -428,6 +478,7 @@ $("board").addEventListener("pointerdown", (e) => {
 });
 document.addEventListener("pointermove", (e) => {
   if (!drag) return;
+  if (zoom.busy) return (drag = null);
   const b = cellAt(e.clientX, e.clientY);
   if (!b) return;
   const r = Number(b.dataset.r), c = Number(b.dataset.c);

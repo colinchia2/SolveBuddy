@@ -11,7 +11,7 @@
   .screen { gap: 10px; }
   /* The board, mode bar and number pad sit centred as one group above the bottom bar (Colin, 10/22). The hint card
      floats over the pad in full. */
-  .screen > .board { margin-top: auto; }
+  .screen > .zview { margin-top: auto; align-self: center; }
   #hint { max-height: none; }
   /* Sudoku-only: board, pencil marks, mode bar, keypad. */
   .board .missing { grid-column: 1 / -1; width: 351px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
@@ -31,13 +31,14 @@
   .board { isolation: isolate; } /* cage/thermo layers stay inside the board, under any pop-up (Colin, 10/22) */
   .board svg.extra { position: absolute; left: -3px; top: -3px; pointer-events: none; z-index: 1; }
   .board svg.extra line { stroke: #4E433A; stroke-width: 1.2; stroke-dasharray: 3 3; stroke-opacity: 0.75; }
-  .board svg.extra .sum { font: 700 9px Inter, sans-serif; fill: var(--ink); paint-order: stroke; stroke: var(--board); stroke-width: 3px; }
+  .board svg.extra .sum { font: 700 10px Inter, sans-serif; fill: var(--ink); paint-order: stroke; stroke: var(--board); stroke-width: 3px; }
   .cell .v, .cell .ctr, .cell .cn { position: relative; z-index: 2; }
   .cell .v.given { font-weight: 700; color: var(--ink); }
   .cell .v.shown { color: var(--sel-ring); }
   .cn { font-weight: 700; }
   .cn.blue { color: var(--sel-ring); }
   .cn.red { color: var(--accent-dark); }
+  .cn.bad, .ctr b { color: var(--conflict-star); font-weight: inherit; } /* a pencil mark that clashes (S8) */
   .cell .v.wrong { color: var(--conflict-star); }
   .cell .ctr { font-size: 10px; font-weight: 600; letter-spacing: -0.02em; color: var(--pencil); }
   .cell .cn { position: absolute; font-size: 9px; font-weight: 600; line-height: 1; color: var(--pencil); }
@@ -69,9 +70,11 @@
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
+      <p class="tip" id="tip" hidden></p><span class="zslot" id="zoomCtl"></span>
     </div>
 
-    <div class="board" id="board"></div>
+    <!-- Killer zooms with two fingers (Colin 10/27, web/zoom.js); the window clips the board. -->
+    <div class="zview" id="zview"><div class="board" id="board"></div></div>
 
     <div class="modes glass">
       <button class="seg" data-mode="normal"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M10.5 9l2-1.5V16" stroke-linecap="round"/></svg>Normal</button>
@@ -134,6 +137,7 @@
         <div class="card">
           <div class="opt"><span>Highlight row, column &amp; box</span><button class="switch" role="switch" data-set="hl" aria-label="Highlight row, column and box"></button></div>
           <div class="opt"><span>Highlight matching numbers</span><button class="switch" role="switch" data-set="same" aria-label="Highlight matching numbers"></button></div>
+          <div class="opt"><span>Tap a number to see where it can't go</span><button class="switch" role="switch" data-set="reach" aria-label="Tap a number to see where it can't go"></button></div>
         </div>
       </div>
       <button class="dark" data-close>Done</button>
