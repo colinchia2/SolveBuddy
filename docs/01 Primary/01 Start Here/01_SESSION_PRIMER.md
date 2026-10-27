@@ -129,6 +129,8 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - `npm run checks`: 21 free checks (rules, one answer, grades, hints solve every pack puzzle, mistakes first).
 
 ## Gotchas already hit
+- **Run `node checks/run_all.ts` before every push.** GitHub's Publish site runs it and refuses to publish on a FAIL,
+  and some checks load web/bridge.js in Node (no `document`): page code there must not touch the page at load (10/27).
 - **Never bulk-edit files with PowerShell `Get-Content`/`Set-Content`.** It read UTF-8 as the wrong encoding and
   garbled every ×, · and →. Use the Edit tool, or Python reading/writing bytes as UTF-8.
 - Browser test tools drag in one jump, and so can a fast finger. Drag code must fill in the cells in between.

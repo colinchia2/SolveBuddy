@@ -1006,7 +1006,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`Library: Shikaku is tile 6 (${lib.tiles.join(", ")}), not under Coming soon ("${lib.soon.replace(/\n/g, " ")}")`, lib.tiles[5] === "shikaku" && !/Shikaku/.test(lib.soon));
   // The half-done sheet shows the grid, your patch and every number (Colin 10/24: it was blank).
   check(`Shikaku packs: ${lib.rows.map((r) => `${r.name}${r.rects ? ` (${r.rects} patches)` : ""}`).join(", ")}, each with a thumb; a half-done one's sheet shows its board with the grid (${lib.lines} lines) and numbers (${lib.nums}) ("${lib.note}")`,
-    lib.rows.map((r) => r.name).join() === "8×8,10×10,12×12,Patches 8×8" && lib.rows.every((r) => r.thumb) && lib.rows[0].rects > 5 && lib.sheet
+    lib.rows.map((r) => r.name).join() === "8×8,10×10,12×12" && lib.rows.every((r) => r.thumb) && lib.rows[0].rects > 5 && lib.sheet
     && /1 of \d+ patches drawn/.test(lib.note) && lib.nums >= 10 && lib.lines === 7);
   await p.goto(`${BASE}packs.html`);
   await p.waitForTimeout(700);
@@ -1014,7 +1014,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await p.goto(`${BASE}stats.html`);
   await p.waitForTimeout(500);
   const stat = await p.evaluate(() => document.getElementById("games").innerText.includes("Shikaku"));
-  check(`Packs tab Shikaku block (${blk.join(" / ")}); Stats lists Shikaku (${stat})`, blk.length === 4 && blk[0] === "8×8: Easy" && stat);
+  check(`Packs tab Shikaku block (${blk.join(" / ")}); Stats lists Shikaku (${stat})`, blk.length === 3 && blk[0] === "8×8: Easy" && stat);
   await ctx.close();
 }
 
@@ -1061,14 +1061,13 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     await p.click("#hintBtn"); await p.click("#hintNext"); await p.click("#hintNext"); await p.click("#hintNext");
   }
   const solved = await p.evaluate(() => globalThis.sbShik.state().solved);
-  await p.goto(`${BASE}shikaku.html?pack=patches&p=1`);
-  await p.waitForTimeout(700);
-  const pk = await p.evaluate(() => ({ sub: document.getElementById("sub").textContent, tiles: document.querySelectorAll("#nums .tile").length, rules: !document.getElementById("rulesPatches").hidden }));
   await p.goto(`${BASE}shikaku.html?pack=easy&p=1`);
   await p.waitForTimeout(500);
   const classic = await p.evaluate(() => ({ tiles: document.querySelectorAll("#nums .tile").length, rules: !document.getElementById("rulesPatches").hidden }));
-  check(`Patches: Hint solves the import (${solved}); the Patches pack shows tiles (${pk.sub}, ${pk.tiles}, rules line ${pk.rules}); classic Easy keeps plain numbers (${classic.tiles} tiles, rules line ${classic.rules})`,
-    solved && pk.sub === "Patches · 8×8 · #1" && pk.tiles > 10 && pk.rules && classic.tiles === 0 && !classic.rules);
+  // (No Patches pack since 10/27; there's no ?pack=patches to open.)
+  const noPack = await p.evaluate(async () => !(await import("./bridge.js")).GAMES.shikaku.packs.some((x) => x[0] === "patches"));
+  check(`Patches: Hint solves the import (${solved}); no Patches pack (${noPack}); classic Easy keeps plain numbers (${classic.tiles} tiles, rules line ${classic.rules})`,
+    solved && noPack && classic.tiles === 0 && !classic.rules);
   // Import tab: both screenshots are listed and open.
   await p.goto(`${BASE}import.html`);
   await p.waitForTimeout(800);
@@ -1711,12 +1710,32 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await p.setViewportSize({ width: 834, height: 1194 });
   await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(2200);
   const up = await p.evaluate(() => ({ bw: Math.round(document.getElementById("board").getBoundingClientRect().width),
-    keysInRow: new Set([...document.querySelectorAll("#pad .key")].map((k) => Math.round(k.getBoundingClientRect().top))).size, port: document.documentElement.classList.contains("port") }));
+    keysInRow: new Set([...document.querySelectorAll("#pad .key")].map((k) => k.offsetTop)).size, port: document.documentElement.classList.contains("port") }));
   await p.goto(`${BASE}watersort.html?pack=easy&p=1`); await p.waitForTimeout(1500);
   const pz = await p.evaluate(() => Number(getComputedStyle(document.querySelector(".phone")).zoom));
   check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Water Sort shows the phone layout ×${pz.toFixed(2)}`,
     up.port && up.bw > 650 && up.keysInRow === 1 && pz > 1.2);
   await ctx.close();
+}
+
+// Star Battle (Colin 10/27 phone test): a hint's ×s are red while its card is up, the usual grey once it's done.
+{
+  await page.goto(`${BASE}starbattle.html?pack=easy&p=7`);
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(2000);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    for (let i = 0; i < 30; i++) {
+      $("hintBtn").click(); await wait(120); $("hintNext").click(); await wait(40); $("hintNext").click(); await wait(80);
+      const during = document.querySelectorAll(".xm.hinted").length;
+      if (during) { $("hintNext").click(); await wait(300); return { during, after: document.querySelectorAll(".xm.hinted").length }; }
+      $("hintNext").click(); await wait(300);
+    }
+    return null;
+  });
+  check(`hint ×s red while the card is up (${r?.during}), grey after Done (${r?.after})`, r && r.during > 0 && r.after === 0);
 }
 
 check("no page errors anywhere", errors.length === 0);

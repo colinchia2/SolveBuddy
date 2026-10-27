@@ -5,7 +5,7 @@ export const inApp = !!globalThis.SOLVEBUDDY_APP;
 // iPad's real width and sets SOLVEBUDDY_APP.tablet (each page's head script adds html.tablet + land/port). Here: keep
 // land/port right as it turns, and the sizes common.css uses: --pz = the phone layout scaled to fit (pages without
 // their own iPad layout), --bz = how much a split page's board grows, --bw = its width. iPhone never gets html.tablet.
-export const isTablet = document.documentElement.classList.contains("tablet");
+export const isTablet = !!globalThis.document?.documentElement.classList.contains("tablet"); // (the checks load this file outside a browser)
 function sizeTablet() {
   const root = document.documentElement, W = innerWidth, H = innerHeight, land = W > H;
   root.classList.toggle("land", land);
@@ -134,10 +134,9 @@ export const GAMES = {
     sets: [{ name: "5×5", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "15×15", levels: ["hard"] }] },
   // Shikaku (Colin 10/24): size is the level, 10 each.
   shikaku: { name: "Shikaku", packs: [
-    ["easy", "shikaku8-easy.json", "Easy"], ["medium", "shikaku10-medium.json", "Medium"], ["hard", "shikaku12-hard.json", "Hard"],
-    ["patches", "shikaku8-patches.json", "Patches"]], // shape clues, like LinkedIn's Patches (Colin 10/24)
-    sets: [{ name: "8×8", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "12×12", levels: ["hard"] },
-      { name: "Patches 8×8", levels: ["patches"] }] },
+    ["easy", "shikaku8-easy.json", "Easy"], ["medium", "shikaku10-medium.json", "Medium"], ["hard", "shikaku12-hard.json", "Hard"]],
+    // (The Patches 8×8 pack was taken out 10/27: Colin doesn't want LinkedIn's look as a pack. Shape clues stay for imports.)
+    sets: [{ name: "8×8", levels: ["easy"] }, { name: "10×10", levels: ["medium"] }, { name: "12×12", levels: ["hard"] }] },
 };
 // Block Drop (Colin, 10/22) is endless, with no packs: its tile opens the game, and it keeps its own best scores.
 export const BLOCKS_KEY = "solvebuddy.blocks";

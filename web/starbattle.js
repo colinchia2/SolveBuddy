@@ -348,7 +348,8 @@ function render() {
         const fill = bad.has(k) || wrong ? "var(--conflict-star)" : "var(--ink)";
         inner = `<svg width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="${fill}"/></svg>`;
       } else if (m === CROSS) {
-        inner = `<span class="xm${wrong ? " wrong" : s.hinted.has(k) ? " hinted" : ""}">×</span>`;
+        // A hint's ×s show red only while its card is up, then turn the usual grey (Colin 10/27: red looks wrong).
+        inner = `<span class="xm${wrong ? " wrong" : s.hint && s.hinted.has(k) ? " hinted" : ""}">×</span>`;
       } else if (g === STAR) {
         inner = `<svg class="pretend" width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
       } else if (g === CROSS) {

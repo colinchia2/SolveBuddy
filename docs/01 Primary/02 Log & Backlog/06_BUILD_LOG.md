@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-27 — Publish fix + Colin's phone notes (pages only)
+- **The F1 push (a10c32f) didn't publish:** GitHub's "Publish site" runs `npm run checks` first, and the checks load
+  web/bridge.js in Node, where `document` doesn't exist; the new iPad line read it at load. Guarded
+  (`globalThis.document?.`). Nothing reached the phone in between; this push publishes F1 and the fixes below.
+- **Hint ×s (Star Battle):** red only while the hint card is up, the usual grey after Done.
+- **Patches 8×8 pack removed** (Colin: LinkedIn's look, not wanted as a pack): GAMES, shikaku.js, the pack file, the
+  maker entry and its checks. Shape clues stay in the engine for imports. Colin's LinkedIn Patches + Queens screenshots
+  are still in Import: ask before removing.
+- Checks: run_all 49 PASS; pages_smoke 149 PASS.
+
 ## 2026-10-27 — F1 iPad layouts (pages only)
 - Pictures: https://claude.ai/artifact/EM1URxLzDX5jmYEExmw5h4. The app (545730d) sets SOLVEBUDDY_APP.tablet and lays
   pages out at the iPad's width; each page's head script adds html.tablet + land/port (or ?tablet=1 in a browser).

@@ -12,7 +12,6 @@ const PACKS = [
   { file: "shikaku8-easy.json", id: "shikaku8-easy", size: 8, difficulty: "Easy", maxArea: 8, maxSide: 5, ones: 0, seed: 81 },
   { file: "shikaku10-medium.json", id: "shikaku10-medium", size: 10, difficulty: "Medium", maxArea: 12, maxSide: 6, ones: 1, seed: 101 },
   { file: "shikaku12-hard.json", id: "shikaku12-hard", size: 12, difficulty: "Hard", maxArea: 16, maxSide: 7, ones: 1, seed: 121 },
-  { file: "shikaku8-patches.json", id: "shikaku8-patches", size: 8, difficulty: "Patches", maxArea: 9, maxSide: 5, ones: 0, seed: 88, patches: true },
 ];
 // A Patches clue for rectangle R: its true shape with no number (half), its shape with the number, or "any" with the
 // number.

@@ -18,7 +18,6 @@ const PACKS = {
   easy: await loadPack("shikaku8-easy.json"),
   medium: await loadPack("shikaku10-medium.json"),
   hard: await loadPack("shikaku12-hard.json"),
-  patches: await loadPack("shikaku8-patches.json"), // shape clues, like LinkedIn's Patches (Colin 10/24)
 };
 const query = new URLSearchParams(location.search);
 // Imported puzzles (?import=<id>, Colin 10/24: his Patches screenshot) save and log under pack "import" with p = the

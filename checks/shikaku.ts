@@ -38,7 +38,7 @@ check("shape clues: a 2×2 with clues on a diagonal has 2 answers as 'any' (rows
   countSolutions({ size: 2, clues: [[0, 0, 0, "a"], [1, 1, 0, "a"]], solution: [] }) === 2
   && countSolutions({ size: 2, clues: [[0, 0, 0, "t"], [1, 1, 0, "t"]], solution: [] }) === 1);
 
-const PACKS = [["shikaku8-easy.json", 8, "Easy"], ["shikaku10-medium.json", 10, "Medium"], ["shikaku12-hard.json", 12, "Hard"], ["shikaku8-patches.json", 8, "Patches"]] as const;
+const PACKS = [["shikaku8-easy.json", 8, "Easy"], ["shikaku10-medium.json", 10, "Medium"], ["shikaku12-hard.json", 12, "Hard"]] as const;
 let partials = 0;
 for (const [file, size, level] of PACKS) {
   const pk = JSON.parse(readFileSync(`packs/${file}`, "utf8"));
@@ -99,12 +99,6 @@ for (const [file, size, level] of PACKS) {
   check(`${file}: from 60 half-done boards hints stay right and finish; a wrong patch is pointed at first (${firstMistake})`, mixOk && firstMistake);
 }
 check(`hints draw partial patches along the way (${partials} across the packs)`, partials > 0);
-{ // Patches: each puzzle has shape clues, half or so with no number; every clue's answer is its own shape.
-  const ps: Puzzle[] = JSON.parse(readFileSync("packs/shikaku8-patches.json", "utf8")).puzzles;
-  const all = ps.flatMap((p) => p.clues), blank = all.filter((k) => !k[2]).length, shaped = all.filter((k) => k[3] && k[3] !== "a").length;
-  check(`shikaku8-patches.json: Patches style, ${blank} of ${all.length} clues with no number, ${shaped} with a shape`,
-    ps.every((p) => p.style === "patches") && blank > all.length / 4 && shaped > all.length / 2);
-}
 { // Colin's Patches screenshot (10/24), imported: one answer, Hint alone solves it.
   const imp = JSON.parse(readFileSync("packs/imports.json", "utf8")).puzzles.filter((x: any) => x.game === "shikaku");
   check(`imports.json: ${imp.length} Shikaku import(s), each with exactly one answer that matches its stored answer, and Hint alone solves it`,
