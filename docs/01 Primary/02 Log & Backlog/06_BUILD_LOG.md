@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-27 — Pack pictures, option C (pages only)
+- Colin picked C (mockup "Pack pictures"). Every pack row in the Library (Star Battle, Sudoku, Shikaku, Nonogram;
+  Water Sort has one pack and opens straight in) shows its first puzzle as it starts, via preview.js boardPreview with
+  an empty board, shrunk to 52px (`.pthumb`, CSS zoom), plus a size sticker in the game's colour (`.psize`). Never the
+  answer, never your progress (that stays in the ring). Old last-solved thumbs (nonoThumb/shikThumb) are gone.
+- Checks: run_all 49 PASS; pages_smoke 147 PASS (new: every row has a picture and a size sticker).
+
 ## 2026-10-27 — LinkedIn screenshots removed; pack pictures mockup
 - Colin said yes: the Patches and Queens (LinkedIn) screenshots are out of packs/imports.json (4 imports left); the
   page block that played the Patches import is gone, and the Shikaku import check allows none.

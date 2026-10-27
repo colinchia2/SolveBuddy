@@ -994,7 +994,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const soon = document.getElementById("soon").innerText;
     document.querySelector('.tile[data-game="shikaku"]').click();
     await wait(400);
-    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), rects: r.querySelectorAll(".nthumb rect").length }));
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".pthumb .pv"), rects: r.querySelectorAll(".pthumb rect, .pthumb .pv-c, .pthumb text").length }));
     document.querySelector('.c-row[data-set="0"]').click();
     await wait(400);
     document.querySelector('.ptile[data-p="2"]').click();
@@ -1029,7 +1029,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const tagged = !!document.querySelector(".newdot, .tile.new") || [...document.querySelectorAll(".tile")].some((t) => /new/i.test(t.innerText));
     document.querySelector('.tile[data-game="nonogram"]').click();
     await new Promise((r) => setTimeout(r, 400));
-    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".nthumb svg"), zoom: /zoom/i.test(r.innerText) || !!r.querySelector(".zchip") }));
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".pthumb .pv"), zoom: /zoom/i.test(r.innerText) || !!r.querySelector(".zchip") }));
     // every other game's pack list: no "zoom" either
     const others = [];
     for (const g of ["sudoku", "starbattle", "watersort"]) {
@@ -1674,6 +1674,22 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     return null;
   });
   check(`hint ×s red while the card is up (${r?.during}), grey after Done (${r?.after})`, r && r.during > 0 && r.after === 0);
+}
+
+// Pack pictures (Colin 10/27, option C): every pack row on every game shows its first puzzle as it starts, with a size
+// sticker; never your progress (the same before and after solving one).
+{
+  const rows = {};
+  for (const g of ["starbattle", "sudoku", "shikaku", "nonogram"]) {
+    await page.goto(`${BASE}home.html`);
+    await page.waitForTimeout(900);
+    await page.click(`[data-game="${g}"]`);
+    await page.waitForTimeout(600);
+    rows[g] = await page.evaluate(() => [...document.querySelectorAll(".c-row")].map((r) => r.querySelector(".pthumb .pv") ? r.querySelector(".psize")?.textContent ?? "?" : "none"));
+  }
+  const all = Object.values(rows).flat();
+  check(`pack pictures with size stickers: ${Object.entries(rows).map(([g, r]) => `${g} ${r.join(",")}`).join(" · ")}`,
+    all.length >= 12 && all.every((t) => /^\d+×\d+$/.test(t)));
 }
 
 check("no page errors anywhere", errors.length === 0);

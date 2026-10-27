@@ -3,7 +3,7 @@
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
 import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { boardPreview } from "./preview.js";
-import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, nonoPicture, ring, setParts, shikakuColors, shikakuPicture, streaks, tabs } from "./screens.js";
+import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, ring, setParts, streaks, tabs } from "./screens.js";
 
 const data = {}; // "sudoku/easy" → the pack file (its puzzles draw the little preview)
 for (const [g, game] of Object.entries(GAMES))
@@ -23,21 +23,18 @@ const TILES = [
 // that's playable (the page test checks).
 const SOON = ["Binairo", "Shikaku", "Five Letters", "Groups"].filter((n) => !Object.values(GAMES).some((g) => g.name === n));
 const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4, "thermo-expert": 4, patches: 2 };
-// Nonogram's pack rows (Colin 10/23): the last picture you solved in that pack, or an empty grid of its size.
-function nonoThumb(k) {
-  const last = solves().filter((e) => e.g === "nonogram" && e.pack === k).sort((a, b) => b.at - a.at)[0];
-  const pz = last && data[`nonogram/${k}`].puzzles[last.p - 1];
-  if (pz) return nonoPicture(pz.solution, 30, pz.color ?? "#2A211B");
-  const n = data[`nonogram/${k}`].size;
-  return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
-}
-// Shikaku's pack rows (Colin 10/24): the last puzzle you solved in that pack as its coloured picture, or an empty grid.
-function shikThumb(k) {
-  const last = solves().filter((e) => e.g === "shikaku" && e.pack === k).sort((a, b) => b.at - a.at)[0];
-  const pz = last && data[`shikaku/${k}`].puzzles[last.p - 1];
-  if (pz) return shikakuPicture(pz.size, finalBoard("shikaku", k, last.p)?.patches ?? shikakuColors(pz.solution), 30);
-  const n = data[`shikaku/${k}`].size;
-  return `<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x=".5" y=".5" width="29" height="29" fill="#FFFDF9" stroke="rgba(42,33,27,0.3)"/>${Array.from({ length: n - 1 }, (_, i) => { const p = ((i + 1) * 30) / n; return `<path d="M${p.toFixed(2)} 0V30M0 ${p.toFixed(2)}H30" stroke="#E6DACD" stroke-width=".7"/>`; }).join("")}</svg>`;
+// Every pack row's picture (Colin 10/27, mockup "Pack pictures" option C): the pack's first puzzle as it starts (its
+// regions, numbers, clues or tubes; never the answer, never your progress, which stays in the ring) with a size
+// sticker in the game's colour. The same kind of picture for every pack.
+const START = { starbattle: { marks: {} }, sudoku: { entries: {} }, nonogram: { marks: {} }, shikaku: { patches: [] } };
+function packThumb(g, s) {
+  const pk = data[`${g}/${s.levels[0]}`], p = pk?.puzzles?.[0];
+  if (!p) return "";
+  const board = g === "watersort" ? { tubes: p.tubes } : START[g];
+  if (!board) return "";
+  const n = g === "starbattle" ? p.regions.length : g === "sudoku" ? 9 : pk.size ?? p.size;
+  const tag = g === "watersort" ? "" : n ? `${n}×${n}` : "";
+  return `<span class="pthumb" aria-hidden="true">${boardPreview(g, p, board)}${tag ? `<b class="psize" style="background:${LOOK[g].ink}">${tag}</b>` : ""}</span>`;
 }
 const ICON = {
   back: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>`,
@@ -129,19 +126,19 @@ function renderView(moved) {
       ${groups.map(({ group, rows }) => `<div class="c-group"><div class="c-ghead">${esc(group || "Packs")}</div>
         <div class="c-list">${rows.map(({ s, i, short }) => {
           const n = setSize(g, s), d = setDone(g, s);
-          if (g === "nonogram" || g === "shikaku") { // thumb = last solved picture; size is the level (no "zoom" label, Colin 10/24)
+          if (g === "nonogram" || g === "shikaku") { // size is the level (no "zoom" label, Colin 10/24)
             const k = s.levels[0];
             return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
-              <span class="nthumb">${g === "shikaku" ? shikThumb(k) : nonoThumb(k)}</span>
+              ${packThumb(g, s)}
               <span class="g"><b>${esc(short)}</b><small class="nsub">${bars(LEVEL_BARS[k], [5, 7, 9, 11])}${esc(label(g, k))} · ${n} puzzles</small></span>
               <span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
           }
           const sub = [setBoard(g, s), s.note ?? s.levels.map((k) => label(g, k)).join(", ")].filter(Boolean).join(" · ");
           return `<button class="c-row" data-set="${i}" style="--i:${i}" aria-label="${esc(s.name)} pack, ${d} of ${n} done">
-            <span class="g"><b>${esc(short)}</b><small>${esc(sub)}</small></span><span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
+            ${packThumb(g, s)}<span class="g"><b>${esc(short)}</b><small>${esc(sub)}</small></span><span class="cnt">${ring(d, n)}${d}/${n}</span>${CHEVRON}</button>`;
         }).join("")}</div></div>`).join("")}
-      ${g === "nonogram" ? `<p class="c-lead">Size is the level: bigger pictures, longer clues. Each row shows the last picture you solved in it.</p>` : ""}
-      ${g === "shikaku" ? `<p class="c-lead">Size is the level: bigger boards, more patches. Each row shows the last puzzle you solved in it.</p>` : ""}
+      ${g === "nonogram" ? `<p class="c-lead">Size is the level: bigger pictures, longer clues.</p>` : ""}
+      ${g === "shikaku" ? `<p class="c-lead">Size is the level: bigger boards, more patches.</p>` : ""}
       ${moreLink(`Get more ${game.name} packs`)}`;
   } else {
     const s = game.sets[at.set];

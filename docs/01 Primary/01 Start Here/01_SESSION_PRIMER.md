@@ -16,6 +16,8 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 - **Done + pushed 10/27 (hints round, part 2):** S15 for Star Battle (What if stepped through from Explain,
   numbered moves, blue R#C#) and Water Sort (chain chips). **Round 10/27 is complete** except Colin's phone checks
   (pencil marks S10, the line through Done S3, the new hints). S16 (hint review) is in the backlog.
+- **Also done 10/27 (late):** F1 iPad layouts (Sudoku + Star Battle split; the rest phone layout scaled); publish fix;
+  hint ×s grey after Done; Patches pack and the LinkedIn screenshots removed; pack pictures option C. Build log.
 - **Next:** Colin's phone-test notes on this round, one at a time; then backlog (A: Packs vs Library talk, D: Stats).
 - **New app build 10/27 (family chat, app `545730d`, iPad support):** OTAs now go to this build; recheck the
   fingerprint before any OTA (the old `513e3eaf…` is gone). iPad layouts belong to the family chat.
