@@ -1,5 +1,11 @@
 # SolveBuddy — project status
 
+**As of 2026-10-27 (end of day):** round 10/27 finished and checked by Colin. 6 games; slim hint cards and visual
+hints (Sudoku cages, Star Battle What if, Water Sort chains); Water Sort par; iPad layouts for Sudoku + Star Battle;
+pack pictures. Checks: run_all 49 PASS, pages_smoke 147 PASS. Next = backlog.
+
+---
+
 **As of 2026-10-27:** round 10/27 under way; quick fixes S1–S6 pushed (pages). New app build with iPad support
 (app `545730d`) is on Colin's phone; OTAs go to it. Checks: run_all 49 PASS, pages_smoke 128 PASS.
 

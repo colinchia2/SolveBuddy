@@ -6,6 +6,10 @@ Top item = what's next.
 **From round 10/27 (S16, Colin):** a hint review after a puzzle: which hints, when, how much of each (thirds), and a
 replay of the board at that moment. Fits the future Stats/analysis tab (D). The "Hints used" sheet (S13) says it's
 coming. Also from 10/27: Water Sort "show me a shorter way" after finishing (par is already worked out).
+**Small leftovers from round 10/27 (not started):** (a) Water Sort hints still use a colour's usual name after Colin
+reshades it in Settings › This puzzle; (b) Library / Import previews of an import use the usual colours, not its own
+shades; (c) own iPad layouts for Water Sort, Shikaku, Nonogram, Block Drop and the tabs (today: the phone layout
+scaled; Sudoku and Star Battle have theirs); (d) a ‹ back step in the Star Battle What if play-through.
 
 **From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
 - **DONE 10/25: Colin ran the OTA** (app `948e38d`: Library tab → home, Nonogram + Shikaku in GAMES) and confirmed it.
