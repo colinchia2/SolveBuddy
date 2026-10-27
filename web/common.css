@@ -87,6 +87,21 @@ header { display: flex; align-items: center; gap: 6px; }
 /* No scroll box on the card (every game shows it at full height): on the phone the scroll layer left a thin light line
    across the Done / Next button (Colin 10/27, S3). The button also gets its own layer so it paints in one piece. */
 .hint .dark { transform: translateZ(0); }
+/* The slim card (Colin 10/27, S14 option A): one top row = step · trick · [Next] [×], then the line and its reason.
+   It takes the bottom bar's spot (the bar hides under it) so it never reaches the board, which stays where it is.
+   The markup is the same on every game; the top row's boxes just step aside (display: contents). */
+.hint { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto auto; column-gap: 8px; row-gap: 4px; align-items: center;
+  padding: 12px 14px; bottom: 22px; }
+.hint .hint-top, .hint .hint-top > div { display: contents; } /* beats the .hint-top rules further down */
+.hint-top > div:first-child > svg, .hint-top > div:last-child > div { display: none !important; } /* the face and step dots (inline flex) */
+#hintStep { grid-area: 1 / 1; font-size: 13px; }
+.hint .chip { grid-area: 1 / 2; }
+.hint #hintNext { grid-area: 1 / 4; min-height: 34px; padding: 0 12px; border-radius: 10px; font-size: 13px; gap: 4px; white-space: nowrap; }
+#hintNext svg { width: 14px; height: 14px; }
+.hint #hintClose { grid-area: 1 / 5; width: 34px; height: 34px; }
+.hint .h1 { grid-column: 1 / -1; margin-top: 4px; font-size: 15px; }
+.hint .h2 { grid-column: 1 / -1; font-size: 13px; line-height: 1.4; }
+.phone:has(.hint:not([hidden])) .dock { visibility: hidden; }
 .hint-top { display: flex; justify-content: space-between; align-items: center; }
 .hint-top > div { display: flex; align-items: center; gap: 8px; }
 .chip { font-size: 11px; font-weight: 600; color: var(--brand-dark); background: var(--brand-soft); border-radius: 8px; padding: 3px 8px; }

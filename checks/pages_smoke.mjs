@@ -1598,6 +1598,18 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await page.evaluate(() => { localStorage.removeItem("solvebuddy.waterLook"); localStorage.removeItem("solvebuddy.imports"); });
 }
 
+// S14 (10/27, option A): the slim hint card never reaches the board, on the biggest boards; it takes the bar's place.
+for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple&p=1", "nonogram.html?pack=hard&p=1", "watersort.html?pack=hard&p=6", "shikaku.html?pack=hard&p=2"]) {
+  await page.goto(`${BASE}${u}`);
+  await page.waitForTimeout(1500);
+  await page.click("#hintBtn"); await page.waitForTimeout(150);
+  await page.click("#hintNext"); await page.waitForTimeout(450);
+  const r = await page.evaluate(() => { const H = document.getElementById("hint").getBoundingClientRect(), B = document.getElementById("board").getBoundingClientRect();
+    return { gap: Math.round(H.top - B.bottom), bar: getComputedStyle(document.querySelector(".dock")).visibility, next: document.getElementById("hintNext").getBoundingClientRect().top < H.top + 40 }; });
+  check(`S14 ${u}: card clears the board by ${r.gap}px, bar ${r.bar}, Next in the top row ${r.next}`, r.gap >= 0 && r.bar === "hidden" && r.next);
+  await page.click("#hintClose"); await page.waitForTimeout(300);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();
