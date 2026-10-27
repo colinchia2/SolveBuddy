@@ -191,7 +191,7 @@ function squeeze(b: Board, regions: Regions): Step | null {
     const star = o.find((p) => used(p) === total);
     if (star) {
       return { technique: "Squeeze", star, cross: [], focus: u.cells, nudge: `Look at ${u.label}.`,
-        why: `${cap(u.label)} needs ${stars(need)}. Every way to fit ${need === 1 ? "it" : "them"} without touching uses row ${star[0] + 1}, column ${star[1] + 1}, so that's a star.` };
+        why: `${cap(u.label)} needs ${stars(need)}. Every way to fit ${need === 1 ? "it" : "them"} without touching uses R${star[0] + 1}C${star[1] + 1}, so that's a star.` };
     }
     const cross = o.filter((p) => !used(p));
     if (cross.length) {
@@ -265,8 +265,8 @@ function wouldBlock(b: Board, regions: Regions): Step | null {
       if (!blocked) continue;
       return { technique: "Would block", star: null, cross: [[r, c]], focus: blocked.cells,
         nudge: `Look at ${blocked.label}.`,
-        why: perUnit(regions) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out every open cell of ${blocked.label}. So that cell can't have a star.`
-          : `A star at row ${r + 1}, column ${c + 1} would leave ${blocked.label} with ${nowhere(regions)}. So that cell can't have a star.` };
+        why: perUnit(regions) === 1 ? `A star at R${r + 1}C${c + 1} would rule out every open cell of ${blocked.label}. So that cell can't have a star.`
+          : `A star at R${r + 1}C${c + 1} would leave ${blocked.label} with ${nowhere(regions)}. So that cell can't have a star.` };
     }
   }
   return null;
@@ -407,11 +407,11 @@ function whatIfWith(b: Board, regions: Regions, full: boolean): Step | null {
       const { chain, pretendCross, dead } = found;
       const forced = chain.length;
       best = { technique: "What if", star: null, cross: [[r, c]], focus: dead.cells, forced, chain, pretendCross, dead,
-        nudge: `Imagine a star at row ${r + 1}, column ${c + 1}. What happens?`,
+        nudge: `Imagine a star at R${r + 1}C${c + 1}. What happens?`,
         why: forced === 0
-          ? (perUnit(regions) === 1 ? `A star at row ${r + 1}, column ${c + 1} would rule out the last open cells of ${dead.label}. So that cell can't have one.`
-            : `A star at row ${r + 1}, column ${c + 1} would leave ${dead.label} with ${nowhere(regions)}. So that cell can't have one.`)
-          : `If row ${r + 1}, column ${c + 1} had a star, after ${forced} forced move${forced === 1 ? "" : "s"} ${dead.label} would have ${nowhere(regions)}. So that cell can't have one.` };
+          ? (perUnit(regions) === 1 ? `A star at R${r + 1}C${c + 1} would rule out the last open cells of ${dead.label}. So that cell can't have one.`
+            : `A star at R${r + 1}C${c + 1} would leave ${dead.label} with ${nowhere(regions)}. So that cell can't have one.`)
+          : `Pretend R${r + 1}C${c + 1} has a star and follow the ${forced} move${forced === 1 ? "" : "s"} it forces: ${dead.label} runs out of room. So that cell can't have one.` }; // stepped through on the board (S15)
     }
   }
   if (!best) return null;

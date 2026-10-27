@@ -250,10 +250,14 @@ function advanceHint() {
   const h = s.hint;
   if (!h) return; // a second tap on Done while the card slides away
   const chain = h.data.chain;
+  // A What if is stepped through from Explain on (Colin 10/27, S15): each Next shows one forced move, numbered on
+  // the board; after the line that runs dry, Next goes to Show me, which puts the real × in.
   if (h.play != null) {
     if (h.play <= chain.length) h.play++;
     else {
       h.play = null;
+      h.level = 3;
+      s.hints = (s.hints ?? 0) + 1 / 3;
       applyHint(h.data);
     }
     return render();
@@ -265,10 +269,8 @@ function advanceHint() {
   }
   h.level++;
   s.hints = (s.hints ?? 0) + 1 / 3;
-  if (h.level === 3) {
-    if (chain) h.play = 0;
-    else applyHint(h.data);
-  }
+  if (h.level === 2 && chain) h.play = 0;
+  else if (h.level === 3) applyHint(h.data);
   render();
 }
 function applyHint(d) {
@@ -290,18 +292,21 @@ function playFrame(h) {
   crossOut(d.pretendCross);
   let latest = [from];
   let focus = [];
-  for (const step of d.chain.slice(0, h.play)) {
+  const nums = new Map(); // each forced move's number, on its star (or its first ×), so you can follow the order
+  for (const [i, step] of d.chain.slice(0, h.play).entries()) {
     if (step.star) ghost.set(key(...step.star), STAR);
     crossOut(step.cross);
     latest = step.star ? [step.star] : step.cross;
     focus = step.focus;
+    const at = step.star ?? step.cross[0];
+    if (at) nums.set(key(...at), i + 1);
   }
   const dead = h.play > d.chain.length;
   if (dead) {
     latest = [];
     focus = d.dead.cells;
   }
-  return { ghost, latest: new Set(latest.map((p) => key(...p))), focus, dead };
+  return { ghost, latest: new Set(latest.map((p) => key(...p))), focus, dead, nums };
 }
 
 function render() {
@@ -312,7 +317,7 @@ function render() {
   // line where the chain ends (that gave the ending away and didn't point at the cell).
   const pretend = h?.data.chain && h.data.kind === "step" && !frame && h.level < 3 ? h.data.cross[0] : null;
   const focus = new Set((frame ? frame.focus : pretend && h.level === 1 ? [] : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
-  const striped = new Set(h && h.level === 2 ? h.data.cross.map(([r, c]) => key(r, c)) : []);
+  const striped = new Set(h && h.level === 2 && !frame ? h.data.cross.map(([r, c]) => key(r, c)) : []);
   const ringed = pretend || (h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null);
   const ringKey = ringed ? key(...ringed) : null;
   const bad = conflicts();
@@ -351,6 +356,7 @@ function render() {
       } else if (auto.has(k)) {
         inner = `<span class="xm auto">×</span>`;
       }
+      if (frame?.nums.has(k)) inner += `<span class="stepn">${frame.nums.get(k)}</span>`;
       const label = `Row ${r + 1} column ${c + 1}${m === STAR ? ", star" : m === CROSS ? ", crossed" : ""}`;
       const fx = intro ? ` intro" style="--d:${(s.introWait + 0.15 + (r + c) * 0.035).toFixed(3)}s;` : won && m === STAR ? ` won" style="--d:${(r * 0.11).toFixed(2)}s;` : `" style="`;
       cells.push(`<button class="cell ${br} ${bb}${fx}background:${bg};box-shadow:${ring}" data-r="${r}" data-c="${c}" aria-label="${label}">${inner}</button>`);
@@ -377,21 +383,25 @@ function render() {
       const [r, c] = d.clear || d.cross[0];
       const k = d.chain.length;
       const cap = (t) => t[0].toUpperCase() + t.slice(1);
+      const at = `R${r + 1}C${c + 1}`;
       if (h.play === 0) {
-        text = [mistake ? `Start from your star at row ${r + 1}, column ${c + 1}.` : `Pretend row ${r + 1}, column ${c + 1} has a star.`,
-          `It rules out ${K > 1 ? "its neighbors, and any row, column or region it fills" : "its row, column, region and neighbors"}. Faint marks are pretend. Tap Next to see what it forces.`];
+        text = [mistake ? `Start from your star at ${at}.` : `Pretend ${at} has a star.`,
+          `Faint marks are pretend. Tap Next to see what it forces, one move at a time.`];
       } else if (!frame.dead) {
         const st = d.chain[h.play - 1];
-        text = [`Forced move ${h.play} of ${k}`, st.star ? `${st.why} It rules out its neighbors too.` : st.why];
+        text = [`${h.play} · ${st.why}`, st.star ? "It rules out its neighbors too." : ""];
       } else {
         text = [`${cap(d.dead.label)} has ${K > 1 ? "no room left for its stars" : "nowhere left for its star"}.`, mistake
-          ? `So your star at row ${r + 1}, column ${c + 1} can't be right.`
-          : `So the pretend star can't be right: row ${r + 1}, column ${c + 1} gets an ×.`];
+          ? `So your star at ${at} can't be right.` : `So the pretend star can't be right: ${at} gets an ×.`];
       }
       next = !frame.dead ? "Next" : mistake ? "Take it off" : "Cross it out";
+      $("hintChip").textContent = h.play === 0 ? "What if · start" : frame.dead ? "What if · done" : `What if · ${h.play} of ${k}`;
     }
-    $("hintTitle").textContent = text[0];
-    $("hintBody").textContent = text[1];
+    // Cell names in blue, like Sudoku (Colin 10/27, S15).
+    const paint = (t) => t.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch])
+      .replace(/R\d+C\d+/g, (n) => (h.level < 2 && !frame ? n : `<b class="rc">${n}</b>`));
+    $("hintTitle").innerHTML = paint(text[0]);
+    $("hintBody").innerHTML = paint(text[1]);
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
   }

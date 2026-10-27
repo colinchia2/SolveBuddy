@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-10-27 — Hints round part 2: Star Battle "what if" stepped through, Water Sort chain (S15 done)
+- **Star Battle:** a What if now plays out from Explain (it used to start at Show me): Next shows one forced move at a
+  time, each numbered in its cell's corner (`.stepn`), chip "What if · 2 of 3"; after the line that runs dry, "Cross it
+  out" goes to Show me and puts the real × in. Cell names are R#C# everywhere in Star Battle hints, painted blue
+  (`.rc`). Engine data unchanged (the snapshot without wording hashes the same before/after; wording snapshot refreshed).
+- **Water Sort:** explain.ts returns a `chain` (this pour → the colour it frees → the move that uses it, with the tubes
+  each step touches). Explain shows it as numbered chips with colour swatches; tapping a chip outlines that step's tubes;
+  the long sentence hides while chips show, so the card stays clear of the tubes.
+- Checks: pages_smoke 146 PASS (S15 What if + Water Sort chain); run_all 49 PASS.
+- Not done (ideas): a ‹ back step in the What if; Water Sort hint names use base colour names after a reshade.
+
 ## 2026-10-27 — Hints round: slim card (S14) + Sudoku hints on the board (S15, part 1) + Killer hint speed (E)
 - Mockups (same canvas, https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK): "S14 · Hint card" (Colin picked A),
   "S15 · Better hints" and the animated "S15 · Hints in motion" (Colin: "looks great").

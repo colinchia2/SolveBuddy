@@ -431,8 +431,10 @@ function render() {
   $("stage").classList.toggle("eight", perRow === 8);
   const intro = Date.now() - s.introAt < 1500;
   const won = s.winAt && Date.now() - s.winAt < 1500;
-  const ringA = h && !h.stuck ? h.move[0] : null;
-  const ringB = h && !h.stuck && h.level === 2 ? h.move[1] : null;
+  // Explain with a chain (S15): the picked step's tubes are outlined instead (1 = this pour's two tubes).
+  const stepTubes = h && !h.stuck && h.level === 2 && h.why.chain?.length > 1 ? h.why.chain[h.step ?? 0].tubes : null;
+  const ringA = stepTubes ? stepTubes[0] : h && !h.stuck ? h.move[0] : null;
+  const ringB = stepTubes ? stepTubes[1] ?? null : h && !h.stuck && h.level === 2 ? h.move[1] : null;
   const rows = [];
   for (let r = 0; r * perRow < n; r++) {
     const cells = [];
@@ -466,6 +468,12 @@ function render() {
     $("hintBody").textContent = body;
     $("hintBody").hidden = !body;
     $("hintNextLabel").textContent = next;
+    // The chain as numbered chips with each colour's swatch; tap one to outline its tubes (Colin 10/27, S15).
+    const chain = !h.stuck && h.level === 2 && h.why.chain?.length > 1 ? h.why.chain : null;
+    $("hintWays").hidden = !chain;
+    if (chain) $("hintBody").hidden = true; // the chips say it; the card stays clear of the tubes
+    if (chain) $("hintWays").innerHTML = chain.map((st, i) => `<button class="way ok${i === (h.step ?? 0) ? " on" : ""}" data-step="${i}" aria-pressed="${i === (h.step ?? 0)}">`
+      + `${st.color ? `<i class="dot-c" style="background:${shade(st.color)}"></i>` : ""}${i + 1} · ${st.text}</button>`).join("");
   }
 
   $("rules").hidden = !s.rules;
@@ -538,6 +546,13 @@ $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm");
 $("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
+$("hintWays").onclick = (e) => {
+  const b = e.target.closest("[data-step]");
+  if (!b || !s.hint) return;
+  s.hint.step = Number(b.dataset.step);
+  haptic("pick");
+  render();
+};
 $("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));

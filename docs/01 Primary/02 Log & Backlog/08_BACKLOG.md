@@ -3,6 +3,10 @@
 Top item = what's next.
 
 ## Next (after the 10/22 save point; items 1–14 of the 10/22 voice note and Import v1 are DONE)
+**From round 10/27 (S16, Colin):** a hint review after a puzzle: which hints, when, how much of each (thirds), and a
+replay of the board at that moment. Fits the future Stats/analysis tab (D). The "Hints used" sheet (S13) says it's
+coming. Also from 10/27: Water Sort "show me a shorter way" after finishing (par is already worked out).
+
 **From 10/24 (app shell, `C:\dev\SolveBuddyApp`):**
 - **DONE 10/25: Colin ran the OTA** (app `948e38d`: Library tab → home, Nonogram + Shikaku in GAMES) and confirmed it.
 - **Optional cleanup:** drop `bridge.js` HOSTED + the hosting in `scripts/build_site.ts` now the OTA is confirmed

@@ -35,7 +35,7 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
         kind: "mistake", technique: "Check this", focus: [...Array(n).keys()].map((i) => [r, i] as Cell),
         star: null, cross: [], clear: [r, c],
         nudge: `Something's off in row ${r + 1}.`,
-        explain: `The star at row ${r + 1}, column ${c + 1} can't be right. ${why.text}`,
+        explain: `The star at R${r + 1}C${c + 1} can't be right. ${why.text}`,
         showMe: "Cleared it. Keep going from here.",
         ...why.found,
       };
@@ -53,7 +53,7 @@ export function hint(board: Board, regions: Regions, solution: Stars): Hint {
     const [r, c] = step.star;
     return {
       kind: "step", technique: step.technique, focus: step.focus, star: step.star, cross: [], clear: [r, c],
-      nudge: step.nudge, explain: `${step.why} Your × at row ${r + 1}, column ${c + 1} is in the way.`,
+      nudge: step.nudge, explain: `${step.why} Your × at R${r + 1}C${c + 1} is in the way.`,
       showMe: "Swapped your × for the star.",
     };
   }
@@ -83,14 +83,14 @@ function whyWrong(board: Board, regions: Regions, solution: Stars, [r, c]: Cell)
       const clash = a === r ? "is in the same row as" : b === c ? "is in the same column as"
         : regions[a][b] === regions[r][c] ? "is in the same region as"
         : Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1 ? "touches" : "";
-      if (clash) return { text: `It ${clash} the star at row ${a + 1}, column ${b + 1}.`, found: null };
+      if (clash) return { text: `It ${clash} the star at R${a + 1}C${b + 1}.`, found: null };
     }
   } else {
     // 2 or 3 stars: it touches a star, or makes one too many in a row, column or region.
     const all: [number, number][] = [];
     base.forEach((row, a) => row.forEach((v, b) => v === STAR && all.push([a, b])));
     const near = all.find(([a, b]) => Math.abs(a - r) <= 1 && Math.abs(b - c) <= 1);
-    if (near) return { text: `It touches the star at row ${near[0] + 1}, column ${near[1] + 1}.`, found: null };
+    if (near) return { text: `It touches the star at R${near[0] + 1}C${near[1] + 1}.`, found: null };
     const full = all.filter(([a]) => a === r).length >= per ? `row ${r + 1}`
       : all.filter(([, b]) => b === c).length >= per ? `column ${c + 1}`
       : all.filter(([a, b]) => regions[a][b] === regions[r][c]).length >= per ? "its region" : "";

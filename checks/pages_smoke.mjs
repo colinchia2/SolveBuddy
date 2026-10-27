@@ -1638,6 +1638,61 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     && r.third.red !== r.first.red && /can't/.test(r.show));
 }
 
+// S15 Star Battle (10/27): a What if steps through from Explain, one numbered forced move per Next, cell names in blue;
+// then Show me puts the × in.
+{
+  await page.goto(`${BASE}starbattle.html?pack=expert&p=1`);
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(2200);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    for (let i = 0; i < 120; i++) {
+      $("hintBtn").click(); await wait(120); $("hintNext").click(); await wait(40);
+      if ($("hintChip").textContent.startsWith("What if")) break;
+      $("hintNext").click(); await wait(40); $("hintNext").click(); await wait(260);
+    }
+    const frames = [];
+    for (let k = 0; k < 12; k++) {
+      frames.push({ chip: $("hintChip").textContent, step: $("hintStep").textContent, blue: document.querySelectorAll("#hintTitle .rc, #hintBody .rc").length,
+        nums: [...document.querySelectorAll(".cell .stepn")].map((e) => e.textContent).join(""), next: $("hintNextLabel").textContent });
+      if (frames.at(-1).next === "Done") break;
+      $("hintNext").click(); await wait(60);
+    }
+    return frames;
+  });
+  const mid = r.filter((f) => /of/.test(f.chip));
+  check(`S15 What if: ${r.map((f) => `${f.chip}[${f.nums}]`).join(" → ")}; blue label at start ${r[0]?.blue}`,
+    r[0]?.chip === "What if · start" && r[0].step === "Explain" && r[0].blue > 0 && mid.length >= 1 && mid.every((f, i) => f.nums.length === i + 1)
+    && r.some((f) => f.next === "Cross it out") && r.at(-1).next === "Done");
+}
+// S15 Water Sort (10/27): Explain shows the pour as a numbered chain; tapping a step outlines its tubes; the card stays
+// clear of the tubes.
+{
+  await page.goto(`${BASE}watersort.html?pack=hard&p=6`);
+  await page.waitForTimeout(1000);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(2200);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    for (let i = 0; i < 40; i++) {
+      $("hintBtn").click(); await wait(80); $("hintNext").click(); await wait(60);
+      if (document.querySelectorAll("#hintWays .way").length >= 3) break;
+      $("hintNext").click(); await wait(1200); $("hintNext").click(); await wait(300);
+    }
+    const rings = () => [...document.querySelectorAll(".tube.ring, .tube.target")].map((t) => Number(t.dataset.i) + 1).join(",");
+    const chips = [...document.querySelectorAll("#hintWays .way")].map((b) => b.textContent);
+    const first = rings();
+    document.querySelectorAll("#hintWays .way")[chips.length - 1].click(); await wait(80);
+    const H = $("hint").getBoundingClientRect(), last = [...document.querySelectorAll(".tube-num")].at(-1).getBoundingClientRect();
+    return { chips, first, last: rings(), clear: H.top >= last.bottom - 1 };
+  });
+  check(`S15 Water Sort chain ${r.chips.join(" | ")}: outlines ${r.first} → ${r.last}; card clear of the tubes ${r.clear}`,
+    r.chips.length >= 3 && r.first !== r.last && r.clear);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

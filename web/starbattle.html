@@ -37,6 +37,10 @@
   .cell .xm.wrong { color: var(--conflict-star); }
   /* What if play-through: pretend marks are faint terracotta so they never look like real moves. */
   .cell .xm.pretend { color: var(--accent); opacity: 0.6; }
+  /* What if, stepped through (S15): each forced move's number in its cell's corner; cell names in blue. */
+  .cell { position: relative; }
+  .cell .stepn { position: absolute; top: 1px; right: 3px; font: 800 11px/1 Inter, sans-serif; color: var(--accent-dark); }
+  .hint .rc { color: var(--sel-ring); font-weight: 700; }
   .cell svg.pretend { opacity: 0.55; }
 </style>
 </head>

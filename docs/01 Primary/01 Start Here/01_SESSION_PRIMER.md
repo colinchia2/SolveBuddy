@@ -13,8 +13,10 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   shades in Settings › This puzzle). Colin still to check pencil marks on the phone.
 - **Done + pushed 10/27 (hints round, part 1):** S14 slim card on every game; S15 for Sudoku (cage chips +
   blockers on the board, short squeeze/45 text); E (Killer hints ~100ms). Build log.
-- **Next:** S15 for Star Battle ("what if" stepped through, one numbered forced move per Next, blue R#C# labels),
-  then Water Sort (the pour + what it unlocks two moves on, as a chain). Mockup: "S15 · Hints in motion".
+- **Done + pushed 10/27 (hints round, part 2):** S15 for Star Battle (What if stepped through from Explain,
+  numbered moves, blue R#C#) and Water Sort (chain chips). **Round 10/27 is complete** except Colin's phone checks
+  (pencil marks S10, the line through Done S3, the new hints). S16 (hint review) is in the backlog.
+- **Next:** Colin's phone-test notes on this round, one at a time; then backlog (A: Packs vs Library talk, D: Stats).
 - **New app build 10/27 (family chat, app `545730d`, iPad support):** OTAs now go to this build; recheck the
   fingerprint before any OTA (the old `513e3eaf…` is gone). iPad layouts belong to the family chat.
 - **Rules this round:** don't touch `C:\dev\SolveBuddyApp` or run an OTA without Colin's go (the family chat may be building).
