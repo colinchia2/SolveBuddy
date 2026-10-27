@@ -51,10 +51,13 @@ header { display: flex; align-items: center; gap: 6px; }
 .dock { margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 4px; position: relative; }
 /* Hints used (Colin 10/27, S13): a small number on the Hint button's top-right corner (Hint = 2nd of 4); hidden until
    the first hint; tap it for "Hints used" (bridge.js showHintsUsed). Its touch area is bigger than the tag. */
-.hints-badge { position: absolute; z-index: 2; top: -4px; left: calc((100% - 24px) * 0.5 + 8px - 6px); transform: translateX(-100%);
-  min-width: 24px; height: 22px; padding: 0 7px; border-radius: 11px; border: 2px solid var(--bg); background: #F8EBC9; color: #7A4E00;
-  font: 700 12px/18px Inter, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.hints-badge::before { content: ""; position: absolute; inset: -10px -8px; }
+/* Colin 10/27 phone test: it sits mostly above the button (so Hint stays easy to tap, no stretched touch area), the
+   number is centred in its pill, and it hides while the hint card is up (it showed on top of the card). */
+.hints-badge { position: absolute; z-index: 1; top: -8px; left: calc((100% - 24px) * 0.5 + 8px + 6px); transform: translateX(-100%);
+  display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 20px; padding: 0 6px; box-sizing: border-box;
+  border-radius: 10px; border: 2px solid var(--bg); background: #F8EBC9; color: #7A4E00;
+  font: 700 12px/1 Inter, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.phone:has(.hint:not([hidden])) .hints-badge { visibility: hidden; }
 .sheet p.soon { color: var(--muted); font-size: 14px; }
 .tool { height: 46px; border-radius: 14px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   font: 600 10px Inter, sans-serif; color: var(--ink); }

@@ -353,7 +353,9 @@ async function hintLine(url) {
     out.two = line();
     const L = $("hintsUsed").getBoundingClientRect(), H = $("hintBtn").getBoundingClientRect();
     // S13 (10/27): a number tag on the Hint button's top-right corner ("⅔"), not a line above it.
-    out.over = L.top < H.top + 4 && L.bottom > H.top && L.right <= H.right && L.right > H.right - 12 && $("hintsUsed").textContent === "⅔";
+    // Phone test 10/27: it sits on the corner, mostly above the button (covers under a tenth of it), hidden under the card.
+    const cover = (Math.max(0, L.bottom - H.top) * Math.max(0, Math.min(L.right, H.right) - L.left)) / (H.width * H.height);
+    out.over = L.bottom > H.top && L.top < H.top && Math.abs(L.right - H.right) < 10 && cover < 0.1 && $("hintsUsed").textContent === "⅔";
     out.sameDock = Math.abs(document.querySelector(".dock").getBoundingClientRect().top - dockTop) < 0.5;
     // Nothing on the page above the bar is under the line (the board, the number pad, a tip).
     const hit = [...document.querySelectorAll(".screen *")].filter((e) => !e.closest(".dock") && !e.closest(".hint") && e.children.length === 0)
@@ -1549,10 +1551,14 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await page.click("#hintClose");
   await page.waitForTimeout(350);
   const badge = await page.evaluate(() => document.getElementById("hintsUsed").textContent);
+  await page.click("#hintBtn"); await page.waitForTimeout(150);
+  const underCard = await page.evaluate(() => getComputedStyle(document.getElementById("hintsUsed")).visibility);
+  check(`S13 the number hides while the hint card is up (${underCard})`, underCard === "hidden");
+  await page.click("#hintClose"); await page.waitForTimeout(350);
   await page.click("#hintsUsed");
   await page.waitForTimeout(300);
   const sheet = await page.evaluate(() => { const el = document.getElementById("hintsSheet"); return el && !el.hidden ? el.querySelector("[data-text]").textContent : ""; });
-  check(`S13 Hint button shows "${badge}", tapping it opens "${sheet}"`, badge === "⅓" && sheet === "You've used ⅓ of a hint on this puzzle.");
+  check(`S13 Hint button shows "${badge}", tapping it opens "${sheet}"`, badge === "⅓" && sheet === "You've used ⅔ of a hint on this puzzle."); // the peek at the card above used another third
   // S17: Water Sort par beside the moves; greyed with "hint used" after a hint.
   await page.goto(`${BASE}watersort.html?pack=hard&p=6`);
   await page.waitForTimeout(1200);
