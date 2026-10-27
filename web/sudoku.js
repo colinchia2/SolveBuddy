@@ -2,7 +2,7 @@
 // Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 import { rulesOf } from "../engine/sudoku/variants.ts";
-import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, isTablet, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -100,7 +100,7 @@ function load(i, name = packName, first = false) {
   // Killer zooms with two fingers (Colin 10/27, S11: the cage sums are small): at fit for a new puzzle.
   const zoomOn = s.extra?.variant === "killer";
   $("zview").style.width = $("zview").style.height = zoomOn ? `${BOARD_PX}px` : "";
-  zoom.reset(zoomOn);
+  zoom.reset(zoomOn && !isTablet); // an iPad's board is already big (F1)
   // Pick up where you left off (Colin, 10/21).
   // An import starts from the numbers you'd already filled in (from the photo, or made by hand).
   const saved = savedGame("sudoku", name, pid());

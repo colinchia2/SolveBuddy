@@ -4,7 +4,7 @@
 // "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
-import { clearSaved, finalBoard, goHome, haptic, hapticLevel, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -109,7 +109,7 @@ function load(i, name = packName, first = false) {
     boardPx = 3 + 352; // the board's 3px top/left frame + 352px of cells
     $("zview").style.width = $("zview").style.height = `${boardPx}px`;
   }
-  zoom.reset(big, saved?.zoom);
+  zoom.reset(big && !isTablet, saved?.zoom); // an iPad's board is already big (F1)
   $("sub").textContent = name === "import" ? `Imported · ${N}×${N} · ${K} star${K === 1 ? "" : "s"}`
     : `${N}×${N}${MORE[K]} · ${pack.difficulty} · #${i + 1}`;
   $("time").textContent = "0:00";

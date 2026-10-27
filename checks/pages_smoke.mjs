@@ -1693,6 +1693,32 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     r.chips.length >= 3 && r.first !== r.last && r.clear);
 }
 
+// F1 iPad (10/27, pictures https://claude.ai/artifact/EM1URxLzDX5jmYEExmw5h4): with the app's tablet flag, Sudoku and
+// Star Battle sideways put the board on the left (grown to fill it) and the controls on the right; upright the board
+// fills the width with one row of 9 keys; other pages show the phone layout scaled up. Without the flag (every check
+// above) nothing changes.
+{
+  const ctx = await browser.newContext({ viewport: { width: 1194, height: 834 } });
+  await ctx.addInitScript(() => { window.SOLVEBUDDY_APP = { tablet: true, splash: false }; });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const side = async (u) => { await p.goto(`${BASE}${u}`); await p.waitForTimeout(2200);
+    return p.evaluate(() => { const B = document.getElementById("board").getBoundingClientRect(), D = document.querySelector(".dock").getBoundingClientRect();
+      return { bw: Math.round(B.width), boardRight: B.right, dockLeft: D.left, land: document.documentElement.classList.contains("land") }; }); };
+  const su = await side("sudoku.html?pack=easy&p=1"), sb = await side("starbattle.html?pack=double&p=1");
+  check(`F1 iPad sideways: Sudoku board ${su.bw}px left of the bar (${su.boardRight < su.dockLeft}), Star Battle ${sb.bw}px (${sb.boardRight < sb.dockLeft})`,
+    su.land && su.bw > 600 && su.boardRight < su.dockLeft && sb.bw > 600 && sb.boardRight < sb.dockLeft);
+  await p.setViewportSize({ width: 834, height: 1194 });
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(2200);
+  const up = await p.evaluate(() => ({ bw: Math.round(document.getElementById("board").getBoundingClientRect().width),
+    keysInRow: new Set([...document.querySelectorAll("#pad .key")].map((k) => Math.round(k.getBoundingClientRect().top))).size, port: document.documentElement.classList.contains("port") }));
+  await p.goto(`${BASE}watersort.html?pack=easy&p=1`); await p.waitForTimeout(1500);
+  const pz = await p.evaluate(() => Number(getComputedStyle(document.querySelector(".phone")).zoom));
+  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Water Sort shows the phone layout ×${pz.toFixed(2)}`,
+    up.port && up.bw > 650 && up.keysInRow === 1 && pz > 1.2);
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

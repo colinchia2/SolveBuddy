@@ -198,6 +198,44 @@ html.app .screen::-webkit-scrollbar { display: none; }
 /* The app draws its own Liquid Glass back button in this spot (and turns off swipe-back), so hide the page's. */
 html.nativeback #backBtn { visibility: hidden; }
 
+/* ---- iPad (Colin 10/27, F1). Only under html.tablet, so iPhone stays exactly as it is. ---- */
+/* Pages without their own iPad layout: the phone layout, scaled up to fit and centred. */
+html.tablet.app .phone:not([data-tablet]) { width: 390px; height: calc(100vh / var(--pz, 1)); zoom: var(--pz, 1); margin: 0 auto; background: transparent; }
+/* The soft colour wash runs edge to edge behind it, not just behind the phone-wide column. */
+html.tablet.app body { min-height: 100vh; background:
+  radial-gradient(110% 55% at 0% 0%, rgba(220,233,242,0.9), rgba(220,233,242,0) 70%),
+  radial-gradient(110% 55% at 100% 100%, rgba(191,227,216,0.6), rgba(191,227,216,0) 70%), var(--bg); }
+/* A hint card at iPad size. */
+html.tablet .phone[data-tablet] .hint { padding: 18px 20px; row-gap: 8px; }
+html.tablet .phone[data-tablet] .hint .h1 { font-size: 20px; }
+html.tablet .phone[data-tablet] .hint .h2 { font-size: 16px; }
+html.tablet .phone[data-tablet] .hint .chip, html.tablet .phone[data-tablet] #hintStep { font-size: 14px; }
+html.tablet .phone[data-tablet] .hint #hintNext { min-height: 44px; font-size: 15px; padding: 0 16px; }
+html.tablet .phone[data-tablet] .hint #hintClose { width: 44px; height: 44px; }
+/* Sudoku and Star Battle (the approved pictures): sideways = board on the left under its title; timer, pad, hint and
+   the bar on the right. Upright = one column, the board as wide as it fits. */
+html.tablet .phone[data-tablet] .zview { zoom: var(--bz, 1); }
+html.tablet .phone[data-tablet] .screen { padding: 24px 32px 32px; }
+html.tablet .phone[data-tablet] .tool { height: 72px; font-size: 14px; gap: 4px; border-radius: 16px; }
+html.tablet .phone[data-tablet] .tool svg { width: 22px; height: 22px; }
+html.tablet .phone[data-tablet] .title b { font-size: 26px; }
+html.tablet .phone[data-tablet] .title span { font-size: 15px; }
+html.tablet .phone[data-tablet] .info { font-size: 20px; }
+html.tablet.land .phone[data-tablet] .screen { display: grid; column-gap: 48px; row-gap: 20px; align-items: start;
+  grid-template-columns: var(--bw, 690px) minmax(0, 1fr); grid-template-rows: 56px auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "head info" "board modes" "board pad" "board ." "board dock"; }
+html.tablet.land .phone[data-tablet] .screen > header { grid-area: head; }
+html.tablet.land .phone[data-tablet] .screen > .info { grid-area: info; align-self: center; }
+html.tablet.land .phone[data-tablet] .screen > .zview, html.tablet.land .phone[data-tablet] .screen > .stage { grid-area: 2 / 1 / 6 / 2; margin: 0; padding: 0; justify-content: flex-start; }
+html.tablet.land .phone[data-tablet] .screen > .modes { grid-area: modes; }
+html.tablet.land .phone[data-tablet] .screen > .pad { grid-area: pad; }
+html.tablet.land .phone[data-tablet] .screen > .dock { grid-area: dock; margin: 0; }
+/* The hint card lives in the right column, above the bar, which stays (there's room). */
+html.tablet.land .phone[data-tablet] .hint { left: calc(32px + var(--bw, 690px) + 48px); right: 32px; bottom: calc(32px + 72px + 20px); }
+html.tablet.land .phone[data-tablet]:has(.hint:not([hidden])) .dock { visibility: visible; }
+html.tablet.port .phone[data-tablet] .screen { align-items: stretch; }
+html.tablet.port .phone[data-tablet] .screen > .zview { align-self: center; }
+
 /* Solved! card (mockup "Solved! celebration", Colin 10/21). --wait = when the board's win wave is done. */
 @keyframes sbFadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes sbRise { 0% { opacity: 0; transform: translateY(120px); } 100% { opacity: 1; transform: translateY(0); } }

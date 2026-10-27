@@ -1,6 +1,31 @@
 // Shared by every SolveBuddy page: the phone-app bridge, the packs, and the solve log that Home, Packs and Stats read.
 // In the app (window.SOLVEBUDDY_APP), opening a game and going back are the app's job; in a browser they're links.
 export const inApp = !!globalThis.SOLVEBUDDY_APP;
+// iPad (Colin 10/27, F1; pictures: https://claude.ai/artifact/EM1URxLzDX5jmYEExmw5h4). The app lays pages out at the
+// iPad's real width and sets SOLVEBUDDY_APP.tablet (each page's head script adds html.tablet + land/port). Here: keep
+// land/port right as it turns, and the sizes common.css uses: --pz = the phone layout scaled to fit (pages without
+// their own iPad layout), --bz = how much a split page's board grows, --bw = its width. iPhone never gets html.tablet.
+export const isTablet = document.documentElement.classList.contains("tablet");
+function sizeTablet() {
+  const root = document.documentElement, W = innerWidth, H = innerHeight, land = W > H;
+  root.classList.toggle("land", land);
+  root.classList.toggle("port", !land);
+  const top = parseFloat(getComputedStyle(root).getPropertyValue("--safetop")) || 0;
+  root.style.setProperty("--pz", String(Math.min(W / 390, (H - top) / 844)));
+  const phone = document.querySelector('.phone[data-tablet="split"]');
+  if (!phone) return;
+  const base = parseFloat(phone.style.getPropertyValue("--base")) || 355;
+  // Sideways: the board fills the left column under the title (picture: 690 on an 11" iPad). Upright: the width.
+  const side = land ? Math.min(H - top - 32 - 56 - 24 - 32, W - 64 - 48 - 400) : Math.min(W - 64, (H - top) * 0.62);
+  const bz = Math.max(1, side / base);
+  root.style.setProperty("--bz", String(bz));
+  root.style.setProperty("--bw", `${Math.round(base * bz)}px`);
+}
+if (isTablet) {
+  sizeTablet();
+  addEventListener("resize", sizeTablet);
+  addEventListener("DOMContentLoaded", sizeTablet);
+}
 export const post = (msg) => globalThis.ReactNativeWebView?.postMessage(JSON.stringify(msg));
 
 // Games the phone app doesn't know as pages yet ride inside one it does (the app opens only the game pages built into

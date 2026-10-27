@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=390, user-scalable=no">
-<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app"); if (window.SOLVEBUDDY_APP?.splash) document.documentElement.classList.add("splash")</script>
+<script>if (window.SOLVEBUDDY_APP) document.documentElement.classList.add("app"); if (window.SOLVEBUDDY_APP?.splash) document.documentElement.classList.add("splash"); if (window.SOLVEBUDDY_APP?.tablet || /[?&]tablet=1/.test(location.search)) document.documentElement.classList.add("tablet", innerWidth > innerHeight ? "land" : "port");</script>
 <title>SolveBuddy</title>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="common.css">

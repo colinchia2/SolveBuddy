@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-10-27 — F1 iPad layouts (pages only)
+- Pictures: https://claude.ai/artifact/EM1URxLzDX5jmYEExmw5h4. The app (545730d) sets SOLVEBUDDY_APP.tablet and lays
+  pages out at the iPad's width; each page's head script adds html.tablet + land/port (or ?tablet=1 in a browser).
+- **Sudoku and Star Battle** (`.phone[data-tablet="split"]`): sideways = title + board on the left (board grown with CSS
+  zoom to fill, --bz/--bw from bridge.js `sizeTablet`), timer, mode bar, 3 × 3 big keys, hint card and bar on the
+  right; upright = one column, board as wide as it fits, one row of 9 keys. Two-finger zoom is off on iPad.
+- **Every other page** (tabs, Water Sort, Shikaku, Nonogram, Block Drop): the phone layout scaled up and centred
+  (--pz), the colour wash edge to edge. Their own iPad layouts can come later.
+- iPhone unchanged (everything is under html.tablet). pages_smoke 148 PASS (F1 ×2 new).
+
 ## 2026-10-27 — Hints round part 2: Star Battle "what if" stepped through, Water Sort chain (S15 done)
 - **Star Battle:** a What if now plays out from Explain (it used to start at Show me): Next shows one forced move at a
   time, each numbered in its cell's corner (`.stepn`), chip "What if · 2 of 3"; after the line that runs dry, "Cross it
