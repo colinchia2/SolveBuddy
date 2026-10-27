@@ -1029,7 +1029,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     const tagged = !!document.querySelector(".newdot, .tile.new") || [...document.querySelectorAll(".tile")].some((t) => /new/i.test(t.innerText));
     document.querySelector('.tile[data-game="nonogram"]').click();
     await new Promise((r) => setTimeout(r, 400));
-    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".pthumb .pv"), zoom: /zoom/i.test(r.innerText) || !!r.querySelector(".zchip") }));
+    const rows = [...document.querySelectorAll(".c-row")].map((r) => ({ name: r.querySelector(".g b").textContent, thumb: !!r.querySelector(".pthumb svg"), zoom: /zoom/i.test(r.innerText) || !!r.querySelector(".zchip") }));
     // every other game's pack list: no "zoom" either
     const others = [];
     for (const g of ["sudoku", "starbattle", "watersort"]) {
@@ -1427,7 +1427,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await page.click('.cell[data-r="3"][data-c="0"]');
   await page.click('.seg[data-mode="corner"]');
   for (const n of [1, 2]) await page.click(`#pad [data-n="${n}"]`);
-  const marks = await page.evaluate(() => [...document.querySelectorAll('.cell[data-r="3"][data-c="0"] .cn')].map((e) => `${e.textContent}${e.classList.contains("bad") ? "!" : ""}`));
+  const marks = await page.evaluate(() => [...document.querySelectorAll('.cell[data-r="3"][data-c="0"] .cn')].map((e) => `${e.textContent}${getComputedStyle(e).color === "rgb(179, 38, 30)" ? "!" : ""}`));
   check(`S8 a pencil mark that clashes shows red (${marks.join(" ")})`, marks.join() === "1,2!");
   // S9: three picked cells in a column share one outline: the middle one has no top or bottom edge.
   await page.evaluate(() => { const d = (r) => document.querySelector(`.cell[data-r="${r}"][data-c="8"]`); const pt = (el) => { const b = el.getBoundingClientRect(); return { bubbles: true, clientX: b.x + 5, clientY: b.y + 5 }; };
@@ -1479,7 +1479,7 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     .map((e) => [e.textContent, `${parseFloat(e.style.left)},${parseFloat(e.style.top)}`]))));
   const [sumCell, plainCell] = spots;
   check(`S10 keypad spots: plain ${JSON.stringify(plainCell)}, cage-sum ${JSON.stringify(sumCell)}`,
-    plainCell[1] === "7,6" && plainCell[3] === "32,6" && plainCell[5] === "19.5,14.5" && plainCell[9] === "32,32" && sumCell[1] === "22,6" && sumCell[3] === "33,6"
+    plainCell[1] === "21.5,6" && plainCell[3] === "27.3,6" && plainCell[5] === "33.1,6" && plainCell[9] === "6,32.5" && sumCell[1] === "21.5,6" && sumCell[9] === "6,32.5" // smallest first: top right ×3, bottom left, bottom right (10/27)
     && !Object.values(plainCell).includes("19.5,19.5"));
   // S13: the number on the Hint button opens "Hints used".
   await page.click('.seg[data-mode="normal"]');
@@ -1685,7 +1685,7 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     await page.waitForTimeout(900);
     await page.click(`[data-game="${g}"]`);
     await page.waitForTimeout(600);
-    rows[g] = await page.evaluate(() => [...document.querySelectorAll(".c-row")].map((r) => r.querySelector(".pthumb .pv") ? r.querySelector(".psize")?.textContent ?? "?" : "none"));
+    rows[g] = await page.evaluate(() => [...document.querySelectorAll(".c-row")].map((r) => r.querySelector(".pthumb > :first-child") ? r.querySelector(".psize")?.textContent ?? "?" : "none"));
   }
   const all = Object.values(rows).flat();
   check(`pack pictures with size stickers: ${Object.entries(rows).map(([g, r]) => `${g} ${r.join(",")}`).join(" · ")}`,

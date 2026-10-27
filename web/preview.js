@@ -28,7 +28,7 @@ export function boardPreview(g, puzzle, board) {
       const br = c === 2 || c === 5 ? " br" : "", bb = r === 2 || r === 5 ? " bb" : "";
       cells.push(`<i class="pv-c${br}${bb}${given ? " given" : ""}">${v || ""}</i>`);
     }
-    return `<div class="pv pv-su">${cells.join("")}</div>`;
+    return `<div class="pv pv-su">${cells.join("")}${extras(puzzle)}</div>`;
   }
   if (g === "nonogram") {
     // Solved: the picture in its colour; in progress: your filled squares and × marks.
@@ -54,6 +54,30 @@ export function boardPreview(g, puzzle, board) {
     return `<div class="pv pv-ws">${tubes.map((t) => `<span class="pv-tube">${t.map((x) => `<i style="background:${WS_COLORS[x] ?? "#ccc"}"></i>`).join("")}</span>`).join("")}</div>`;
   }
   return "";
+}
+
+// Killer cages (dashed, sum in the corner) and Thermo lines (grey bulb and tube) over a small Sudoku, drawn like the
+// game draws them (Colin 10/27: the pack pictures and the Resume / View solved card had neither). Cells are 22px.
+function extras(p) {
+  const C = 22, parts = [];
+  for (const line of p.thermos ?? []) {
+    const pts = line.map(([r, c]) => `${c * C + C / 2},${r * C + C / 2}`).join(" ");
+    parts.push(`<g opacity=".55"><polyline points="${pts}" fill="none" stroke="#BDB6AD" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<circle cx="${line[0][1] * C + C / 2}" cy="${line[0][0] * C + C / 2}" r="8" fill="#BDB6AD"/></g>`);
+  }
+  for (const cage of p.cages ?? []) {
+    const has = (r, c) => cage.cells.some(([a, b]) => a === r && b === c), d = 2;
+    for (const [r, c] of cage.cells) {
+      const x0 = c * C + d, y0 = r * C + d, x1 = (c + 1) * C - d - 1, y1 = (r + 1) * C - d - 1;
+      if (!has(r - 1, c)) parts.push(`<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}"/>`);
+      if (!has(r + 1, c)) parts.push(`<line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}"/>`);
+      if (!has(r, c - 1)) parts.push(`<line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}"/>`);
+      if (!has(r, c + 1)) parts.push(`<line x1="${x1}" y1="${y0}" x2="${x1}" y2="${y1}"/>`);
+    }
+    const [r, c] = cage.cells[0];
+    parts.push(`<text x="${c * C + 3}" y="${r * C + 8}">${cage.sum}</text>`);
+  }
+  return parts.length ? `<svg class="pv-extra" viewBox="0 0 ${9 * C} ${9 * C}" aria-hidden="true">${parts.join("")}</svg>` : "";
 }
 
 // The finished look of a Water Sort level: each colour in its own full tube, the rest empty.

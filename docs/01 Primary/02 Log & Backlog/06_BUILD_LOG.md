@@ -2,6 +2,20 @@
 
 Newest first.
 
+## 2026-10-27 — Colin's checklist round (pages only)
+- Checklist https://claude.ai/artifact/3VEN9gjNrLCxQdZEwXPKvU (db `checks`): 4 doesn't (s8, s10, s18, pp), 2 maybe (s12, s13).
+  s18 turned out fine (he found Settings › This puzzle); s13's "coming later" = S16 hint review, on the backlog.
+- **S8:** clashing corner marks really turn red now: `.cell .cn` (blue) came after `.cn.bad` and won; now `.cell .cn.bad`.
+  The page check reads the actual colour, not the class.
+- **S10 again (Colin's layout):** corner marks in order, smallest first, 3 per corner: top right, then bottom left, then
+  bottom right (sudoku.js `CORNER_SPOTS`); top left stays free for a cage sum; Center marks unchanged.
+- **S12:** no line under the Shikaku board at all (`#tip` hidden); the patch's own look says what's wrong.
+- **Pictures:** Killer cages (dashed, sums) and Thermo lines drawn in preview.js (`extras`), so the Resume / View solved
+  card has them too. In the pack thumbs a Sudoku's numbers are dots and sums are left off (phones push tiny text up to a
+  minimum size and it spilled out of the cells). Nonogram's thumb: empty grid with clue strips (`nonoClues`).
+- Settings rows (`.opt`) get padding so a wrapped label isn't squashed.
+- Checks: run_all 49 PASS; pages_smoke 147 PASS.
+
 ## 2026-10-27 — Pack pictures, option C (pages only)
 - Colin picked C (mockup "Pack pictures"). Every pack row in the Library (Star Battle, Sudoku, Shikaku, Nonogram;
   Water Sort has one pack and opens straight in) shows its first puzzle as it starts, via preview.js boardPreview with

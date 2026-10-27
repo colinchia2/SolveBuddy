@@ -26,10 +26,26 @@ const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 
 // Every pack row's picture (Colin 10/27, mockup "Pack pictures" option C): the pack's first puzzle as it starts (its
 // regions, numbers, clues or tubes; never the answer, never your progress, which stays in the ring) with a size
 // sticker in the game's colour. The same kind of picture for every pack.
+// Nonogram's picture: the empty grid with its clue strips along the top and left, each clue a little bar (its length is
+// the number), the way the game looks before you start. Never the picture itself.
+function nonoClues(p) {
+  const n = p.rows.length, S = 52, band = 15, cs = (S - band) / n, ink = LOOK.nonogram.ink;
+  const bars = (clues, i, across) => clues.slice(-4).reverse().map((k, j) => {
+    const len = Math.min(band - 3, 1.2 + k * 0.9), off = band - 2 - j * 3.2;
+    return across ? `<rect x="${(off - len + 0.6).toFixed(1)}" y="${(band + i * cs + cs / 2 - 0.9).toFixed(1)}" width="${len.toFixed(1)}" height="1.8" rx=".9" fill="${ink}"/>`
+      : `<rect x="${(band + i * cs + cs / 2 - 0.9).toFixed(1)}" y="${(off - len + 0.6).toFixed(1)}" width="1.8" height="${len.toFixed(1)}" rx=".9" fill="${ink}"/>`;
+  }).join("");
+  const lines = Array.from({ length: n - 1 }, (_, i) => { const q = (band + (i + 1) * cs).toFixed(1); return `<path d="M${q} ${band}V${S}M${band} ${q}H${S}" stroke="#E6DACD" stroke-width=".6"/>`; }).join("");
+  return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}"><rect width="${S}" height="${S}" rx="6" fill="${LOOK.nonogram.bg}"/>`
+    + `<rect x="${band}" y="${band}" width="${S - band}" height="${S - band}" fill="#FFFDF9"/>${lines}`
+    + `${p.cols.map((cl, i) => bars(cl, i, false)).join("")}${p.rows.map((cl, i) => bars(cl, i, true)).join("")}`
+    + `<rect x="${band}" y="${band}" width="${S - band}" height="${S - band}" fill="none" stroke="${ink}" stroke-width="1"/></svg>`;
+}
 const START = { starbattle: { marks: {} }, sudoku: { entries: {} }, nonogram: { marks: {} }, shikaku: { patches: [] } };
 function packThumb(g, s) {
   const pk = data[`${g}/${s.levels[0]}`], p = pk?.puzzles?.[0];
   if (!p) return "";
+  if (g === "nonogram") return `<span class="pthumb" aria-hidden="true">${nonoClues(p)}<b class="psize" style="background:${LOOK[g].ink}">${pk.size}×${pk.size}</b></span>`;
   const board = g === "watersort" ? { tubes: p.tubes } : START[g];
   if (!board) return "";
   const n = g === "starbattle" ? p.regions.length : g === "sudoku" ? 9 : pk.size ?? p.size;

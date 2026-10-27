@@ -45,7 +45,7 @@
   .patch.ringed { box-shadow: 0 0 0 3px var(--accent); }
   .patch.land { animation: sland .25s ease-out; }
   @keyframes sland { from { opacity: .55; } }
-  .tip.bad { color: var(--conflict-star); font-weight: 600; }
+  #tip { display: none; } /* no line under the board at all (Colin 10/27: "I don't want those ever"); the patch's own look says it */
   /* Solved: the patches dip and pop in a wave from the top-left, then fill in solid; numbers turn white. */
   .sview.won .scells i { box-shadow: none; transition: box-shadow .4s ease; }
   .sview.won .patch { background: var(--pc); border-style: solid; transition: background .45s ease var(--d); }
