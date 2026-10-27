@@ -46,6 +46,10 @@
   .tube-wrap { position: relative; padding-bottom: 18px; }
   .tube-num { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; font: 600 11px Inter, sans-serif; color: var(--muted); }
   .count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
+  /* Par (Colin 10/27, S17): blue while within it, coral "+3" past it, grey once a hint is used (it still shows). */
+  .par { margin-left: 4px; padding: 2px 8px; border-radius: 8px; font-size: 12px; font-weight: 700; background: var(--brand-soft); color: var(--brand-dark); }
+  .par.over { background: var(--accent-soft); color: var(--accent-dark); }
+  .par.off { background: #E6E1DA; color: var(--muted); }
   .rules-sub { margin: 4px 0 0; font: 700 14px Inter, sans-serif; color: var(--ink); }
   .rules-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--body); }
   @keyframes wsShake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
@@ -68,7 +72,7 @@
 
     <div class="info">
       <button class="timer" id="timer" aria-label="Pause"><svg class="clock" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span id="time">0:00</span><svg class="pause-ico" width="14" height="14" viewBox="0 0 24 24" fill="#2A211B"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg></button>
-      <span class="count"><svg width="15" height="15" viewBox="0 0 24 24" fill="#6A45B0"><path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/></svg><span id="count">0 moves</span></span>
+      <span class="count"><svg width="15" height="15" viewBox="0 0 24 24" fill="#6A45B0"><path d="M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z"/></svg><span id="count">0 moves</span><span class="par" id="par" hidden></span></span>
     </div>
 
     <div class="stage" id="stage">

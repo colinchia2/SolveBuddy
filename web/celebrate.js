@@ -21,7 +21,8 @@ export function solveFacts(game, pack, ms, hints) {
 // The card rises after the board's own win wave (delay ms). Returns nothing; buttons call back.
 // heading + medal (Nonogram, Colin 10/23): a solved picture says its name ("A heart!") and shows itself as the medal;
 // without them it's the usual "Solved!" and blue star disc.
-export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, heading = "Solved!", medal = "" }) {
+// extra = badges a game adds in front (Water Sort's par, Colin 10/27).
+export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, heading = "Solved!", medal = "", extra = "" }) {
   document.getElementById("won")?.remove();
   const { current } = streaks(); // the solve is already logged, so today counts
   const fills = ["#2F6FD6", "#FFC94D", "#C24E2A", "#4D96FF", "#FFC94D"];
@@ -30,6 +31,7 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, 
     return star(16, fills[i % 5], `position:absolute;left:40px;top:40px;--dx:${Math.round(Math.cos(a) * dist)}px;--dy:${Math.round(Math.sin(a) * dist)}px;animation:sbBurst .9s calc(var(--wait) + ${(0.45 + (i % 4) * 0.04).toFixed(2)}s) ease-out both`);
   }).join("");
   const badges = [
+    extra,
     hintThirds(facts.hints) === 0 && `<span class="badge blue" style="--at:.75s"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No hints</span>`,
     hintThirds(facts.hints) > 0 && `<span class="badge hintb" style="--at:.75s">${HINT_ICON}${hintCount(facts.hints)} used</span>`,
     facts.best && `<span class="badge gold" style="--at:.9s">${star(14, "#C98A00")}Your best ${level} time</span>`,

@@ -2,7 +2,8 @@
 // and following the Hint button's move from the start solves it.
 // Run: node checks/watersort.ts
 import { readFileSync } from "node:fs";
-import { CAP, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
+import { CAP, isDone, isSolved, moves, pour, stateKey } from "../engine/watersort/rules.ts";
+import { par } from "../engine/watersort/par.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
 
@@ -41,5 +42,29 @@ for (const key of ["easy", "medium", "hard"]) {
 }
 console.log(`hint reasons: ${explained} hints, ${ledOn} say what comes next, ${badText} bad`);
 if (badText) bad++;
+
+// Par (Colin 10/27, S17): every pack level gets one, fast, never more than the solver's own path; on the Easy levels
+// a plain breadth-first search (the slow sure way) agrees it's the fewest.
+const bfs = (start: string[][]) => {
+  let layer = [start], d = 0;
+  const seenB = new Set([stateKey(start)]);
+  while (layer.length) {
+    if (layer.some(isSolved)) return d;
+    const next: string[][][] = [];
+    for (const st of layer) for (const m of moves(st)) { const n = pour(st, ...m), k = stateKey(n); if (!seenB.has(k)) { seenB.add(k); next.push(n); } }
+    layer = next; d++;
+  }
+  return -1;
+};
+let parBad = 0, parSlow = 0;
+for (const level of ["easy", "medium", "hard"]) {
+  for (const p of JSON.parse(readFileSync(`packs/watersort-${level}.json`, "utf8")).puzzles) {
+    const t0 = performance.now(), n = par(p.tubes);
+    parSlow = Math.max(parSlow, performance.now() - t0);
+    if (n === null || n > p.moves || (level === "easy" && bfs(p.tubes) !== n)) { parBad++; console.log(`${p.id}: par ${n} FAIL`); }
+  }
+}
+console.log(`par: 30 levels, ${parBad} wrong, slowest ${Math.round(parSlow)}ms`);
+if (parBad || parSlow > 500) bad++;
 console.log(bad ? `${bad} FAILED` : "all ok");
 process.exit(bad ? 1 : 0);

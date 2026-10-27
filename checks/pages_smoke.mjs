@@ -323,7 +323,7 @@ const used = await page.evaluate(async () => {
   const $ = (id) => document.getElementById(id);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   let last = "";
-  const note = () => { const t = $("hintsUsed")?.hidden === false ? $("hintsUsed").textContent : ""; if (t) last = t; };
+  const note = () => { const t = $("hintsUsed")?.hidden === false ? $("hintsUsed").dataset.full : ""; if (t) last = t; };
   for (let i = 0; i < 200 && !$("won"); i++) {
     if ($("hint").hidden) { $("hintBtn").click(); note(); await wait(30); }
     for (let g = 0; g < 10 && !$("hint").hidden; g++) { $("hintNext").click(); note(); }
@@ -341,7 +341,7 @@ async function hintLine(url) {
   return page.evaluate(async () => {
     const $ = (id) => document.getElementById(id);
     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-    const line = () => ($("hintsUsed") && !$("hintsUsed").hidden ? $("hintsUsed").textContent : "");
+    const line = () => ($("hintsUsed") && !$("hintsUsed").hidden ? $("hintsUsed").dataset.full : "");
     const restart = async () => { $("restartBtn").click(); await wait(50); document.querySelector('.scrim:not([hidden]) [data-act="yes"]').click(); await wait(400); };
     await restart();
     await wait(2200); // the number pad's opening bounce is over
@@ -352,7 +352,8 @@ async function hintLine(url) {
     $("hintNext").click(); await wait(80);
     out.two = line();
     const L = $("hintsUsed").getBoundingClientRect(), H = $("hintBtn").getBoundingClientRect();
-    out.over = L.bottom <= H.top + 0.5 && Math.abs((L.left + L.right) / 2 - (H.left + H.right) / 2) < 1;
+    // S13 (10/27): a number tag on the Hint button's top-right corner ("⅔"), not a line above it.
+    out.over = L.top < H.top + 4 && L.bottom > H.top && L.right <= H.right && L.right > H.right - 12 && $("hintsUsed").textContent === "⅔";
     out.sameDock = Math.abs(document.querySelector(".dock").getBoundingClientRect().top - dockTop) < 0.5;
     // Nothing on the page above the bar is under the line (the board, the number pad, a tip).
     const hit = [...document.querySelectorAll(".screen *")].filter((e) => !e.closest(".dock") && !e.closest(".hint") && e.children.length === 0)
@@ -1519,6 +1520,50 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const mid = (v) => `${(v / n) * 100}%`;
   check(`S12 Shikaku size shows live in the middle (${JSON.stringify(tag)}), gone after; no standing tip ("${tip0}")`,
     tag?.n === "6" && tag.left === mid(free[1] + 1.5) && tag.top === mid(free[0] + 1) && gone && tip0 === "");
+}
+
+// 10/27 mockup batch (S10, S13, S17).
+{
+  // S10: corner marks have fixed keypad spots at the edges; 5 just under the 2; nothing at the centre; in a cage-sum
+  // cell 1 2 3 slide right.
+  await page.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(1500);
+  await page.click('.seg[data-mode="corner"]');
+  for (const [r, c] of [[0, 0], [1, 0]]) {
+    await page.click(`.cell[data-r="${r}"][data-c="${c}"]`);
+    for (const n of [9, 5, 1, 3]) await page.click(`#pad [data-n="${n}"]`); // typed out of order
+  }
+  const spots = await page.evaluate(() => [[0, 0], [1, 0]].map(([r, c]) => Object.fromEntries([...document.querySelectorAll(`.cell[data-r="${r}"][data-c="${c}"] .cn`)]
+    .map((e) => [e.textContent, `${parseFloat(e.style.left)},${parseFloat(e.style.top)}`]))));
+  const [sumCell, plainCell] = spots;
+  check(`S10 keypad spots: plain ${JSON.stringify(plainCell)}, cage-sum ${JSON.stringify(sumCell)}`,
+    plainCell[1] === "7,6" && plainCell[3] === "32,6" && plainCell[5] === "19.5,14.5" && plainCell[9] === "32,32" && sumCell[1] === "22,6" && sumCell[3] === "33,6"
+    && !Object.values(plainCell).includes("19.5,19.5"));
+  // S13: the number on the Hint button opens "Hints used".
+  await page.click('.seg[data-mode="normal"]');
+  await page.click("#hintBtn");
+  await page.waitForTimeout(150);
+  await page.click("#hintClose");
+  await page.waitForTimeout(350);
+  const badge = await page.evaluate(() => document.getElementById("hintsUsed").textContent);
+  await page.click("#hintsUsed");
+  await page.waitForTimeout(300);
+  const sheet = await page.evaluate(() => { const el = document.getElementById("hintsSheet"); return el && !el.hidden ? el.querySelector("[data-text]").textContent : ""; });
+  check(`S13 Hint button shows "${badge}", tapping it opens "${sheet}"`, badge === "⅓" && sheet === "You've used ⅓ of a hint on this puzzle.");
+  // S17: Water Sort par beside the moves; greyed with "hint used" after a hint.
+  await page.goto(`${BASE}watersort.html?pack=hard&p=6`);
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
+  await page.reload();
+  await page.waitForTimeout(1500);
+  const par0 = await page.evaluate(() => document.getElementById("par").textContent);
+  await page.click("#hintBtn");
+  await page.waitForTimeout(150);
+  const par1 = await page.evaluate(() => `${document.getElementById("par").textContent}|${document.getElementById("par").className}`);
+  check(`S17 Water Sort par: "${par0}", after a hint "${par1}"`, par0 === "Par 30" && par1 === "Par 30 · hint used|par off");
 }
 
 check("no page errors anywhere", errors.length === 0);

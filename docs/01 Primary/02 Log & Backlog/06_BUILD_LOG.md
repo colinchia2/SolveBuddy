@@ -2,6 +2,22 @@
 
 Newest first.
 
+## 2026-10-27 — Round 10/27 mockup batch: S10, S13, S17 (pages only)
+- Mockups (Design canvas): https://claude.ai/artifact/UmE8Eo1KnGWSXb8xB7haKK. Colin picked: pencil marks B, hints
+  badge A, par as drawn but still shown after a hint ("looks good").
+- **S10 corner marks:** fixed keypad spots pushed to the edges (1 2 3 top, 4 · 6 sides, 7 8 9 bottom), the 5 just
+  under the 2 so the centre is only for Center marks; in a Killer cage-sum cell 1 2 3 slide right of the sum, clear of
+  a two-digit sum. sudoku.js `cornerSpot()`; marks are centred on their spot.
+- **S13 hints used:** a small number tag ("1⅓") on the Hint button's corner replaces the line above it; tap it for a
+  "Hints used" sheet (count + "each step counts a third"; "see each hint again" comes later with S16).
+  bridge.js `showHintsUsed` / `hintShort`; the full sentence is in `data-full`.
+- **S17 Water Sort par:** `engine/watersort/par.ts` = A* with an admissible count (solve.ts `mess`), so it finds the
+  fewest pours; every pack level in ≤50ms, so the page works it out live (imports too; huge ones get no par). Beside the
+  moves: "Par 30" (blue), "+3" past it (coral), "Par 30 · hint used" (grey) after a hint. Solved card: "On par ·
+  30 moves" (gold) / "3 over par" / "Par 30 · not counted, hint used". checks/watersort.ts checks every level's par
+  (Easy ones against a plain breadth-first search). Several pack pars are 1–2 under the hint solver's path.
+- Checks: pages_smoke 136 PASS; run_all 49 PASS on a rerun (Killer hint timing flaked again: backlog E, worth doing soon).
+
 ## 2026-10-27 — Round 10/27 medium batch: S7, S8, S9, S11, S12 (pages only)
 - **S7 tap a placed number:** the row, column and box of every copy light up (peer colour), so the open cells left
   show where it can go. New Sudoku setting "Tap a number to see where it can't go" (`reach`, on by default).

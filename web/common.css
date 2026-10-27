@@ -49,13 +49,13 @@ header { display: flex; align-items: center; gap: 6px; }
 
 /* Bottom bar (option A, Colin 10/21): Undo · Hint · More, under the thumb. */
 .dock { margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding-top: 4px; position: relative; }
-/* "You've used 1⅓ hints" (Colin 10/23): a quiet line centred over the Hint button (2nd of 4), floating in the gap above
-   the bar so it adds no height; hidden until the first hint (bridge.js showHintsUsed). */
-.hints-used { position: absolute; bottom: calc(100% - 3px); left: calc((100% - 24px) * 0.375 + 8px); transform: translateX(-50%);
-  margin: 0; white-space: nowrap; font: 500 11px/12px Inter, sans-serif; color: var(--muted); pointer-events: none; }
-.hints-used[hidden] { display: none; }
-/* A zoomable board fills right down to the bar, so it makes room for the line once it shows. */
-.screen:has(.hints-used:not([hidden])) .stage.zarea { padding-bottom: 14px; }
+/* Hints used (Colin 10/27, S13): a small number on the Hint button's top-right corner (Hint = 2nd of 4); hidden until
+   the first hint; tap it for "Hints used" (bridge.js showHintsUsed). Its touch area is bigger than the tag. */
+.hints-badge { position: absolute; z-index: 2; top: -4px; left: calc((100% - 24px) * 0.5 + 8px - 6px); transform: translateX(-100%);
+  min-width: 24px; height: 22px; padding: 0 7px; border-radius: 11px; border: 2px solid var(--bg); background: #F8EBC9; color: #7A4E00;
+  font: 700 12px/18px Inter, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hints-badge::before { content: ""; position: absolute; inset: -10px -8px; }
+.sheet p.soon { color: var(--muted); font-size: 14px; }
 .tool { height: 46px; border-radius: 14px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
   font: 600 10px Inter, sans-serif; color: var(--ink); }
 .tool svg { width: 18px; height: 18px; } /* a small bar (Colin, 10/21: the Hint button was too big) */
@@ -209,6 +209,7 @@ html.nativeback #backBtn { visibility: hidden; }
 .badge.blue { background: var(--brand-soft); color: var(--brand-dark); }
 .badge.hintb { background: #F8EBC9; color: #7A4E00; } /* "1⅓ hints used" */
 .badge.gold { background: #FDF0D5; color: #7A4E00; }
+.badge.grey { background: #E6E1DA; color: var(--muted); }
 .badge.coral { background: var(--accent-soft); color: var(--accent-dark); }
 .won-next { width: 100%; min-height: 54px; border-radius: 14px; border: 0; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif;
   display: flex; align-items: center; justify-content: center; gap: 8px; }

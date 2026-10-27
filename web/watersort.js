@@ -3,7 +3,8 @@
 import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.ts";
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
-import { clearSaved, goHome, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { par } from "../engine/watersort/par.ts";
+import { clearSaved, goHome, haptic, hintThirds, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -79,7 +80,7 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   const p = pack.puzzles[i];
   s = { tubes: p.tubes.map((t) => [...t]), picked: null, moves: 0, hint: null, started: Date.now(), elapsed: 0,
-    solved: false, rules: false, settingsOpen: false };
+    solved: false, rules: false, settingsOpen: false, par: par(p.tubes) };
   // Pick up where you left off.
   const saved = savedGame("watersort", name, pid());
   if (saved) {
@@ -290,9 +291,20 @@ function checkSolved() {
   const facts = solveFacts("watersort", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
   logSolve({ g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   render();
-  celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
+  const pb = s.par == null ? "" : hintThirds(s.hints) ? `<span class="badge grey" style="--at:.6s">Par ${s.par} · not counted, hint used</span>`
+    : s.moves <= s.par ? `<span class="badge gold" style="--at:.6s">On par · ${s.moves} moves</span>`
+    : `<span class="badge blue" style="--at:.6s">${s.moves - s.par} over par</span>`;
+  celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, extra: pb,
     hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
+}
+
+// Par beside the move count (Colin 10/27, S17): "Par 18" while you're within it, "+3" past it; once a hint is used it
+// still shows, greyed: "Par 18 · hint used". No par when the search couldn't finish (a huge import).
+function parTag() {
+  if (s.par == null) return null;
+  if (hintThirds(s.hints)) return { text: `Par ${s.par} · hint used`, cls: "off" };
+  return s.moves <= s.par ? { text: `Par ${s.par}`, cls: "" } : { text: `+${s.moves - s.par}`, cls: "over" };
 }
 
 // Hint: Nudge (ring the tube to pour from) → Explain (where to, and why) → Show me (pours it).
@@ -385,6 +397,9 @@ function render() {
   $("board").innerHTML = rows.join("");
   anims.forEach(bindPour);
   $("count").textContent = `${s.moves} move${s.moves === 1 ? "" : "s"}`;
+  const pt = parTag();
+  $("par").hidden = !pt;
+  if (pt) { $("par").textContent = pt.text; $("par").className = `par ${pt.cls}`; }
   $("hintBtn").classList.toggle("pressed", !!h);
 
   $("hint").hidden = !h;

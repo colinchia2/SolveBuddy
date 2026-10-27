@@ -42,12 +42,16 @@ let pack = PACKS[packName];
 const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, rgba(255,255,255,0) 4px 10px)";
 const $ = (id) => document.getElementById(id);
 const key = (r, c) => `${r},${c}`;
-// Corner marks fill the corners first, then top/bottom middle, then the sides (handoff §6).
-const CORNER_POS = [
-  "top:1px;left:3px", "top:1px;right:3px", "bottom:1px;left:3px", "bottom:1px;right:3px",
-  "top:1px;left:0;right:0;text-align:center", "bottom:1px;left:0;right:0;text-align:center",
-  "top:13px;left:3px", "top:13px;right:3px", "top:13px;left:0;right:0;text-align:center",
-];
+// Corner marks (Colin 10/27, S10, mockup option B): every number has its own spot, laid out like a phone keypad and
+// pushed to the edges: 1 2 3 along the top, 4 and 6 on the sides, 7 8 9 along the bottom, and the 5 just under the 2,
+// so nothing sits in the middle (that's for Center marks). In a cell with a Killer cage sum, 1 2 3 slide right of it.
+// Spot = the mark's centre, in px from the cell's top-left.
+const SPOT_X = [7, 19.5, 32], SPOT_Y = [6, 19.5, 32];
+function cornerSpot(d, sum) {
+  if (d === 5) return [19.5, 14.5]; // always the same spot, just under the middle of the top row
+  if (sum && d <= 3) return [[22, 27.5, 33][d - 1], 6]; // clear of a two-digit sum, so "18" never reads as "181"
+  return [SPOT_X[(d - 1) % 3], SPOT_Y[Math.floor((d - 1) / 3)]];
+}
 
 // Two-finger zoom, the same as Star Battle's big boards (web/zoom.js), inside the board's own square: the number pad
 // below stays where it is. One finger still selects.
@@ -343,6 +347,7 @@ function render() {
     const sides = [!on(r - 1, c) && "0 2px", !on(r + 1, c) && "0 -2px", !on(r, c - 1) && "2px 0", !on(r, c + 1) && "-2px 0"].filter(Boolean);
     return sides.length ? sides.map((xy) => `inset ${xy} 0 0 var(--sel-ring)`).join(", ") : "none";
   };
+  const sumCells = new Set((s.extra?.cages ?? []).map((g) => key(...g.cells[0]))); // where a cage's sum is written
   const reach = new Set();
   if (settings.reach && !h && selVal && s.picked.size === 1) {
     for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
@@ -384,7 +389,10 @@ function render() {
       } else if (s.center[k]) {
         inner += `<span class="ctr">${s.center[k].map((d) => (bad(r, c, d) ? `<b>${d}</b>` : d)).join("")}</span>`;
       }
-      if (!v && s.corner[k]) inner += s.corner[k].map((d, i) => `<span class="cn${bad(r, c, d) ? " bad" : ""}" style="${CORNER_POS[i]}">${d}</span>`).join("");
+      if (!v && s.corner[k]) inner += s.corner[k].map((d) => {
+        const [x, y] = cornerSpot(d, sumCells.has(k));
+        return `<span class="cn${bad(r, c, d) ? " bad" : ""}" style="left:${x}px;top:${y}px">${d}</span>`;
+      }).join("");
       const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : "", intro ? "drop" : "", won ? "won wave" : ""].join(" ");
       const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
       const d = intro ? s.introWait + 0.15 + box * 0.09 + ((r % 3) * 3 + (c % 3)) * 0.025 : (r + c) * 0.03;

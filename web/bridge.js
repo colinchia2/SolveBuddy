@@ -178,25 +178,46 @@ export function hintAmount(h) {
   return `${whole}${part} hint${t === 3 ? "" : "s"}`;
 }
 export const hintsUsedText = (h) => (hintThirds(h) ? `You've used ${hintAmount(h)}` : "");
-// The quiet line just above the Hint button, hidden until the first hint. It floats over the gap above the bottom
-// bar, so it adds no height (a zoomable board's area makes room for it, common.css). Games call it from render().
+// Just the number, for the tag on the Hint button: "⅓", "1", "1⅔".
+export const hintShort = (h) => { const t = hintThirds(h), whole = Math.floor(t / 3); return `${whole || ""}${["", "⅓", "⅔"][t % 3]}` || "0"; };
+// A small number on the Hint button's corner, hidden until the first hint (Colin 10/27, S13: the old line sat too
+// close to the button). Tapping it opens "Hints used"; the list of each hint comes later with the puzzle review.
+// The full sentence rides along in data-full and the label. Games call it from render().
 export function showHintsUsed(h) {
   const dock = document.querySelector(".dock");
   if (!dock) return;
   let el = document.getElementById("hintsUsed");
   if (!el) {
-    el = document.createElement("p");
+    el = document.createElement("button");
     el.id = "hintsUsed";
-    el.className = "hints-used";
-    el.setAttribute("aria-live", "polite");
-    dock.prepend(el);
+    el.className = "hints-badge";
+    el.onclick = () => hintsSheet(el.dataset.full);
+    dock.appendChild(el);
   }
   const text = hintsUsedText(h);
-  if (el.textContent !== text) el.textContent = text;
-  if (el.hidden !== !text) {
-    el.hidden = !text;
-    dispatchEvent(new Event("resize")); // a zoomable board re-measures its area (web/zoom.js)
+  if (el.dataset.full !== text) {
+    el.dataset.full = text;
+    el.textContent = hintShort(h);
+    el.setAttribute("aria-label", `${text}. Show hints used`);
   }
+  el.hidden = !text;
+}
+function hintsSheet(text) {
+  let el = document.getElementById("hintsSheet");
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "scrim";
+    el.id = "hintsSheet";
+    el.innerHTML = `<section class="sheet" role="dialog" aria-label="Hints used">
+      <h2>Hints used</h2><p data-text></p>
+      <p>Each step of a hint counts a third: Nudge, Explain, Show me.</p>
+      <p class="soon">Coming later: see each hint again, right where you used it.</p>
+      <button class="dark" data-close>Done</button></section>`;
+    el.onclick = (e) => { if (e.target === el || e.target.closest("[data-close]")) el.hidden = true; };
+    document.querySelector(".phone").appendChild(el);
+  }
+  el.querySelector("[data-text]").textContent = `${text} on this puzzle.`;
+  el.hidden = false;
 }
 
 // The More menu behind the bottom bar's ⋯ (Colin, 10/21): Game settings, and Restart, which asks before clearing.
