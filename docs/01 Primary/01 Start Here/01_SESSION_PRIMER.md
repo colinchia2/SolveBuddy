@@ -3,6 +3,9 @@
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
 ## Right now (save point 2026-10-27: round 10/27 FINISHED)
+- **10/29: OTA waiting on Colin's go.** App `f9bce34` = the "frozen after coming back" fix (build log 10/29). Fingerprint
+  `a84cce9c…` matches the iPad build. He runs: `npx eas-cli update --channel production --environment production
+  --platform ios --message "Pages start over if the iPhone shut them down" --non-interactive`, then reopens twice.
 - **Round 10/27 is done and Colin checked it on the phone ("those are all good").** Every item S1–S18 + F1 built and
   pushed, or on the backlog. His checklist: https://claude.ai/artifact/3VEN9gjNrLCxQdZEwXPKvU (db `checks`); the last
   4 "doesn't" + 2 "maybe" were fixed in the final push (60e85d2). Build log 2026-10-27 has every step.
