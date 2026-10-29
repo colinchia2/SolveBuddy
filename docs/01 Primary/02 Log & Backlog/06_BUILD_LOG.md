@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-10-29 — Frozen after coming back (app shell, OTA waiting)
+- Colin: app frozen after leaving it a while (same in CheckBuddy). iOS can shut a web page down in the background.
+- App `f9bce34` (App.js only): a page starts over when iOS says it was shut down, or when it doesn't answer a ping
+  within 2.5 s after 60 s+ away (a hidden tab is pinged when you next open it). Starting over = a fresh web view,
+  not reload() (reload would fetch from GitHub Pages and fail offline). Bundles; fingerprint `a84cce9c…` = the iPad
+  build on Colin's phone, so OTA. **Waiting on Colin's go for the OTA.**
+
 ## 2026-10-27 — Colin's checklist round (pages only)
 - Checklist https://claude.ai/artifact/3VEN9gjNrLCxQdZEwXPKvU (db `checks`): 4 doesn't (s8, s10, s18, pp), 2 maybe (s12, s13).
   s18 turned out fine (he found Settings › This puzzle); s13's "coming later" = S16 hint review, on the backlog.
