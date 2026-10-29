@@ -9,7 +9,8 @@ coming. Also from 10/27: Water Sort "show me a shorter way" after finishing (par
 **Small leftovers from round 10/27 (not started):** (a) Water Sort hints still use a colour's usual name after Colin
 reshades it in Settings › This puzzle; (b) Library / Import previews of an import use the usual colours, not its own
 shades; (c) own iPad layouts for Water Sort, Shikaku, Nonogram, Block Drop and the tabs (today: the phone layout
-scaled; Sudoku and Star Battle have theirs); (d) a ‹ back step in the Star Battle What if play-through.
+scaled; Sudoku and Star Battle have theirs); (d) a ‹ back step in the Star Battle What if play-through; (e) S3, the stray line through the hint card
+button ("Done" / "Next"): pushed 10/27, Colin to confirm on the phone.
 **iPad: a proper check (Colin, 10/27 end of day):** he only looked quickly. Go through it with him on the iPad, both
 ways up: Sudoku and Star Battle (board left / controls right; upright one column; hint card; zoom off), the tabs and
 the other games (phone layout scaled), the native back button and tab bar lining up. Fix what he finds, one at a time.
