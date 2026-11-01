@@ -1,5 +1,9 @@
 # SolveBuddy — project status
 
+**2026-11-01:** iPad tab pages now start below Apple's top tab bar (pages only, pushed). Build log 11/1.
+
+---
+
 **As of 2026-10-27 (end of day):** round 10/27 finished and checked by Colin. 6 games; slim hint cards and visual
 hints (Sudoku cages, Star Battle What if, Water Sort chains); Water Sort par; iPad layouts for Sudoku + Star Battle;
 pack pictures. Checks: run_all 49 PASS, pages_smoke 147 PASS. Next = backlog.

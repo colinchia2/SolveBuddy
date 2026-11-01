@@ -6,12 +6,26 @@ export const inApp = !!globalThis.SOLVEBUDDY_APP;
 // land/port right as it turns, and the sizes common.css uses: --pz = the phone layout scaled to fit (pages without
 // their own iPad layout), --bz = how much a split page's board grows, --bw = its width. iPhone never gets html.tablet.
 export const isTablet = !!globalThis.document?.documentElement.classList.contains("tablet"); // (the checks load this file outside a browser)
+// 11/1 (Colin's iPad screenshots): on iPad, Apple draws the tab bar at the TOP (under the clock), not the bottom, so on
+// the four tab pages the face and title sat under it. There: the top room = the clock + the bar (TOP_BAR, in iPad
+// points), the bottom keeps only the home-bar room. --safetop is used inside the scaled phone layout, so it's divided
+// by --pz to land at the same spot on screen. Game pages (no tab bar, --tabbar 0) are unchanged.
+const TOP_BAR = 44; // the bar ends 40 below the clock's safe area (Colin's screenshot); the header's own 12 adds air
+let safeTop0 = null, tabbed = false;
 function sizeTablet() {
   const root = document.documentElement, W = innerWidth, H = innerHeight, land = W > H;
   root.classList.toggle("land", land);
   root.classList.toggle("port", !land);
-  const top = parseFloat(getComputedStyle(root).getPropertyValue("--safetop")) || 0;
-  root.style.setProperty("--pz", String(Math.min(W / 390, (H - top) / 844)));
+  if (safeTop0 === null) {
+    const css = getComputedStyle(root);
+    safeTop0 = parseFloat(css.getPropertyValue("--safetop")) || 0;
+    tabbed = inApp && (parseFloat(css.getPropertyValue("--tabbar")) || 0) > 0;
+    if (tabbed) { root.classList.add("topbar"); root.style.setProperty("--tabbar", "24px"); }
+  }
+  const top = safeTop0 + (tabbed ? TOP_BAR : 0);
+  const pz = Math.min(W / 390, (H - top) / 844);
+  root.style.setProperty("--pz", String(pz));
+  if (tabbed) root.style.setProperty("--safetop", `${Math.round(top / pz)}px`);
   const phone = document.querySelector('.phone[data-tablet="split"]');
   if (!phone) return;
   const base = parseFloat(phone.style.getPropertyValue("--base")) || 355;

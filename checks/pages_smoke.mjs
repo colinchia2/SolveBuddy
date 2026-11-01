@@ -1656,6 +1656,30 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await ctx.close();
 }
 
+// iPad tab pages (Colin 11/1 screenshots): Apple's tab bar sits at the TOP on iPad (ends ~64 down), so the face and
+// title on Library, Packs, Stats and Import start below it, both ways up. A game page (no tab bar) keeps its old top.
+{
+  const tops = {};
+  for (const [w, h] of [[1194, 834], [834, 1194]]) {
+    for (const tabbar of ["72px", "0px"]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+      await ctx.addInitScript((tb) => { window.SOLVEBUDDY_APP = { tablet: true, splash: false };
+        const set = () => { const r = document.documentElement; if (!r) return false; r.style.setProperty("--tabbar", tb); r.style.setProperty("--safetop", "24px"); return true; };
+        if (!set()) { const o = new MutationObserver(() => { if (set()) o.disconnect(); }); o.observe(document, { childList: true }); } }, tabbar);
+      const p = await ctx.newPage();
+      p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+      for (const pg of tabbar === "0px" ? ["stats"] : ["home", "packs", "stats", "import"]) {
+        await p.goto(`${BASE}${pg}.html`); await p.waitForTimeout(1200);
+        tops[`${pg}${tabbar === "0px" ? "-notabs" : ""}@${w}`] = await p.evaluate(() => Math.round(document.querySelector(".brandbar").getBoundingClientRect().top));
+      }
+      await ctx.close();
+    }
+  }
+  const tabbed = Object.entries(tops).filter(([k]) => !k.includes("notabs")), plain = Object.entries(tops).filter(([k]) => k.includes("notabs"));
+  check(`iPad tab pages start below the top tab bar: ${Object.entries(tops).map(([k, v]) => `${k} ${v}`).join(", ")}`,
+    tabbed.length === 8 && tabbed.every(([, v]) => v >= 70 && v <= 100) && plain.every(([, v]) => v < 60));
+}
+
 // Star Battle (Colin 10/27 phone test): a hint's ×s are red while its card is up, the usual grey once it's done.
 {
   await page.goto(`${BASE}starbattle.html?pack=easy&p=7`);

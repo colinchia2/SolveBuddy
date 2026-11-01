@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-01 — iPad: tab pages start below Apple's top tab bar (pages only; a contained build)
+- Colin's iPad screenshots: on Library, Packs, Stats and Import the face and title sat under the tab bar. On iPad, Apple draws the bar at the TOP; the pages only made room at the bottom (`--tabbar`).
+- `web/bridge.js`: on iPad tab pages (`--tabbar` > 0), the top room = the clock + `TOP_BAR` 44, divided by `--pz` (the scaled phone layout); the bottom keeps 24 for the home bar; html gets `topbar`. Game pages and iPhone unchanged.
+- Before/after: https://claude.ai/artifact/XwM38c38MFF47HeyRQfgU8. Check: pages_smoke "iPad tab pages start below the top tab bar" (8 tab pages both ways up at 79-84, a no-tab page unchanged). run_all 49 PASS.
+- Colin's other 11/1 asks, one at a time: stats page mockups + a weekly streak (next), syncing phone and iPad (needs accounts + a server: its own chat).
+
 ## 2026-10-29 — Frozen after coming back (app shell, OTA waiting)
 - Colin: app frozen after leaving it a while (same in CheckBuddy). iOS can shut a web page down in the background.
 - App `f9bce34` (App.js only): a page starts over when iOS says it was shut down, or when it doesn't answer a ping
