@@ -9,7 +9,7 @@
 // Haptics (bridge.js levels): L1 for each new square while dragging, L2 when a patch lands, warn on red, L5 solved.
 // The header, info row, bottom bar, hint card, settings, pause and finish are the same as Nonogram's.
 import { hint as findHint, SHAPE_RULE, area, candidates, cluesIn, contains, fits, inside, isSolved, label, overlaps, same, shapeOf, sortPatches } from "../engine/shikaku/shikaku.ts";
-import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { SHK_COLORS, SHK_TILE, shikakuColors, shikakuPicture, shkClueColor } from "./screens.js";
 import { second } from "./zoom.js";
@@ -95,7 +95,8 @@ function load(i, name = packName, first = false) {
   const b = $("board");
   b.classList.remove("won", "wave");
   b.style.setProperty("--n", N);
-  const room = Math.max(280, Math.min(358, $("stage").clientHeight - 60));
+  // iPad (Colin 11/1): the board is drawn at the phone's 356 and grown by --bz to fill its side (the stage is short sideways).
+  const room = isTablet ? 356 : Math.max(280, Math.min(358, $("stage").clientHeight - 60));
   cs = Math.floor(room / N);
   b.style.width = b.style.height = `${cs * N}px`;
   b.style.setProperty("--fs", `${N >= 12 ? 13 : N >= 10 ? 15 : 17}px`);

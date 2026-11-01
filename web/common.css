@@ -214,7 +214,7 @@ html.tablet .phone[data-tablet] .hint #hintNext { min-height: 44px; font-size: 1
 html.tablet .phone[data-tablet] .hint #hintClose { width: 44px; height: 44px; }
 /* Sudoku and Star Battle (the approved pictures): sideways = board on the left under its title; timer, pad, hint and
    the bar on the right. Upright = one column, the board as wide as it fits. */
-html.tablet .phone[data-tablet] .zview { zoom: var(--bz, 1); }
+html.tablet .phone[data-tablet] .zview, html.tablet .phone[data-tablet] .sview { zoom: var(--bz, 1); } /* Shikaku's board is .sview (Colin 11/1) */
 html.tablet .phone[data-tablet] .screen { padding: 24px 32px 32px; }
 html.tablet .phone[data-tablet] .tool { height: 72px; font-size: 14px; gap: 4px; border-radius: 16px; }
 html.tablet .phone[data-tablet] .tool svg { width: 22px; height: 22px; }

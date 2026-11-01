@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-01 — iPad: Shikaku gets the big-board layout (pages only; a contained build)
+- Colin's iPad screenshot: Shikaku was the phone layout, small in the middle. Before/after: https://claude.ai/artifact/ED8gWN5dMh6sToi1z7Fqw5
+- `shikaku.html` `.phone data-tablet="split" --base:356` (Star Battle's layout); `common.css` zooms `.sview` by `--bz` like `.zview`; `shikaku.js` draws the board at 356 on iPad (the stage is short sideways). iPhone unchanged.
+- Check: pages_smoke "F1 iPad" now includes Shikaku (667px sideways, 724px upright). pages_smoke 151 PASS, run_all 52 PASS.
+- Still small on iPad: Nonogram, Water Sort, Block Drop (one at a time, mockup first).
+
 ## 2026-11-01 — New Stats page + weekly streak + hint detail (pages only; a contained build)
 - Colin picked parts of 3 mockups; the mix: https://claude.ai/artifact/JAatyGmA8Z7BigUnQhP4vd. Order: this week, a filter (All or one puzzle) that changes everything below, how much you play (weekly bars by game, days-you-played grid, when-you-play clock, podium of top 3 packs), how fast (bar fastest-to-slowest, star = best, line = average; "Getting faster?" lines), good at (level tiles per game; one puzzle = pack-by-pack table), hints, tips.
 - **Weekly streak:** a week (Mon-Sun) counts at 3 puzzles, any days (`WEEK_GOAL`, `streaks()` in screens.js). Home pill says "N weeks", the Solved card "N-week streak". Each day's ring fills a third per puzzle in the game's colour.
