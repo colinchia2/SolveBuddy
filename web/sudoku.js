@@ -2,7 +2,7 @@
 // Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 import { rulesOf } from "../engine/sudoku/variants.ts";
-import { clearSaved, goHome, isTablet, haptic, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, isTablet, haptic, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -103,7 +103,7 @@ function load(i, name = packName, first = false) {
   if (saved) {
     Object.assign(s, { entries: saved.entries ?? {}, corner: saved.corner ?? {}, center: saved.center ?? {} });
     s.started = Date.now() - (saved.ms ?? 0);
-    s.hints = saved.hints ?? 0;
+    s.hints = saved.hints ?? 0; s.hd = saved.hd;
   } else if (name === "import") s.entries = { ...(p.entries ?? {}) };
   $("sub").textContent = name === "import" ? "Imported · Classic 9×9"
     : p.label ? `Classic 9×9 · ${p.label}` : `${VARIANT_NAMES[p.variant] ?? "Classic 9×9"} · ${pack.difficulty} · #${i + 1}`;
@@ -215,7 +215,7 @@ function checkSolved() {
   haptic("success");
   [250, 500, 750].forEach((ms) => setTimeout(() => haptic("tap"), ms)); // ticks with the blue sweep
   const facts = solveFacts("sudoku", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
-  logSolve({ g: "sudoku", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
+  logSolve({ hd: s.hd, g: "sudoku", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   const p = pack.puzzles[idx];
   celebrate({ title: packName === "import" ? "Imported puzzle" : p.label || `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
     hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
@@ -235,6 +235,7 @@ function openHint() {
   // A cage's chips start on the first wrong way that has something on the board to show (S15).
   const ways = data.ways ?? [];
   const first = ways.findIndex((w) => !w.ok && w.blockers.length);
+  hintStep(s, 1, data.technique);
   s.hint = { data, level: 1, way: first >= 0 ? first : Math.max(0, ways.findIndex((w) => !w.ok)) };
   render();
 }
@@ -248,6 +249,7 @@ function advanceHint() {
   }
   h.level++;
   s.hints = (s.hints ?? 0) + 1 / 3;
+  hintStep(s, h.level);
   if (h.level === 3) {
     saveUndo();
     const d = h.data;
@@ -586,7 +588,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 function persist() {
   if (!s || s.solved || ![s.entries, s.corner, s.center].some((m) => Object.keys(m).length)) return;
   saveGame("sudoku", packName, { p: pid(), entries: s.entries, corner: s.corner, center: s.center,
-    ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+    ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd });
 }
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);

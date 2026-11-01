@@ -92,7 +92,7 @@ const setBoard = (g, set) => {
 function render() {
   const { current } = streaks();
   $("streak").hidden = current < 1;
-  $("streak").innerHTML = `${FLAME}${current} day${current === 1 ? "" : "s"}`;
+  $("streak").innerHTML = `${FLAME}${current} week${current === 1 ? "" : "s"}`;
   $("tiles").innerHTML = TILES.map((t) => t.id === "nonogram"
     ? `<button class="tile" data-game="nonogram" aria-label="Open Nonogram">${gameIcon(LOOK.nonogram, 38, 21)}<span><span class="name">Nonogram</span><span class="count">${total("nonogram")} puzzles</span></span></button>`
     : t.id === "blocks"

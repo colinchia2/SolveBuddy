@@ -4,7 +4,7 @@
 // "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
-import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -100,7 +100,7 @@ function load(i, name = packName, first = false) {
   if (saved) {
     s.marks = saved.marks ?? {};
     s.started = Date.now() - (saved.ms ?? 0);
-    s.hints = saved.hints ?? 0;
+    s.hints = saved.hints ?? 0; s.hd = saved.hd;
   } else if (name === "import") s.marks = { ...(p.marks ?? {}) };
   // Zoom: on for big boards, at fit for a new puzzle, or where you left it on this one.
   const big = N >= ZOOM_FROM;
@@ -199,7 +199,7 @@ function checkSolved() {
   haptic("success");
   for (let r = 1; r < N; r++) setTimeout(() => haptic("tap"), r * 110); // a tick as each row's star pops
   const facts = solveFacts("starbattle", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
-  logSolve({ g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
+  logSolve({ hd: s.hd, g: "starbattle", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   celebrate({ title: packName === "import" ? "Imported puzzle" : `${MORE[K].trim()} ${pack.difficulty} #${idx + 1}`.trim(),
     level: pack.difficulty, facts, hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1100 });
@@ -240,6 +240,7 @@ function openHint() {
   $("hintBtn").classList.add("thinking");
   setTimeout(() => {
     s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
+    hintStep(s, 1, s.hint.data.technique);
     $("hintBtn").classList.remove("thinking");
     render();
   }, 30);
@@ -258,6 +259,7 @@ function advanceHint() {
       h.play = null;
       h.level = 3;
       s.hints = (s.hints ?? 0) + 1 / 3;
+      hintStep(s, 3);
       applyHint(h.data);
     }
     return render();
@@ -269,6 +271,7 @@ function advanceHint() {
   }
   h.level++;
   s.hints = (s.hints ?? 0) + 1 / 3;
+  hintStep(s, h.level);
   if (h.level === 2 && chain) h.play = 0;
   else if (h.level === 3) applyHint(h.data);
   render();
@@ -546,7 +549,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 // Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
 function persist() {
   if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0,
+  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd,
     zoom: zoom.isOn() ? zoom.state() : null });
 }
 setInterval(() => {

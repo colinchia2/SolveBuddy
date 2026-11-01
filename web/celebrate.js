@@ -24,7 +24,7 @@ export function solveFacts(game, pack, ms, hints) {
 // extra = badges a game adds in front (Water Sort's par, Colin 10/27).
 export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, heading = "Solved!", medal = "", extra = "" }) {
   document.getElementById("won")?.remove();
-  const { current } = streaks(); // the solve is already logged, so today counts
+  const { current } = streaks(); // the solve is already logged, so this week counts once it reaches the goal
   const fills = ["#2F6FD6", "#FFC94D", "#C24E2A", "#4D96FF", "#FFC94D"];
   const burst = Array.from({ length: 10 }, (_, i) => {
     const a = (i / 10) * Math.PI * 2, dist = 70 + (i % 3) * 18;
@@ -35,7 +35,7 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, 
     hintThirds(facts.hints) === 0 && `<span class="badge blue" style="--at:.75s"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>No hints</span>`,
     hintThirds(facts.hints) > 0 && `<span class="badge hintb" style="--at:.75s">${HINT_ICON}${hintCount(facts.hints)} used</span>`,
     facts.best && `<span class="badge gold" style="--at:.9s">${star(14, "#C98A00")}Your best ${level} time</span>`,
-    current > 1 && `<span class="badge coral" style="--at:1.05s"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>${current}-day streak</span>`,
+    current > 0 && `<span class="badge coral" style="--at:1.05s"><svg width="14" height="14" viewBox="0 0 24 24" fill="#E8743F" aria-hidden="true"><path d="M12 2c1.2 3.4 5 5.2 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.2 1.6 1 2.6 2 3 0-3.5.3-6 1-8.5z"/></svg>${current}-week streak</span>`,
   ].filter(Boolean).join("");
 
   const el = document.createElement("div");

@@ -1716,6 +1716,47 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     all.length >= 12 && all.every((t) => /^\d+×\d+$/.test(t)));
 }
 
+// Stats (Colin 11/1, the "mix"): this week's rings + weekly streak, a filter that changes everything below, the podium,
+// speed rows with a star for your best, hints card (how far you go, tricks), and tips; an empty phone still lists every game.
+{
+  await page.goto(`${BASE}stats.html`);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.solves"));
+  await page.reload();
+  await page.waitForTimeout(500);
+  const empty = await page.evaluate(() => ({ games: document.getElementById("games").innerText, streak: document.getElementById("streakTxt").innerText, errs: document.querySelectorAll(".st").length }));
+  await page.evaluate(() => {
+    const DAY = 864e5, d = new Date(); d.setHours(12, 0, 0, 0); const mon = d.getTime() - ((d.getDay() + 6) % 7) * DAY;
+    const e = (g, pack, ms, hints, at, hd) => ({ g, pack, p: 1, ms, hints, at, ...(hd ? { hd } : {}) });
+    const log = [];
+    for (let w = 1; w <= 4; w++) for (let i = 0; i < 3; i++) log.push(e("sudoku", "easy", 200000 + i * 30000, 0, mon - w * 7 * DAY + i * DAY));
+    log.push(e("starbattle", "easy", 150000, 1, mon - 9 * DAY, { steps: [3, 1, 0], tricks: { "Star rules out": 2, "Check this": 1 } }));
+    log.push(e("starbattle", "easy", 120000, 0, mon - 16 * DAY));
+    log.push(e("nonogram", "easy", 60000, 0, Math.min(mon + 3600e3, Date.now() - 60e3)));
+    localStorage.setItem("solvebuddy.solves", JSON.stringify(log));
+  });
+  await page.reload();
+  await page.waitForTimeout(500);
+  const all = await page.evaluate(() => ({
+    streak: document.getElementById("streakTxt").innerText.replace(/\s+/g, " "),
+    week: document.querySelectorAll(".hd-day").length,
+    pod: [...document.querySelectorAll(".pod > b")].map((b) => b.textContent),
+    stars: document.querySelectorAll(".speed svg path[stroke='#fff']").length,
+    hints: document.querySelector(".hints").innerText,
+    tips: document.getElementById("tips").innerText,
+  }));
+  await page.click('.st-chip[data-f="sudoku"]');
+  await page.waitForTimeout(200);
+  const one = await page.evaluate(() => ({ on: document.querySelector(".st-chip.on").dataset.f, games: document.getElementById("games").innerText, big: document.querySelector(".play .st-big").textContent }));
+  check(`Stats empty: every game listed (${["Sudoku", "Star Battle", "Water Sort", "Nonogram", "Shikaku"].every((g) => empty.games.includes(g))}), "${empty.streak.split("\n")[0]}"`,
+    ["Sudoku", "Star Battle", "Water Sort", "Nonogram", "Shikaku"].every((g) => empty.games.includes(g)) && /No streak/.test(empty.streak));
+  check(`Stats: "${all.streak}", 7 day rings (${all.week}), podium ${all.pod.join(" / ")}, ${all.stars} best stars; hints card has steps and the trick, not "Check this"; tips: ${all.tips.split("\n")[0]}`,
+    /4-week streak/.test(all.streak) && all.week === 7 && all.pod[1] === "Sudoku" && all.stars >= 2
+    && /Nudge 67%/.test(all.hints) && /Explain 33%/.test(all.hints) && /Star rules out/.test(all.hints) && !/Check this/.test(all.hints) && all.tips.length > 10);
+  check(`Stats filter: Sudoku chip on (${one.on}), ${one.big} solves, pack-by-pack table ("${one.games.split("\n").slice(4, 6).join(" ")}")`,
+    one.on === "sudoku" && one.big === "12" && /Not tried yet/.test(one.games) && !/Star Battle/.test(one.games));
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.solves"));
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

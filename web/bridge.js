@@ -175,6 +175,13 @@ export function saveFinal(game, pack, p, data) {
 export function solves() {
   try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { return []; }
 }
+// Hint detail for Stats (Colin 11/1): s.hd = { steps: [asked, reached Explain, reached Show me], tricks: { name: times } }.
+// It rides along in the saved game and the solve log; s.hints (the thirds count) stays the one the screens show.
+export function hintStep(s, step, trick) {
+  const d = (s.hd ??= { steps: [0, 0, 0], tricks: {} });
+  d.steps[step - 1]++;
+  if (trick) d.tricks[trick] = (d.tricks[trick] ?? 0) + 1;
+}
 export function logSolve(entry) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}
 }

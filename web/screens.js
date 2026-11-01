@@ -146,18 +146,27 @@ export function tabs(current) {
 export const dayKey = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 const addDays = (ts, n) => { const d = new Date(ts); d.setDate(d.getDate() + n); return d.getTime(); };
 
-// Current streak (today, or up to yesterday if nothing yet today) and best streak, in days.
-export function streaks(log = solves()) {
-  const days = new Set(log.map((e) => dayKey(e.at)));
+// Weekly streak (Colin 11/1): a week (Monday to Sunday) counts once you solve WEEK_GOAL puzzles in it, any days.
+// current = weeks in a row, this week included once it's done (until then it runs up to last week); best = longest run.
+export const WEEK_GOAL = 3;
+export const weekStart = (ts) => { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+export const weekKey = (ts) => dayKey(weekStart(ts));
+export function weekCounts(log = solves()) {
+  const n = {};
+  for (const e of log) n[weekKey(e.at)] = (n[weekKey(e.at)] ?? 0) + 1;
+  return n;
+}
+export function streaks(log = solves(), now = Date.now()) {
+  const n = weekCounts(log), done = (t) => (n[weekKey(t)] ?? 0) >= WEEK_GOAL;
   let current = 0;
-  let t = days.has(dayKey(Date.now())) ? Date.now() : addDays(Date.now(), -1);
-  while (days.has(dayKey(t))) { current++; t = addDays(t, -1); }
-  const sorted = [...new Set(log.map((e) => { const d = new Date(e.at); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }))].sort((a, b) => a - b);
+  let t = done(now) ? weekStart(now) : addDays(weekStart(now), -7);
+  while (done(t)) { current++; t = addDays(t, -7); }
   let best = 0, run = 0, prev = null;
-  for (const d of sorted) {
-    run = prev !== null && dayKey(addDays(prev, 1)) === dayKey(d) ? run + 1 : 1;
+  for (const w of [...new Set(log.map((e) => weekStart(e.at)))].sort((a, b) => a - b)) {
+    if (!done(w)) { run = 0; prev = w; continue; }
+    run = prev !== null && dayKey(addDays(prev, 7)) === dayKey(w) && run ? run + 1 : 1;
     best = Math.max(best, run);
-    prev = d;
+    prev = w;
   }
   return { current, best };
 }

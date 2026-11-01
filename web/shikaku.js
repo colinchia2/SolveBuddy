@@ -9,7 +9,7 @@
 // Haptics (bridge.js levels): L1 for each new square while dragging, L2 when a patch lands, warn on red, L5 solved.
 // The header, info row, bottom bar, hint card, settings, pause and finish are the same as Nonogram's.
 import { hint as findHint, SHAPE_RULE, area, candidates, cluesIn, contains, fits, inside, isSolved, label, overlaps, same, shapeOf, sortPatches } from "../engine/shikaku/shikaku.ts";
-import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { SHK_COLORS, SHK_TILE, shikakuColors, shikakuPicture, shkClueColor } from "./screens.js";
 import { second } from "./zoom.js";
@@ -87,7 +87,7 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   s = { patches: [], hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, msg: null, landed: null };
   const saved = savedGame("shikaku", name, pid());
-  if (saved) { s.patches = (saved.patches ?? []).map((Q) => ({ ...Q })); s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
+  if (saved) { s.patches = (saved.patches ?? []).map((Q) => ({ ...Q })); s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; s.hd = saved.hd; }
   $("sub").textContent = name === "import" ? `Imported · ${N}×${N}${P.style ? " · Patches" : ""}` : `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
   $("rulesPatches").hidden = !P.style;
   $("time").textContent = "0:00";
@@ -290,7 +290,7 @@ function checkSolved() {
   setTimeout(() => b.classList.add("won"), 250);
   const hints = Math.round((s.hints ?? 0) * 100) / 100;
   const facts = solveFacts("shikaku", packName, s.elapsed, hints);
-  logSolve({ g: "shikaku", pack: packName, p: pid(), ms: s.elapsed, hints });
+  logSolve({ hd: s.hd, g: "shikaku", pack: packName, p: pid(), ms: s.elapsed, hints });
   celebrate({ title: packName === "import" ? "Imported puzzle" : `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts,
     hasNext: packName !== "import" && idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1600, medal: shikakuPicture(N, s.patches, 86) });
@@ -303,6 +303,7 @@ function openHint() {
   s.hints += 1 / 3;
   s.msg = null;
   s.hint = { data: findHint(P, rects()), level: 1 };
+  hintStep(s, 1, s.hint.data.technique);
   render();
 }
 function advanceHint() {
@@ -311,6 +312,7 @@ function advanceHint() {
   if (h.level === 3) { s.hint = null; checkSolved(); return render(); }
   h.level++;
   s.hints += 1 / 3;
+  hintStep(s, h.level);
   if (h.level === 3) {
     undoStack.push(snap());
     const d = h.data;
@@ -357,7 +359,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 
 function persist() {
   if (!s || s.solved || !s.patches.length) return;
-  saveGame("shikaku", packName, { p: pid(), patches: s.patches, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+  saveGame("shikaku", packName, { p: pid(), patches: s.patches, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd });
 }
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);

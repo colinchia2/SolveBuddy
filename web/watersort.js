@@ -4,7 +4,7 @@ import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
 import { par } from "../engine/watersort/par.ts";
-import { clearSaved, goHome, haptic, hintThirds, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, hintThirds, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -108,7 +108,7 @@ function load(i, name = packName, first = false) {
     s.tubes = saved.tubes ?? s.tubes;
     s.moves = saved.moves ?? 0;
     s.started = Date.now() - (saved.ms ?? 0);
-    s.hints = saved.hints ?? 0;
+    s.hints = saved.hints ?? 0; s.hd = saved.hd;
     undoStack.push(...(saved.undo ?? []));
   }
   $("sub").textContent = name === "import" ? `Imported · ${p.tubes.length} tubes · ${p.colors} colours`
@@ -310,7 +310,7 @@ function checkSolved() {
   const full = s.tubes.filter((t) => t.length).length;
   for (let k = 1; k < full; k++) setTimeout(() => haptic("tap"), k * 110); // a tick as each tube hops
   const facts = solveFacts("watersort", packName, s.elapsed, Math.round((s.hints ?? 0) * 100) / 100);
-  logSolve({ g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
+  logSolve({ hd: s.hd, g: "watersort", pack: packName, p: pid(), ms: s.elapsed, hints: Math.round((s.hints ?? 0) * 100) / 100 });
   render();
   const pb = s.par == null ? "" : hintThirds(s.hints) ? `<span class="badge grey" style="--at:.6s">Par ${s.par} · not counted, hint used</span>`
     : s.moves <= s.par ? `<span class="badge gold" style="--at:.6s">On par · ${s.moves} moves</span>`
@@ -377,6 +377,7 @@ function openHint() {
     const plan = sol.kind === "solved" ? sol.path : [tidiestMove(s.tubes)].filter(Boolean);
     s.hint = plan.length ? { move: plan[0], plan, why: explain(s.tubes, plan, (c) => NAMES[c]), level: 1 } : { stuck: true, level: 1 };
   }
+  hintStep(s, 1);
   render();
 }
 function advanceHint() {
@@ -394,6 +395,7 @@ function advanceHint() {
   }
   if (h.level === 2) { // "Show me": the pour plays, then the card says so (unless that pour finished the level)
     s.hints = (s.hints ?? 0) + 1 / 3;
+    hintStep(s, 3);
     const [a, b] = h.move;
     let key = null; // the board right after this pour (it changes as the pour starts)
     startPour(a, b, () => {
@@ -408,6 +410,7 @@ function advanceHint() {
   }
   h.level++;
   s.hints = (s.hints ?? 0) + 1 / 3;
+  hintStep(s, h.level);
   render();
 }
 function hintText(h) {
@@ -583,7 +586,7 @@ function persist() {
   if (!s || s.solved) return;
   if (!s.moves) return void (savedGame("watersort", packName, pid()) && clearSaved("watersort", packName, pid())); // back at the start
   saveGame("watersort", packName, { p: pid(), tubes: s.tubes, moves: s.moves, undo: undoStack.slice(-100),
-    ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0 });
+    ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd });
 }
 setInterval(() => {
   if (s && !s.solved && !s.pausedAt) $("time").textContent = fmt(Date.now() - s.started);

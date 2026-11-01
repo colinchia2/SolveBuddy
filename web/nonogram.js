@@ -13,7 +13,7 @@
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
 import { runs, sameClue } from "../engine/nonogram/line.ts";
-import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -110,7 +110,7 @@ function load(i, name = packName, first = false) {
   undoStack.length = 0;
   s = { marks: {}, slash: {}, bar: null, hint: null, started: Date.now(), solved: false, rules: false, settingsOpen: false, hints: 0, mode: "x", sweep: null };
   const saved = savedGame("nonogram", name, pid());
-  if (saved) { s.marks = { ...(saved.marks ?? {}) }; s.slash = { ...(saved.slash ?? {}) }; s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; }
+  if (saved) { s.marks = { ...(saved.marks ?? {}) }; s.slash = { ...(saved.slash ?? {}) }; s.started = Date.now() - (saved.ms ?? 0); s.hints = saved.hints ?? 0; s.hd = saved.hd; }
   s.mode = ["fill", "clear"].includes(modes()[modeKey()]) ? modes()[modeKey()] : "x";
   $("sub").textContent = `${pack.difficulty} · ${N}×${N} · #${i + 1}`;
   $("time").textContent = "0:00";
@@ -423,7 +423,7 @@ function checkSolved() {
   setTimeout(() => $("board").classList.add("won"), 120);
   const hints = Math.round((s.hints ?? 0) * 100) / 100;
   const facts = solveFacts("nonogram", packName, s.elapsed, hints);
-  logSolve({ g: "nonogram", pack: packName, p: pid(), ms: s.elapsed, hints });
+  logSolve({ hd: s.hd, g: "nonogram", pack: packName, p: pid(), ms: s.elapsed, hints });
   celebrate({ title: `${pack.difficulty} #${idx + 1}`, level: pack.difficulty, facts, hasNext: idx < pack.puzzles.length - 1,
     onNext: () => load(idx + 1), delay: 1600,
     heading: P.say ?? undefined, medal: P.say ? picture(P.solution, 86, P.color ?? "#2A211B") : undefined });
@@ -442,6 +442,7 @@ function openHint() {
   if (s.hint) { s.hint = null; return render(); }
   s.hints += 1 / 3;
   s.hint = { data: findHint(P, boardArr()), level: 1 };
+  hintStep(s, 1, s.hint.data.technique);
   render();
 }
 function advanceHint() {
@@ -450,6 +451,7 @@ function advanceHint() {
   if (h.level === 3) { s.hint = null; checkSolved(); return render(); }
   h.level++;
   s.hints += 1 / 3;
+  hintStep(s, h.level);
   if (h.level === 3) {
     undoStack.push(snap());
     for (const [r, c] of h.data.clear) delete s.marks[key(r, c)];
@@ -495,7 +497,7 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 
 function persist() {
   if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("nonogram", packName, { p: pid(), marks: s.marks, slash: s.slash, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0,
+  saveGame("nonogram", packName, { p: pid(), marks: s.marks, slash: s.slash, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd,
     zoom: zoom.isOn() ? zoom.state() : null });
 }
 setInterval(() => {

@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-11-01 — New Stats page + weekly streak + hint detail (pages only; a contained build)
+- Colin picked parts of 3 mockups; the mix: https://claude.ai/artifact/JAatyGmA8Z7BigUnQhP4vd. Order: this week, a filter (All or one puzzle) that changes everything below, how much you play (weekly bars by game, days-you-played grid, when-you-play clock, podium of top 3 packs), how fast (bar fastest-to-slowest, star = best, line = average; "Getting faster?" lines), good at (level tiles per game; one puzzle = pack-by-pack table), hints, tips.
+- **Weekly streak:** a week (Mon-Sun) counts at 3 puzzles, any days (`WEEK_GOAL`, `streaks()` in screens.js). Home pill says "N weeks", the Solved card "N-week streak". Each day's ring fills a third per puzzle in the game's colour.
+- **Hint detail:** every game now saves `hd` = { steps: [asked, reached Explain, reached Show me], tricks } (`hintStep` in bridge.js) in the saved game and the solve log. Old solves have none, so "How far you go" and "Tricks" fill from new hints only.
+- **Tips:** plain rules in stats.js `tips()` (next level, most hints, not played lately, not tried yet). No AI.
+- Checks: run_all "weekly streak", "hint detail", "hint detail saved by every game"; pages_smoke 3 Stats checks (empty, full, filter). pages_smoke 151 PASS.
+- Still open from 11/1: syncing phone and iPad (its own chat); some game boards small on iPad (Colin's Shikaku screenshot), next.
+
 ## 2026-11-01 — iPad: tab pages start below Apple's top tab bar (pages only; a contained build)
 - Colin's iPad screenshots: on Library, Packs, Stats and Import the face and title sat under the tab bar. On iPad, Apple draws the bar at the TOP; the pages only made room at the bottom (`--tabbar`).
 - `web/bridge.js`: on iPad tab pages (`--tabbar` > 0), the top room = the clock + `TOP_BAR` 44, divided by `--pz` (the scaled phone layout); the bottom keeps 24 for the home bar; html gets `topbar`. Game pages and iPhone unchanged.

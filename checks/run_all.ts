@@ -405,4 +405,28 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/shikaku.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Weekly streak + hint detail (Colin 11/1): a week counts at 3 puzzles (any days, Mon–Sun); this week joins the streak
+// once it's done; every game saves how far each hint went and its trick, in the saved game and the solve log.
+{
+  const { streaks, weekStart } = await import("../web/screens.js");
+  const { hintStep } = await import("../web/bridge.js");
+  const now = new Date(2026, 10, 1, 20).getTime(); // a Sunday evening
+  const wk = (n: number, d: number) => weekStart(now) - n * 7 * 864e5 + d * 864e5 + 10 * 36e5;
+  const log = (weeks: number[][]) => weeks.flatMap((days, n) => days.map((d) => ({ g: "sudoku", pack: "easy", p: 1, ms: 1, hints: 0, at: wk(n, d) })));
+  const a = streaks(log([[0, 3], [0, 1, 1], [2, 4, 6], [1], [0, 0, 0], [5, 5, 5], [6, 6, 6]]), now); // this week 2: not yet
+  const b = streaks(log([[0, 3, 6], [0, 1, 1], [2, 4, 6]]), now);
+  const c = streaks(log([[0], [1, 2]]), now);
+  check(`weekly streak: 2 last weeks done + this week at 2 = ${a.current} (best ${a.best}); this week done too = ${b.current}; never 3 in a week = ${c.current}`,
+    a.current === 2 && a.best === 3 && b.current === 3 && b.best === 3 && c.current === 0 && c.best === 0);
+  const s: any = {};
+  hintStep(s, 1, "Pointing"); hintStep(s, 2); hintStep(s, 3); hintStep(s, 1, "Pointing"); hintStep(s, 1, "X-wing");
+  check(`hint detail: steps ${s.hd.steps.join("/")}, tricks ${JSON.stringify(s.hd.tricks)}`,
+    s.hd.steps.join() === "3,1,1" && s.hd.tricks.Pointing === 2 && s.hd.tricks["X-wing"] === 1);
+  const wired = ["sudoku", "starbattle", "watersort", "nonogram", "shikaku"].filter((g) => {
+    const t = readFileSync(`web/${g}.js`, "utf8");
+    return (t.match(/hintStep\(s, /g) ?? []).length >= 2 && t.includes(`logSolve({ hd: s.hd, g: "${g}"`) && t.includes("hd: s.hd") && t.includes("s.hd = saved.hd");
+  });
+  check(`hint detail saved by every game (${wired.join(", ")})`, wired.length === 5);
+}
+
 if (failed) process.exit(1);
