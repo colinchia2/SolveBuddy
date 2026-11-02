@@ -4,7 +4,7 @@ import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
 import { par } from "../engine/watersort/par.ts";
-import { clearSaved, goHome, haptic, hintThirds, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, isTablet, haptic, hintThirds, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -167,7 +167,8 @@ function startPour(from, to, done) {
   const c = s.tubes[from][s.tubes[from].length - 1];
   const lift = s.picked === from ? -16 : 0;
   const br = board.getBoundingClientRect(), sr = src.getBoundingClientRect(), tr = dst.getBoundingClientRect();
-  const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift;
+  const z = tubeZoom(); // screen px per board px (iPad)
+  const cx = sr.left + sr.width / 2, cy = sr.top + sr.height / 2 - lift * z;
   // Tilted, the LOWEST corner of the tube's mouth (its lip) sits just above the middle of the other tube's opening, and
   // the stream leaves from that lip (Colin 10/23: it used to drop from the underside, partway along the tube). It tilts
   // so its body lies toward the middle of the screen, never off the edge (a tube at the side used to swing out of view).
@@ -183,14 +184,14 @@ function startPour(from, to, done) {
   if (!quiet) {
     stream = document.createElement("span");
     stream.className = "stream";
-    stream.style.cssText = `left:${mx - br.left - 3}px;height:0px;background:${shade(c)}`;
+    stream.style.cssText = `left:${(mx - br.left) / z - 3}px;height:0px;background:${shade(c)}`;
   }
   // Inside the pouring tube the liquid stays against its closed bottom (tube space, as it sits upright): the colour being
   // poured shrinks from its top, so empty space only ever shows at the open end (Colin 10/23).
   // fills = this pour makes the other tube one colour, full: a firmer buzz when it lands (Colin 10/24).
   const A = { from, to, c, done, stream, k, had, lift, quiet, t: 0, speed: 1, last: null, fills: after[to].length > 0 && isDone(after[to]),
-    D: quiet ? 260 : POUR_MS, tx: mx - lip.x - cx, ty: my - lip.y - cy,
-    deg: dir * TILT, base: dst.querySelector(".liquid").getBoundingClientRect().bottom - br.top, my: my - br.top };
+    D: quiet ? 260 : POUR_MS, tx: (mx - lip.x - cx) / z, ty: (my - lip.y - cy) / z,
+    deg: dir * TILT, base: (dst.querySelector(".liquid").getBoundingClientRect().bottom - br.top) / z, my: (my - br.top) / z };
   undoStack.push(s.tubes.map((t) => [...t]));
   s.tubes = after;
   s.moves++;
@@ -422,6 +423,24 @@ function hintText(h) {
 }
 
 // Tubes in one row, two rows when there are more than 6, three rows of 6 past 12 (imports go up to 18).
+// iPad: the tubes grow to fill the board area (sideways the left side, upright the width), as big as fits both ways.
+// CSS zoom on the board, so the pour's screen measurements are divided by it (startPour).
+const tubeZoom = () => (isTablet ? Number($("board").style.zoom) || 1 : 1);
+function fitTablet() {
+  if (!isTablet) return;
+  const b = $("board"), st = $("stage");
+  b.style.zoom = 1;
+  // Sideways the stage is a grid cell as tall as its content, so the room is down to the bottom of the screen.
+  const land = document.documentElement.classList.contains("land");
+  // It keeps HEAD px clear above the tubes for the tilted pour, and sits in the middle of what's left.
+  const HEAD = 120;
+  st.style.paddingTop = "";
+  const full = land ? innerHeight - st.getBoundingClientRect().top - 48 : st.clientHeight - 60;
+  const z = Math.max(1, Math.min(st.clientWidth / b.offsetWidth, (full - (land ? HEAD : 0)) / b.offsetHeight, 2.4));
+  b.style.zoom = String(z);
+  if (land) st.style.paddingTop = `${Math.max(HEAD, (full - b.offsetHeight * z) / 2)}px`;
+}
+if (isTablet) addEventListener("resize", () => fitTablet());
 function render() {
   showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint;
@@ -454,6 +473,7 @@ function render() {
     rows.push(`<div class="tube-row">${cells.join("")}</div>`);
   }
   $("board").innerHTML = rows.join("");
+  fitTablet();
   anims.forEach(bindPour);
   $("count").textContent = `${s.moves} move${s.moves === 1 ? "" : "s"}`;
   const pt = parTag();

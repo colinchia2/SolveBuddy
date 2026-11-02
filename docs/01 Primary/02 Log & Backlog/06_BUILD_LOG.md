@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-11-01 — iPad: Water Sort gets the big layout (pages only; a contained build)
+- Before/after: https://claude.ai/artifact/SNCdVxb1uVkxeTvCGmZh5H. Colin: "go".
+- The tubes are CSS-zoomed to fit the board area (about 2x); the pour divides its screen measurements by that zoom. Sideways it keeps 120px clear above the tubes so the tilted tube stays on screen.
+- Check: pages_smoke "F1 iPad Water Sort sideways" (tube size, stream lands in its tube, tube on screen) + upright tube size; the "phone layout scaled up" check now uses Import. Still to do: Block Drop.
+
 ## 2026-11-01 — iPad: Nonogram gets the big-board layout (pages only; a contained build)
 - Before/after: https://claude.ai/artifact/3swUYrhS4QkdVy7uzsuhow. Colin: "go".
 - Nonogram's board is drawn bigger on iPad (clue text and squares scaled by the tablet board size), not CSS-zoomed, so its own pinch-zoom and taps keep working.
