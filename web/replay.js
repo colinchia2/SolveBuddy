@@ -16,15 +16,17 @@ export function startReplay(apply) {
   const bar = document.createElement("div");
   bar.className = "rp-bar";
   bar.setAttribute("role", "toolbar");
-  document.querySelector(".phone").appendChild(bar);
+  // In the page's own flow, in place of the game's header and timer row, so it pushes the board down instead of
+  // covering its top rows (Colin 11/2).
+  const screen = document.querySelector(".screen");
+  screen.insertBefore(bar, screen.firstChild);
   const back = () => (inApp ? goHome() : history.length > 1 ? history.back() : (location.href = "stats.html"));
   function show() {
     const h = L[i], f = h && all[h.r];
     const trick = h?.k && !["Check this", "Wrong patch"].includes(h.k) ? h.k : "Hint";
-    bar.innerHTML = `<div class="rp-r1"><button class="rp-back" data-rp="back" aria-label="Back to the hints"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Hints</button>
-        <b>Hint ${i + 1} of ${L.length}</b><span class="rp-when">${h ? `at ${fmt(h.t)}` : ""}</span></div>
+    bar.innerHTML = `<div class="rp-r1"><button class="rp-back sq glass" data-rp="back" aria-label="Back to the hints"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg></button>
+        <span class="rp-title"><b>Hint ${i + 1} of ${L.length}</b><span class="rp-trick">${esc(trick)}${h ? ` · at ${fmt(h.t)}` : ""}</span></span><span class="rp-pad"></span></div>
       <div class="rp-r2"><button class="rp-nav" data-rp="prev" ${i ? "" : "disabled"} aria-label="Previous hint">‹</button>
-        <span class="rp-trick">${esc(trick)}</span>
         <span class="rp-steps">${STEPS.map((s, j) => `<button data-rp="step" data-l="${j + 1}" class="${j + 1 === level ? "on" : ""}" ${h && j < h.n ? "" : "disabled"}>${s}</button>`).join("")}</span>
         <button class="rp-nav" data-rp="next" ${i < L.length - 1 ? "" : "disabled"} aria-label="Next hint">›</button></div>
       ${f ? "" : `<p class="rp-none">This hint wasn't saved on this device, so it can't be replayed.</p>`}`;

@@ -44,6 +44,6 @@ $("games").onclick = (e) => {
 // The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("packs"));
-globalThis.sbRefresh = () => { hopToStats(); render(); }; // hopToStats: "See your hints" on a Solved card
+globalThis.sbRefresh = (left) => { hopToStats(left); render(); }; // hopToStats: "See your hints" on a Solved card
 globalThis.sbHome = () => scrollTo({ top: 0, behavior: "smooth" }); // tapping this tab again (Colin 10/24)
 render();

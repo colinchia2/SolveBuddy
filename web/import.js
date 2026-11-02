@@ -565,7 +565,7 @@ headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) :
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("import"));
 smoothClose();
 // Coming back from a game refreshes the list (In progress / Solved). A half-made import stays where you left it.
-globalThis.sbRefresh = () => { hopToStats(); if (at === "list") render(); }; // hopToStats: "See your hints" on a Solved card
+globalThis.sbRefresh = (left) => { hopToStats(left); if (at === "list") render(); }; // hopToStats: "See your hints" on a Solved card
 addEventListener("storage", () => { if (at === "list") render(); });
 addEventListener("pageshow", () => { if (at === "list") render(); });
 render();

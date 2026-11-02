@@ -304,8 +304,12 @@ let hintsY = 0;
 // "See your hints" on a Solved card left a note: open that puzzle's hints (once, and only if it's fresh).
 function openFromNote() {
   let n = null;
-  try { n = JSON.parse(localStorage.getItem(OPEN_SOLVE_KEY) || "null"); localStorage.removeItem(OPEN_SOLVE_KEY); } catch {}
-  if (!n?.at || Date.now() - n.when > 60000) return false;
+  try { n = JSON.parse(localStorage.getItem(OPEN_SOLVE_KEY) || "null"); } catch {}
+  if (!n?.at) return false;
+  const fresh = Date.now() - n.when <= 60000;
+  if (fresh && !solves().some((e) => e.at === n.at)) return false; // the solve itself hasn't reached this page yet
+  try { localStorage.removeItem(OPEN_SOLVE_KEY); } catch {}
+  if (!fresh) return false;
   backY = 0; view = "solve"; solveAt = n.at; solveFrom = null; render(); scrollTo(0, 0);
   return true;
 }
@@ -331,6 +335,14 @@ $("stats").addEventListener("click", (ev) => {
 // The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("stats"));
-globalThis.sbRefresh = () => { if (!openFromNote()) render(); };
+// The note can reach this page's storage a moment after the tab switch, so keep looking for 3 seconds.
+let noteWatch = 0;
+globalThis.sbRefresh = () => {
+  clearInterval(noteWatch);
+  if (openFromNote()) return;
+  render();
+  const until = Date.now() + 3000;
+  noteWatch = setInterval(() => { if (Date.now() > until || openFromNote()) clearInterval(noteWatch); }, 150);
+};
 globalThis.sbHome = () => (view ? back() : scrollTo({ top: 0, behavior: "smooth" })); // tapping this tab again (Colin 10/24); on a detail screen = back to Stats
 if (!openFromNote()) render();

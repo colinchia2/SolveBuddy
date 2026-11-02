@@ -282,7 +282,7 @@ function openAsked() {
 }
 let watching = 0;
 globalThis.sbRefresh = (left) => {
-  hopToStats(); // "See your hints" on a Solved card
+  hopToStats(left); // "See your hints" on a Solved card
   if (left) justLeft = { ...left, until: Date.now() + 4000 };
   drawn = "";
   fresh();

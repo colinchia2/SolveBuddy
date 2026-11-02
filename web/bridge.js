@@ -69,8 +69,9 @@ function whereLeft() {
   if (!g || !pack || !p) return null;
   const saved = savedGame(g, pack, p);
   const times = solves().filter((e) => e.g === g && e.pack === pack && e.p === p).map((e) => e.ms);
-  return { g, pack, p, saved, state: saved ? "progress" : times.length ? "solved" : "new", ms: times.length ? Math.min(...times) : 0 };
+  return { g, pack, p, saved, state: saved ? "progress" : times.length ? "solved" : "new", ms: times.length ? Math.min(...times) : 0, openSolve: askedSolve };
 }
+let askedSolve = 0; // "See your hints": the solve to open, handed over with the close (see openSolve)
 // The Packs tab opens a pack on Library's pack page (calmer screens, Colin 10/23). In the app the tabs are separate
 // pages sharing storage: leave a note for Library (read when it comes on screen), then switch tabs. No app change.
 export const OPEN_PACK_KEY = "solvebuddy.openPack";
@@ -215,18 +216,27 @@ const RQ = new URLSearchParams(globalThis.location?.search ?? "");
 export const REPLAY = RQ.has("replay") ? { at: Number(RQ.get("replay")), i: Number(RQ.get("i") || 0) } : null;
 if (REPLAY) globalThis.document?.documentElement.classList.add("replaying");
 // "See your hints" on the Solved card: Stats opens that puzzle's hints. A game page can't switch tabs in the app
-// (Colin 11/1: the button did nothing), so it leaves a note and closes; the tab page it lands on sees the note on
-// sbRefresh and switches to Stats (hopToStats), and Stats opens the puzzle.
+// (Colin 11/1: the button did nothing), so it closes and hands the solve over with the close ("left"); the tab page it
+// lands on passes it on as a note and switches to Stats (hopToStats), and Stats opens the puzzle. Not through storage
+// alone: each page's copy of storage catches up a moment late (Colin 11/2: it landed on Library and stayed there), so
+// each step also keeps looking for a couple of seconds.
 export const OPEN_SOLVE_KEY = "solvebuddy.openSolve";
 export function openSolve(at) {
   try { localStorage.setItem(OPEN_SOLVE_KEY, JSON.stringify({ at, when: Date.now() })); } catch {}
+  askedSolve = at;
   if (inApp) goHome();
   else location.href = "stats.html";
 }
-export function hopToStats() {
+export function hopToStats(left) {
+  if (!inApp) return false;
+  if (left?.openSolve) {
+    try { localStorage.setItem(OPEN_SOLVE_KEY, JSON.stringify({ at: left.openSolve, when: Date.now() })); } catch {}
+    post({ type: "tab", name: "Stats" });
+    return true;
+  }
   let n = null;
   try { n = JSON.parse(localStorage.getItem(OPEN_SOLVE_KEY) || "null"); } catch {}
-  if (!inApp || !n?.at || Date.now() - n.when > 60000) return false;
+  if (!n?.at || Date.now() - n.when > 60000) return false;
   post({ type: "tab", name: "Stats" });
   return true;
 }

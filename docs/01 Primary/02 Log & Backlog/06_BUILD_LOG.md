@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-02 — Fixes: "See your hints" landed on Library; replay bar covered the board (pages only)
+- Colin tested on the phone: the Solved card's "See your hints" went to Library and stayed; the replay bar sat on top of the board's first rows and cut the trick name ("Only sp…").
+- Cause 1: each web view's copy of storage catches up late, so Library never saw the note. Now the solve rides along with the close (`left.openSolve`, bridge.js whereLeft); home/packs/import pass `left` to `hopToStats`; Stats keeps looking for 3 s and only opens once the solve itself has arrived.
+- Fix 2: the bar now sits in the page flow in place of the game's header + timer row (both hidden while replaying). Title "Hint i of N", under it "trick · at m:ss"; second row ‹ Nudge Explain Show me ›.
+- Checks: run_all "See your hints hands the solve over" (55 PASS); pages_smoke "Hint replay … board clear of the bar" (163 PASS).
+- Colin's next asks (not built yet): "View hints" on a finished puzzle (Library → solved puzzle), and a Sudoku setting to grey out a number once all 9 are placed. Mockup first.
+
 ## 2026-11-01 — Hint replay: tap a hint, see the board and the card as they were (pages only)
 - Mockup: https://claude.ai/artifact/XLb4R3AJPcqALtAwC2obDP. Colin: "mockup looks good!" (sync confirmed working the same evening).
 - bridge.js: each new hint-log entry gets an id `r`; a frame { board, hint } is kept in `solvebuddy.replays` (this device only, not iCloud; newest 400). Taken a microtask later (Sudoku sets s.hint just after hintStep). `REPLAY` (?replay=<solve at>&i=) makes saveGame/logSolve/clearSaved/saveFinal no-ops and adds html.replaying.

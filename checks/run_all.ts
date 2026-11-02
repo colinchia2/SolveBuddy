@@ -435,6 +435,13 @@ if (existsSync(sbExpertFile)) {
     // (never between an if and its else: that once sent every normal puzzle down the "import" path)
     return /replaySource\(\(\) => \(\{ board: /.test(t) && /load\(idx, packName, true\);[\s\S]{0,400}?if \(REPLAY\) startReplay\(/.test(t) && !/startReplay\([^\n]*\n\s*else\b/.test(t); });
   check(`hint replay wired in every game (${replay.join(", ")})`, replay.length === 5);
+  // "See your hints" (11/2: it landed on Library and stayed): the solve rides along with the close, every tab page
+  // passes it on, and Stats keeps looking until the solve itself has arrived.
+  const br = readFileSync("web/bridge.js", "utf8"), st = readFileSync("web/stats.js", "utf8");
+  const tabs = ["home", "packs", "import"].filter((f) => /sbRefresh = \(left\) => \{\s*hopToStats\(left\)/.test(readFileSync(`web/${f}.js`, "utf8")));
+  check(`"See your hints" hands the solve over with the close (tabs: ${tabs.join(", ")})`,
+    /openSolve: askedSolve/.test(br) && /askedSolve = at;/.test(br) && /left\?\.openSolve/.test(br) && tabs.length === 3
+    && /noteWatch = setInterval/.test(st) && /!solves\(\)\.some\(\(e\) => e\.at === n\.at\)\) return false/.test(st));
 }
 
 if (failed) process.exit(1);

@@ -931,15 +931,16 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const before = await p.evaluate(() => ({ solves: localStorage.getItem("solvebuddy.solves"), saved: localStorage.getItem("solvebuddy.saved"), at: JSON.parse(localStorage.getItem("solvebuddy.solves")).filter((e) => e.g === "shikaku").at(-1).at }));
   await p.goto(`${BASE}shikaku.html?pack=easy&p=1&replay=${before.at}&i=1`); await p.waitForTimeout(1500);
   const rp1 = await p.evaluate(() => ({ title: document.querySelector(".rp-r1 b")?.textContent, card: !document.getElementById("hint").hidden, step: document.getElementById("hintStep")?.textContent,
-    blocked: getComputedStyle(document.querySelector(".screen")).pointerEvents === "none" }));
+    blocked: getComputedStyle(document.querySelector(".screen")).pointerEvents === "none",
+    clear: document.querySelector(".rp-bar").getBoundingClientRect().bottom <= document.getElementById("board").getBoundingClientRect().top + 1 })); // 11/2: the bar covered the top rows
   await p.evaluate(() => document.querySelector('.rp-steps button[data-l="2"]').click()); await p.waitForTimeout(200);
   const rp2 = await p.evaluate(() => document.getElementById("hintStep")?.textContent);
   await p.evaluate(() => document.querySelector('[data-rp="next"]').click()); await p.waitForTimeout(200);
   const rp3 = await p.evaluate(() => document.querySelector(".rp-r1 b")?.textContent);
   await p.waitForTimeout(1200);
   const rpSame = await p.evaluate((b) => localStorage.getItem("solvebuddy.solves") === b.solves && localStorage.getItem("solvebuddy.saved") === b.saved, before);
-  check(`Hint replay: ${rows} hints tappable on Stats; "${rp1.title}" shows the card (${rp1.card}, ${rp1.step}) read-only (${rp1.blocked}); Explain → "${rp2}"; next → "${rp3}"; nothing saved (${rpSame})`,
-    rows === hl.n && /^Hint 2 of /.test(rp1.title ?? "") && rp1.card && rp1.step === "Nudge" && rp1.blocked && rp2 === "Explain" && /^Hint 3 of /.test(rp3 ?? "") && rpSame);
+  check(`Hint replay: ${rows} hints tappable on Stats; "${rp1.title}" shows the card (${rp1.card}, ${rp1.step}) read-only (${rp1.blocked}), board clear of the bar (${rp1.clear}); Explain → "${rp2}"; next → "${rp3}"; nothing saved (${rpSame})`,
+    rows === hl.n && /^Hint 2 of /.test(rp1.title ?? "") && rp1.card && rp1.step === "Nudge" && rp1.blocked && rp1.clear && rp2 === "Explain" && /^Hint 3 of /.test(rp3 ?? "") && rpSame);
   // A puzzle whose first blank-board hints include a partial patch (checks/shikaku.ts counts them in every pack).
   await p.goto(`${BASE}shikaku.html?pack=hard&p=1`);
   await p.waitForTimeout(1200);
