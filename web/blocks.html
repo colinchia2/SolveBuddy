@@ -72,12 +72,26 @@
   .start-facts span { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.7); border: 1px solid rgba(42,33,27,0.08);
     font-size: 13px; font-weight: 600; color: var(--body); font-variant-numeric: tabular-nums; }
   .won-card .disc svg { display: block; }
+  /* iPad (Colin 11/1): the well as tall as the screen allows (--wz from blocks.js), the panels bigger beside it.
+     Sideways: the well on the left, the title, timer and panels on the right. Upright: one column, as before. */
+  html.tablet .phone[data-tablet="blocks"] .screen { height: 100%; }
+  html.tablet .phone[data-tablet="blocks"] .well { zoom: var(--wz, 1); }
+  html.tablet .phone[data-tablet="blocks"] .side { zoom: 1.6; }
+  html.tablet .phone[data-tablet="blocks"] .stage { gap: 24px; }
+  html.tablet.land .phone[data-tablet="blocks"] .screen { display: grid; justify-content: center; column-gap: 56px; row-gap: 20px;
+    grid-template-columns: auto minmax(0, 300px); grid-template-rows: 56px auto minmax(0, 1fr); grid-template-areas: "well head" "well info" "well side"; }
+  html.tablet.land .phone[data-tablet="blocks"] .stage { display: contents; }
+  html.tablet.land .phone[data-tablet="blocks"] .well { grid-area: well; align-self: start; }
+  html.tablet.land .phone[data-tablet="blocks"] header { grid-area: head; }
+  html.tablet.land .phone[data-tablet="blocks"] .info { grid-area: info; }
+  html.tablet.land .phone[data-tablet="blocks"] .side { grid-area: side; width: auto; display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
+  html.tablet.land .phone[data-tablet="blocks"] .side .panel.save { grid-column: 1 / -1; margin-top: 0; }
 </style>
 </head>
 <body>
 <div class="picker" id="picker"><a href="home.html">Home</a><a href="sudoku.html">Sudoku</a><a href="starbattle.html">Star Battle</a><a href="blocks.html" class="on">Block Drop</a><span class="sep"></span></div>
 
-<div class="phone">
+<div class="phone" data-tablet="blocks">
   <div class="glow" style="top:-90px; left:-80px; background:#F8EBC9; opacity:.7"></div>
   <div class="glow" style="top:560px; right:-110px; background:#DCE9F2; opacity:.6"></div>
 

@@ -1,7 +1,7 @@
 // Block Drop play page (Colin, 10/22): the falling-blocks game, endless, in the puzzles' look.
 // The rules live in engine/blocks/game.ts; this page owns time (gravity, lock delay), touch and drawing.
 import { W, H, cellsOf, ghost, gravityMs, grounded, hardDrop, holdPiece, lock, move, newGame, rotate, softDrop } from "../engine/blocks/game.ts";
-import { BLOCKS_KEY, blockScores, goHome, haptic, smoothClose } from "./bridge.js";
+import { BLOCKS_KEY, blockScores, goHome, isTablet, haptic, smoothClose } from "./bridge.js";
 import { openWipe } from "./celebrate.js";
 
 const $ = (id) => document.getElementById(id);
@@ -355,6 +355,19 @@ addEventListener("pagehide", persist);
 const STEP = 24, TAP_PX = 14, HOLD_MS = 300, AXIS_PX = 10, SOFT_EVERY = 55;
 const FLICK = 0.55; // px per ms over the last ~120ms
 const pad = document.querySelector(".screen");
+
+// iPad (Colin 11/1): the well zooms to fill the height (and fit beside the panels). Its sparks and flashes live inside
+// it in its own px, so they zoom with it; swipes are measured in screen px, so they feel the same.
+function fitTablet() {
+  if (!isTablet) return;
+  const well = $("well"), root = document.documentElement, land = root.classList.contains("land");
+  root.style.setProperty("--wz", "1");
+  const top = land ? document.querySelector("header").getBoundingClientRect().top : document.querySelector(".info").getBoundingClientRect().bottom + 24, ww = well.offsetWidth, wh = well.offsetHeight;
+  const side = land ? 0 : document.querySelector(".side").getBoundingClientRect().width + 24;
+  const z = Math.min((innerHeight - top - 36) / wh, (innerWidth - 64 - side) / ww);
+  root.style.setProperty("--wz", String(Math.max(1, z)));
+}
+if (isTablet) { fitTablet(); addEventListener("resize", fitTablet); }
 let drag = null, holdWait = 0, holdRep = 0;
 function endDrag() {
   clearTimeout(holdWait);

@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-11-01 — iPad: Block Drop gets a tall-well layout (pages only; a contained build) — every game now has an iPad layout
+- Before/after: https://claude.ai/artifact/5y153h8NjCpHgtfSMda6s3. Colin: "Go".
+- `data-tablet="blocks"` (its own layout, not the split one): the well is CSS-zoomed to fill the height (--wz from blocks.js fitTablet); panels zoom 1.6. Sideways the title, timer and panels sit right of the well in two columns. Swipes are in screen px, so they feel the same.
+- Check: pages_smoke "F1 iPad Block Drop sideways" + upright well size, all on screen.
+
 ## 2026-11-01 — iPad: Water Sort gets the big layout (pages only; a contained build)
 - Before/after: https://claude.ai/artifact/SNCdVxb1uVkxeTvCGmZh5H. Colin: "go".
 - The tubes are CSS-zoomed to fit the board area (about 2x); the pour divides its screen measurements by that zoom. Sideways it keeps 120px clear above the tubes so the tilted tube stays on screen.
