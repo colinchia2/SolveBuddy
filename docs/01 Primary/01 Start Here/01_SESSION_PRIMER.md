@@ -2,15 +2,24 @@
 
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
-## Right now (save point 2026-10-27: round 10/27 FINISHED)
+## Right now (11/1: backlog triaged by Colin)
+- **Next up = `../02 Log & Backlog/08_BACKLOG.md` "Next up"** (Colin's 11/1 triage). First: **talk through the app's
+  structure (Packs vs Library vs Get more)**, before more building. Then: clean up old hosting code, a daily puzzle for
+  streaks, the Stats tab's older glass cards, making Shikaku puzzles by hand in Import. Everything else is under
+  "Backlog" (FactPack items live there too).
+- **Done:** the freeze fix (10/29 OTA, app `f9bce34`), all hint items, the Water Sort items, round 10/27.
+- **Rules:** run `node checks/run_all.ts` before every push (GitHub won't publish on a FAIL); never `eas build`/
+  `eas update` without Colin's go; one app folder (`C:\dev\SolveBuddyApp`).
+- **To pick up, read:** this section + Key rules; `../02 Log & Backlog/08_BACKLOG.md` "Next up"; the build log's newest
+  entries; `Buddies\00 Family\00_PRIMER.md` "How Colin works".
+
+### Earlier: save point 2026-10-27 (round 10/27 FINISHED)
 - **10/29: freeze fix LIVE on Colin's phone (OTA from app `f9bce34`).** Pages start over if the iPhone shut them down
   (build log 10/29). Colin will say if it still freezes after hours away; nothing else waiting.
 - **Round 10/27 is done and Colin checked it on the phone ("those are all good").** Every item S1–S18 + F1 built and
   pushed, or on the backlog. His checklist: https://claude.ai/artifact/3VEN9gjNrLCxQdZEwXPKvU (db `checks`); the last
   4 "doesn't" + 2 "maybe" were fixed in the final push (60e85d2). Build log 2026-10-27 has every step.
 - **Nothing in progress. No OTA waiting.** App build 545730d (iPad) is on Colin's phone; pages ship by git push.
-- **Next (Colin picks):** a proper iPad check with Colin (backlog, he only looked quickly); S16 hint review (fits the Stats tab, D), Water Sort "shorter way", the 10/27
-  small leftovers, then the older list (A: Packs vs Library talk, D: Stats tab, new games).
 - **Rules:** run `node checks/run_all.ts` before every push (GitHub won't publish on a FAIL); never `eas build`/
   `eas update` without Colin's go; one app folder (`C:\dev\SolveBuddyApp`).
 - **To pick up, read:** this section + Key rules; `../02 Log & Backlog/08_BACKLOG.md` "Next"; the build log's 10/27
