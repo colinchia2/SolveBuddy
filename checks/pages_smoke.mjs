@@ -1892,6 +1892,27 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await Promise.all([phone.close(), ipad.close(), plain.context().close()]);
 }
 
+// "See your hints" in the app (Colin 11/1: tapping it did nothing; a game page can't switch tabs): the game closes, and
+// the tab page it lands on sees the note and switches to Stats. Only a fresh note, and never in a plain browser.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.SOLVEBUDDY_APP = { haptics: true }; window.__out = []; window.ReactNativeWebView = { postMessage: (m) => window.__out.push(JSON.parse(m)) }; });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(800);
+  const game = await p.evaluate(async () => { const { openSolve } = await import("./bridge.js"); window.__out = []; openSolve(123); return window.__out.map((m) => m.type); });
+  const res = {};
+  for (const pg of ["home", "packs", "import"]) {
+    await p.goto(`${BASE}${pg}.html`); await p.waitForTimeout(700);
+    res[pg] = await p.evaluate(() => { window.__out = []; window.sbRefresh(); return window.__out.some((m) => m.type === "tab" && m.name === "Stats"); });
+  }
+  await p.evaluate(() => localStorage.setItem("solvebuddy.openSolve", JSON.stringify({ at: 1, when: Date.now() - 120000 })));
+  const stale = await p.evaluate(() => { window.__out = []; window.sbRefresh(); return window.__out.some((m) => m.type === "tab"); });
+  check(`"See your hints" in the app: the game closes (${game.join(",")}); Library/Packs/Import then switch to Stats (${Object.values(res).join(",")}); an old note doesn't (${!stale})`,
+    game.includes("close") && !game.includes("tab") && Object.values(res).every(Boolean) && !stale);
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

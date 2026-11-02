@@ -1,7 +1,7 @@
 // Home (Library tab): the face top left, the streak, and the games. Tap a game → pick a pack (skipped when the game
 // has one) → the pack's levels with numbered puzzles → tap one: new ones start, solved ones offer View or Restart,
 // half-done ones offer Resume or Restart (approved mockup, canvas row "Game page", Colin 10/21).
-import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
+import { GAMES, OPEN_PACK_KEY, blockScores, clearSaved, finalBoard, haptic, hopToStats, inApp, loadPack, openGame, post, savedGame, smoothClose, solves, solvedIn } from "./bridge.js";
 import { boardPreview } from "./preview.js";
 import { $, CHEVRON, DOWNLOAD, FLAME, LOOK, esc, fmt, gameIcon, headerLogo, ring, setParts, streaks, tabs } from "./screens.js";
 
@@ -282,6 +282,7 @@ function openAsked() {
 }
 let watching = 0;
 globalThis.sbRefresh = (left) => {
+  hopToStats(); // "See your hints" on a Solved card
   if (left) justLeft = { ...left, until: Date.now() + 4000 };
   drawn = "";
   fresh();

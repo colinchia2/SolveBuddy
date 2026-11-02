@@ -188,12 +188,21 @@ export function hintStep(s, step, trick) {
   if (step === 1 || !log.length) log.push({ t, k: trick || "", n: step });
   else log.at(-1).n = Math.max(log.at(-1).n, step);
 }
-// "See your hints" on the Solved card: Stats opens that puzzle's hints (the app switches to the Stats tab).
+// "See your hints" on the Solved card: Stats opens that puzzle's hints. A game page can't switch tabs in the app
+// (Colin 11/1: the button did nothing), so it leaves a note and closes; the tab page it lands on sees the note on
+// sbRefresh and switches to Stats (hopToStats), and Stats opens the puzzle.
 export const OPEN_SOLVE_KEY = "solvebuddy.openSolve";
 export function openSolve(at) {
   try { localStorage.setItem(OPEN_SOLVE_KEY, JSON.stringify({ at, when: Date.now() })); } catch {}
-  if (inApp) post({ type: "tab", name: "Stats" });
+  if (inApp) goHome();
   else location.href = "stats.html";
+}
+export function hopToStats() {
+  let n = null;
+  try { n = JSON.parse(localStorage.getItem(OPEN_SOLVE_KEY) || "null"); } catch {}
+  if (!inApp || !n?.at || Date.now() - n.when > 60000) return false;
+  post({ type: "tab", name: "Stats" });
+  return true;
 }
 export function logSolve(entry) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}

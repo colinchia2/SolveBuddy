@@ -7,7 +7,7 @@ import { countAnswers } from "../engine/starbattle/countAnswers.ts";
 import { countSolutions } from "../engine/sudoku/countSolutions.ts";
 import { isSolved } from "../engine/watersort/rules.ts";
 import { solve } from "../engine/watersort/solve.ts";
-import { haptic, inApp, loadPack, openGame, post, savedGame, solves, smoothClose } from "./bridge.js";
+import { haptic, hopToStats, inApp, loadPack, openGame, post, savedGame, solves, smoothClose } from "./bridge.js";
 import { $, LOOK, esc, fmt, gameIcon, headerLogo, tabs } from "./screens.js";
 import { LETTERS, MAX_SIZE, MAX_TUBES, MIN_SIZE, MIN_TUBES, REGION_COLORS, TUBE_CAP, WATER_COLORS, WATER_NAMES, addImport, allImports,
   answerVerdict, boardProblem, deleteImport, groupByDay, markClashes, maxStars, sudokuClashes, sudokuWrong, waterProblem } from "./importdata.js";
@@ -565,7 +565,7 @@ headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) :
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("import"));
 smoothClose();
 // Coming back from a game refreshes the list (In progress / Solved). A half-made import stays where you left it.
-globalThis.sbRefresh = () => { if (at === "list") render(); };
+globalThis.sbRefresh = () => { hopToStats(); if (at === "list") render(); }; // hopToStats: "See your hints" on a Solved card
 addEventListener("storage", () => { if (at === "list") render(); });
 addEventListener("pageshow", () => { if (at === "list") render(); });
 render();

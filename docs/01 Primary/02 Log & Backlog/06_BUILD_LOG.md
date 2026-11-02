@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 2026-11-01 — Fix: "See your hints" did nothing in the app
+- A game page can't switch tabs in the app (only tab pages post "tab"). Now: note + close the game (goHome); the tab page it lands on calls `hopToStats()` in sbRefresh and switches to Stats, which opens the puzzle. Check: pages_smoke "See your hints in the app" (162 PASS).
+
 ## 2026-11-01 — Hint history per puzzle + Stats on iPad at full width (pages only)
 - Mockup: https://claude.ai/artifact/WXwAwjjzrB2jcyssiCABFs. Colin: "Go on both".
 - Hint history: `hintStep` (bridge.js) now also keeps `hd.log` = [{ t: ms into the puzzle, k: trick, n: 1 Nudge / 2 Explain / 3 Show me }] (every game times a puzzle as (pausedAt ?? now) - started). Solves from before 11/1 have no log and show "before hint history". Text of each hint is not kept, only the trick.

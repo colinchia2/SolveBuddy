@@ -1,7 +1,7 @@
 // Packs tab (calmer screens, Colin 10/23): every pack on this phone, grouped by game, as 2-wide blocks. Each pack is
 // named once with the levels it holds underneath (Sudoku Starter = one 40-puzzle block, Easy · Medium · Hard ·
 // Expert). Names, counts and progress come from the real pack data. Tap a block to open that pack on Library.
-import { GAMES, inApp, loadPack, openPack, post, solvedIn } from "./bridge.js";
+import { GAMES, hopToStats, inApp, loadPack, openPack, post, solvedIn } from "./bridge.js";
 import { $, LOOK, esc, gameIcon, headerLogo, ring, setParts, tabs } from "./screens.js";
 
 const sizes = {}; // "sudoku/easy" → { n, size }
@@ -44,6 +44,6 @@ $("games").onclick = (e) => {
 // The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("packs"));
-globalThis.sbRefresh = render;
+globalThis.sbRefresh = () => { hopToStats(); render(); }; // hopToStats: "See your hints" on a Solved card
 globalThis.sbHome = () => scrollTo({ top: 0, behavior: "smooth" }); // tapping this tab again (Colin 10/24)
 render();
