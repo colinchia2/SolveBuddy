@@ -1,5 +1,6 @@
 // Shared by every SolveBuddy page: the phone-app bridge, the packs, and the solve log that Home, Packs and Stats read.
 // In the app (window.SOLVEBUDDY_APP), opening a game and going back are the app's job; in a browser they're links.
+import "./sync.js"; // iCloud sync (11/1): merges what the other device saved before any page reads its storage
 export const inApp = !!globalThis.SOLVEBUDDY_APP;
 // iPad (Colin 10/27, F1; pictures: https://claude.ai/artifact/EM1URxLzDX5jmYEExmw5h4). The app lays pages out at the
 // iPad's real width and sets SOLVEBUDDY_APP.tablet (each page's head script adds html.tablet + land/port). Here: keep

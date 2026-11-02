@@ -1786,6 +1786,63 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await page.evaluate(() => localStorage.removeItem("solvebuddy.solves"));
 }
 
+// iCloud sync (Colin 11/1, web/sync.js): two pretend devices (separate storage) and a pretend iCloud the app would
+// keep. The phone goes first, then the iPad merges, then the phone hears about it while its Stats page is open.
+{
+  const cloud = {};
+  const device = async (seed) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const p0 = await ctx.newPage();
+    await p0.goto(`${BASE}stats.html`); // a plain browser page: no sync here, just seeding this device's storage
+    await p0.evaluate((s) => { localStorage.clear(); for (const [k, v] of Object.entries(s)) localStorage.setItem(k, JSON.stringify(v)); }, seed);
+    await p0.close();
+    return ctx;
+  };
+  const open = async (ctx) => {
+    const p = await ctx.newPage();
+    p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+    await p.addInitScript((c) => { window.SOLVEBUDDY_APP = { haptics: true }; window.SB_CLOUD = c; window.__out = [];
+      window.ReactNativeWebView = { postMessage: (m) => window.__out.push(m) }; }, { ...cloud });
+    await p.goto(`${BASE}stats.html`);
+    await p.waitForTimeout(800);
+    return p;
+  };
+  // What the page sent to "iCloud": stored, and returned as the app would hand it to the other device.
+  const upload = async (p) => {
+    const sent = (await p.evaluate(() => window.__out.splice(0))).map((m) => JSON.parse(m)).filter((m) => m.type === "cloud");
+    for (const m of sent) cloud[m.key] = m.value;
+    return Object.fromEntries(sent.map((m) => [m.key, m.value]));
+  };
+  const now = Date.now(), e = (g, at) => ({ g, pack: "easy", p: 1, ms: 90000, hints: 0, at });
+  const phone = await device({ "solvebuddy.solves": [e("sudoku", now - 3e6), e("sudoku", now - 2e6)], "solvebuddy.settings": { timer: false } });
+  const ipad = await device({ "solvebuddy.solves": [e("shikaku", now - 1e6)], "solvebuddy.blocks": { best: 500, bestLines: 4, played: 2, saved: { s: 1 } } });
+  const ph = await open(phone);
+  const up1 = await upload(ph);
+  const ip = await open(ipad);
+  const up2 = await upload(ip);
+  const ipadSolves = await ip.evaluate(() => JSON.parse(localStorage.getItem("solvebuddy.solves")).length);
+  const ipadSettings = await ip.evaluate(() => localStorage.getItem("solvebuddy.settings"));
+  const cloudBlocks = JSON.parse(JSON.parse(cloud["solvebuddy.blocks"] ?? "{}").v ?? "{}");
+  const before = await ph.evaluate(() => document.querySelector(".play .st-big")?.textContent);
+  await ph.evaluate((c) => window.sbCloud(c), up2); // the app passes the iPad's changes to the open phone page
+  await ph.waitForTimeout(300);
+  const after = await ph.evaluate(() => ({ big: document.querySelector(".play .st-big")?.textContent,
+    n: JSON.parse(localStorage.getItem("solvebuddy.solves")).length, best: JSON.parse(localStorage.getItem("solvebuddy.blocks") || "{}").best }));
+  // A new solve on the phone goes straight out.
+  await ph.evaluate(() => localStorage.setItem("solvebuddy.solves", JSON.stringify([...JSON.parse(localStorage.getItem("solvebuddy.solves")), { g: "nonogram", pack: "easy", p: 2, ms: 1, hints: 0, at: Date.now() }])));
+  await ph.waitForTimeout(500);
+  const up3 = await upload(ph);
+  check(`iCloud sync: phone sent ${Object.keys(up1).length} things; iPad merged to ${ipadSolves} solves + phone's settings (${!!ipadSettings}); Block Drop best ${cloudBlocks.best} in iCloud without the half-done game (${!("saved" in cloudBlocks)})`,
+    "solvebuddy.solves" in up1 && ipadSolves === 3 && ipadSettings === '{"timer":false}' && cloudBlocks.best === 500 && !("saved" in cloudBlocks));
+  check(`iCloud sync: the open phone Stats page redraws from ${before} to ${after.big} solves (${after.n} kept), Block Drop best ${after.best}; a new solve is sent (${JSON.parse(JSON.parse(up3["solvebuddy.solves"] ?? '{"v":"[]"}').v).length} in iCloud)`,
+    before === "2" && after.big === "3" && after.n === 3 && after.best === 500 && JSON.parse(JSON.parse(up3["solvebuddy.solves"] ?? '{"v":"[]"}').v).length === 4);
+  // A plain browser (no app) never syncs: no SB_CLOUD, nothing sent, sbCloud not defined.
+  const plain = await (await device({})).newPage();
+  await plain.goto(`${BASE}stats.html`);
+  check(`iCloud sync: off in a plain browser (${await plain.evaluate(() => typeof window.sbCloud)})`, (await plain.evaluate(() => typeof window.sbCloud)) === "undefined");
+  await Promise.all([phone.close(), ipad.close(), plain.context().close()]);
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

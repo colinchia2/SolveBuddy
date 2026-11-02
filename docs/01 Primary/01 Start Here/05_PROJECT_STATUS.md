@@ -1,6 +1,6 @@
 # SolveBuddy — project status
 
-**2026-11-01:** iPad: every game now has its own iPad layout (Shikaku, Nonogram, Water Sort, Block Drop added; pages only, pushed). Build log 11/1.
+**2026-11-01:** iPad: every game now has its own iPad layout (Shikaku, Nonogram, Water Sort, Block Drop added; pages only, pushed). iCloud sync of stats between iPhone and iPad: pages pushed, app side committed; waiting on one EAS build (Colin's go). Build log 11/1.
 
 **2026-11-01:** New Stats page (weekly streak of 3 a week, filter by puzzle, podium, speed, hints, tips) + games save hint detail (pages only, pushed). Build log 11/1.
 

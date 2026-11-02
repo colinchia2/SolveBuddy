@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-01 — iCloud sync: same stats on iPhone and iPad (pages pushed; app side committed, NEEDS A BUILD)
+- Colin: "Lets do icloud" (over a manual copy-code button). No account, no server: Apple's iCloud key-value store (same Apple ID, 1 MB).
+- Pages: `web/sync.js` (imported first by bridge.js). Merges per key: solve log = union (once each); finished boards = union; Block Drop = higher best/lines/played (half-done game stays local); settings, Water Sort look, imports = newest wins (`solvebuddy.syncAt`). Half-done puzzles are NOT synced. Runs only when the app sets `window.SB_CLOUD`; sends `{type:"cloud", key, value}`; `window.sbCloud(changes)` merges live + calls sbRefresh.
+- App (`C:\dev\SolveBuddyApp`): local module `modules/solvebuddy-cloud` (Swift, NSUbiquitousKeyValueStore: getAll / set / onChange; same shape as CheckBuddy's checkbuddy-scroll), App.js wiring (SB_CLOUD before each page, "cloud" messages saved, other device's changes to every open page), app.json entitlement `com.apple.developer.ubiquity-kvstore-identifier` (EAS turns on iCloud for the App ID). check-build.mjs checks both. Not compiled yet (no Mac): the build is the first compile.
+- Check: pages_smoke "iCloud sync" x3 (two pretend devices merge to the same solves; an open Stats page redraws; off in a plain browser).
+- Size note: the solve log is the biggest key (~150 bytes a solve; 1 MB = ~6,000 solves). Trim old hint detail if it ever gets close.
+
 ## 2026-11-01 — iPad: Block Drop gets a tall-well layout (pages only; a contained build) — every game now has an iPad layout
 - Before/after: https://claude.ai/artifact/5y153h8NjCpHgtfSMda6s3. Colin: "Go".
 - `data-tablet="blocks"` (its own layout, not the split one): the well is CSS-zoomed to fill the height (--wz from blocks.js fitTablet); panels zoom 1.6. Sideways the title, timer and panels sit right of the well in two columns. Swipes are in screen px, so they feel the same.
