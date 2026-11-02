@@ -6,6 +6,7 @@ Newest first.
 - Colin: clear every solved puzzle so he can solve again with hints and get real stats, but keep his 2-week streak and Block Drop scores. Done once; how-to in `docs/START_FRESH.md`.
 - Not a delete and not a script: there's no server, and iCloud merges the solve log as a union, so a deleted solve comes back from the other device. Instead a cutoff, `FRESH_AT` (bridge.js, 11/2): `solves()` hides older solves everywhere; `allSolves()` keeps them for the streak, the week box and logSolve; half-done games from before it are dropped. Block Drop, settings, imports untouched.
 - Checks: `SB_FRESH_AT` overrides the cutoff (pages_smoke sets 0 everywhere, since its data uses made-up old dates). New checks: run_all "Start fresh" (56 PASS), pages_smoke "Start fresh" (old solves hidden, streak still 2 weeks, Block Drop kept, a new solve counts).
+- Pushed c49f43e; confirmed live on GitHub Pages (app/home.html carries the new cutoff).
 
 ## 2026-11-02 — iPad: Library, Packs and Import use the whole width (pages only)
 - Mockup: https://claude.ai/artifact/BLituBXhDCeNySmrSmMSmy. Colin: "this mockup looks great, lets do it".
