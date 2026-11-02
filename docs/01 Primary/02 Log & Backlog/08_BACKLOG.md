@@ -3,6 +3,9 @@
 Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med / Low, blank = not set; size S / M / L).
 
 ## Next up
+0. **iPad layout for Library, Packs and Import** · S · mockup waiting on Colin's "go" (11/2)
+   - Mockup: https://claude.ai/artifact/BLituBXhDCeNySmrSmMSmy. Draft CSS that made it: `docs/design/ipad_tabs_draft.css`.
+   - Library tiles 3 across; a game's packs 2 across; a pack's numbers 10 across (sideways: levels 2×2); Packs/Import cards 4 across (3 upright); New import not stretched.
 1. **Talk through the app's structure (Packs vs Library vs Get more)** · High · M
    - Colin said this comes first, before more building. He finds Packs confusing: tapping a pack on the Packs tab
      jumps to Library; "which ones do I have vs what am I downloading?". Talk first, no building until he decides.
