@@ -1,7 +1,7 @@
 // Stats tab (Colin 11/1, the "mix" mockup): this week + weekly streak on top, then a filter (All or one puzzle) that
 // changes everything below: how much you play, how fast you are, what you're good at, hints, and tips.
 // Everything comes from the solve log on this phone (bridge.js). The tips are plain rules run here, no AI.
-import { GAMES, OPEN_SOLVE_KEY, inApp, post, solves } from "./bridge.js";
+import { GAMES, OPEN_SOLVE_KEY, inApp, openGame, post, solves } from "./bridge.js";
 import { syncStatus } from "./sync.js";
 import { detail, loadSizes, openTip } from "./statsdetail.js";
 import { $, LOOK, WEEK_GOAL, dayKey, esc, fmt, headerLogo, streaks, tabs, weekCounts, weekKey, weekStart } from "./screens.js";
@@ -317,6 +317,8 @@ $("stats").addEventListener("click", (ev) => {
   const sp = ev.target.closest("[data-sp]");
   if (sp) { speedPick = sp.dataset.sp; const x = sp.parentElement.scrollLeft; render(); const c = document.querySelector(".sd-packs"); if (c) c.scrollLeft = x; return; }
   const go = ev.target.closest("[data-go]"); if (go) return openTip(go.dataset.go);
+  const rp = ev.target.closest("[data-replay]");
+  if (rp) { const e = solves().find((x) => x.at === solveAt); if (e) openGame(e.g, `?pack=${e.pack}&p=${e.p}&replay=${e.at}&i=${rp.dataset.replay}`); return; }
   const so = ev.target.closest("[data-solve]"); if (so) { hintsY = scrollY; solveFrom = view; solveAt = Number(so.dataset.solve); view = "solve"; render(); scrollTo(0, 0); return; }
   const op = ev.target.closest("[data-open]"); if (op) return open(op.dataset.open);
   const b = ev.target.closest(".st-chip"); if (!b) return;

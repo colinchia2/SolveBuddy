@@ -9,7 +9,8 @@
 // Haptics (bridge.js levels): L1 for each new square while dragging, L2 when a patch lands, warn on red, L5 solved.
 // The header, info row, bottom bar, hint card, settings, pause and finish are the same as Nonogram's.
 import { hint as findHint, SHAPE_RULE, area, candidates, cluesIn, contains, fits, inside, isSolved, label, overlaps, same, shapeOf, sortPatches } from "../engine/shikaku/shikaku.ts";
-import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, hintStep, isTablet, loadPack, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { startReplay } from "./replay.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { SHK_COLORS, SHK_TILE, shikakuColors, shikakuPicture, shkClueColor } from "./screens.js";
 import { second } from "./zoom.js";
@@ -391,3 +392,7 @@ smoothClose();
 openWipe();
 renderPicker();
 load(idx, packName, true);
+// Hint replay (Colin 11/1): each hint keeps the board and the card as they were (bridge.js); opened with ?replay=,
+// this page shows them read-only (replay.js).
+replaySource(() => ({ board: { patches: s.patches }, hint: s.hint }));
+if (REPLAY) startReplay((f, level) => { s.patches = f.board.patches.map((Q) => ({ ...Q })); s.hint = { ...f.hint, level }; render(); });

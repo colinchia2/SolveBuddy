@@ -4,7 +4,8 @@ import { CAP, canPour, isDone, isSolved, pour } from "../engine/watersort/rules.
 import { solve, tidiestMove } from "../engine/watersort/solve.ts";
 import { explain } from "../engine/watersort/explain.ts";
 import { par } from "../engine/watersort/par.ts";
-import { clearSaved, goHome, isTablet, haptic, hintThirds, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, hintStep, hintThirds, isTablet, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { startReplay } from "./replay.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
@@ -616,7 +617,13 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-if (!importId) load(idx, packName, true);
+// Hint replay (Colin 11/1): each hint keeps the board and the card as they were (bridge.js); opened with ?replay=,
+// this page shows them read-only (replay.js).
+replaySource(() => ({ board: { tubes: s.tubes, moves: s.moves }, hint: s.hint }));
+if (!importId) {
+  load(idx, packName, true);
+  if (REPLAY) startReplay((f, level) => { s.tubes = f.board.tubes.map((t) => [...t]); s.moves = f.board.moves ?? 0; s.picked = null; s.hint = { ...f.hint, level }; render(); });
+}
 else {
   const item = await findImport(importId);
   if (item) {

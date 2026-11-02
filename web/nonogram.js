@@ -13,7 +13,8 @@
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
 import { runs, sameClue } from "../engine/nonogram/line.ts";
-import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, hintStep, isTablet, loadPack, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { startReplay } from "./replay.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -530,3 +531,7 @@ smoothClose();
 openWipe();
 renderPicker();
 load(idx, packName, true);
+// Hint replay (Colin 11/1): each hint keeps the board and the card as they were (bridge.js); opened with ?replay=,
+// this page shows them read-only (replay.js).
+replaySource(() => ({ board: { marks: s.marks, slash: s.slash }, hint: s.hint }));
+if (REPLAY) startReplay((f, level) => { s.marks = { ...f.board.marks }; s.slash = { ...(f.board.slash ?? {}) }; s.hint = { ...f.hint, level }; render(); });

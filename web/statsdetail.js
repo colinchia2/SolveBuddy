@@ -1,7 +1,7 @@
 // Stats detail screens (Colin 11/1, mockup https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76): tap a card on Stats
 // and its own page opens, one level deeper; "‹ Stats" goes back. The filter (All or one puzzle) carries over, except
 // the streak, which always counts every puzzle. All from the solve log on this device, plain rules, no AI.
-import { GAMES, hintAmount, hintShort, loadPack, openPack } from "./bridge.js";
+import { GAMES, frames, hintAmount, hintShort, loadPack, openPack } from "./bridge.js";
 import { LOOK, WEEK_GOAL, dayKey, esc, fmt, streaks, weekCounts, weekKey, weekStart } from "./screens.js";
 import { DAY, LEVELS, NOT_TRICKS, STAR, card, clockCard, emptyNote, groups, head, hintFree, packInfo, plural, thirds, tips } from "./stats.js";
 
@@ -240,12 +240,16 @@ function solve(log, at, backTo) {
   const topT = Object.entries(tr).sort((a, b) => b[1] - a[1])[0];
   const at12 = new Date(e.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
   const marks = L.map((h, i) => `<span class="sd-tm" style="left:${Math.min(100, (h.t / Math.max(e.ms, 1)) * 100).toFixed(1)}%;background:${SHADE[h.n - 1]}">${i + 1}</span>`).join("");
-  const steps = L.map((h) => row("48px 1fr", `<b class="sd-t">${fmt(h.t)}</b><span><b>${esc(h.k && !NOT_TRICKS.has(h.k) ? h.k : h.k || "Hint")}</b>
-    <span class="sd-steps">${STEP.map((s, j) => `<i class="${j < h.n ? "on" : ""}">${s}</i>`).join("")}</span></span>`)).join("");
+  // Tap a hint to replay it (Colin 11/1): only when its frame is on this device, and not for imports.
+  const F = frames(), can = (h) => !!(h.r && F[h.r]) && e.pack !== "import" && e.p;
+  const steps = L.map((h, i) => { const inner = `<b class="sd-t">${fmt(h.t)}</b><span><b>${esc(h.k && !NOT_TRICKS.has(h.k) ? h.k : h.k || "Hint")}</b>
+    <span class="sd-steps">${STEP.map((s, j) => `<i class="${j < h.n ? "on" : ""}">${s}</i>`).join("")}</span></span>`;
+    return can(h) ? `<button class="sd-row sd-solve" data-replay="${i}" style="grid-template-columns:48px 1fr 14px">${inner}${CHEV}</button>` : row("48px 1fr", inner); }).join("");
+  const any = L.some(can);
   return top(`${GAMES[e.g]?.name ?? e.g}${e.p ? ` #${e.p}` : ""}`, `${esc(packInfo(e.g, e.pack).label)} · ${when(e.at).toLowerCase() === "today" ? "today" : when(e.at)} at ${at12} · solved in ${fmt(e.ms)}`, backTo)
     + kpis([[hintShort(e.hints), "hints"], [L.length ? fmt(L[0].t) : "—", "first one"], [topT ? esc(topT[0]) : "—", topT ? "needed most" : "trick"]])
     + (L.length ? card(`${head("When you asked", "Start to solved. Darker = you went further.")}<div class="sd-tl"><span class="sd-tline"></span>${marks}<span class="sd-tend"></span><small style="left:0">0:00</small><small style="right:0">${fmt(e.ms)}</small></div>`)
-      + card(`${head("Each hint")}${steps}`)
+      + card(`${head("Each hint", any ? "Tap one to see the board and the hint as they were." : "")}${steps}`)
       : card(emptyNote("This puzzle was solved before hint history, so only the total is kept.")));
 }
 

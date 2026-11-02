@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-11-01 — Hint replay: tap a hint, see the board and the card as they were (pages only)
+- Mockup: https://claude.ai/artifact/XLb4R3AJPcqALtAwC2obDP. Colin: "mockup looks good!" (sync confirmed working the same evening).
+- bridge.js: each new hint-log entry gets an id `r`; a frame { board, hint } is kept in `solvebuddy.replays` (this device only, not iCloud; newest 400). Taken a microtask later (Sudoku sets s.hint just after hintStep). `REPLAY` (?replay=<solve at>&i=) makes saveGame/logSolve/clearSaved/saveFinal no-ops and adds html.replaying.
+- web/replay.js: the bar (Hint i of N, at m:ss, the trick, Nudge/Explain/Show me as far as you went, ‹ ›). Each game: `replaySource(() => ({ board, hint }))` + `startReplay(apply)` right after its puzzle loads. The board is shown as when you asked; the card steps through levels (Show me shows the card, not the move made).
+- Stats: hints with a frame on this device are tappable (not imports) → openGame(?pack&p&replay&i).
+- Bug caught by the checks: the hook first landed between `if (!importId) load()` and its `else`, so every normal puzzle also ran the import path. run_all "hint replay wired" now guards it.
+- Checks: pages_smoke "Hint replay" (163 PASS), run_all "hint replay wired" (54 PASS).
+
 ## 2026-11-01 — Fix: "See your hints" did nothing in the app
 - A game page can't switch tabs in the app (only tab pages post "tab"). Now: note + close the game (goHome); the tab page it lands on calls `hopToStats()` in sbRefresh and switches to Stats, which opens the puzzle. Check: pages_smoke "See your hints in the app" (162 PASS).
 

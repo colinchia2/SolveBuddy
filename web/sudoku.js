@@ -2,7 +2,8 @@
 // Imported puzzles (?import=<id>, Colin 10/22) save and log under pack "import" with p = the import's id.
 import { hint as findHint, writeMarks } from "../engine/sudoku/hint.ts";
 import { rulesOf } from "../engine/sudoku/variants.ts";
-import { clearSaved, goHome, isTablet, haptic, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, goHome, haptic, hintStep, isTablet, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { startReplay } from "./replay.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -598,7 +599,13 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-if (!importId) load(idx, packName, true);
+// Hint replay (Colin 11/1): each hint keeps the board and the card as they were (bridge.js); opened with ?replay=,
+// this page shows them read-only (replay.js).
+replaySource(() => ({ board: { entries: s.entries, corner: s.corner, center: s.center }, hint: s.hint }));
+if (!importId) {
+  load(idx, packName, true);
+  if (REPLAY) startReplay((f, level) => { Object.assign(s, { entries: { ...f.board.entries }, corner: { ...f.board.corner }, center: { ...f.board.center } }); s.hint = { ...f.hint, level }; render(); });
+}
 else {
   const item = await findImport(importId);
   if (item) {

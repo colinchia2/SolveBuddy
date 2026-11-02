@@ -429,6 +429,12 @@ if (existsSync(sbExpertFile)) {
     return (t.match(/hintStep\(s, /g) ?? []).length >= 2 && t.includes(`logSolve({ hd: s.hd, g: "${g}"`) && t.includes("hd: s.hd") && t.includes("s.hd = saved.hd");
   });
   check(`hint detail saved by every game (${wired.join(", ")})`, wired.length === 5);
+  // Hint replay (11/1): every game keeps a frame per hint and can open as a replay, after its own puzzle loads.
+  const replay = ["sudoku", "starbattle", "watersort", "nonogram", "shikaku"].filter((g) => {
+    const t = readFileSync(`web/${g}.js`, "utf8");
+    // (never between an if and its else: that once sent every normal puzzle down the "import" path)
+    return /replaySource\(\(\) => \(\{ board: /.test(t) && /load\(idx, packName, true\);[\s\S]{0,400}?if \(REPLAY\) startReplay\(/.test(t) && !/startReplay\([^\n]*\n\s*else\b/.test(t); });
+  check(`hint replay wired in every game (${replay.join(", ")})`, replay.length === 5);
 }
 
 if (failed) process.exit(1);

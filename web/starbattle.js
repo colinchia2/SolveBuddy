@@ -4,7 +4,8 @@
 // "import" with p = the import's id.
 import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
-import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, haptic, hapticLevel, hintStep, isTablet, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { startReplay } from "./replay.js";
 import { celebrate, openWipe, shootingStar, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -560,7 +561,13 @@ addEventListener("pagehide", persist);
 
 smoothClose();
 openWipe();
-if (!importId) load(idx, packName, true);
+// Hint replay (Colin 11/1): each hint keeps the board and the card as they were (bridge.js); opened with ?replay=,
+// this page shows them read-only (replay.js).
+replaySource(() => ({ board: { marks: s.marks }, hint: s.hint }));
+if (!importId) {
+  load(idx, packName, true);
+  if (REPLAY) startReplay((f, level) => { s.marks = { ...f.board.marks }; s.hinted?.clear(); s.hint = { ...f.hint, level, play: null }; render(); });
+}
 else {
   $("count").textContent = "Loading…";
   const item = await findImport(importId);

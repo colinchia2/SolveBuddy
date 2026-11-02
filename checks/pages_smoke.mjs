@@ -925,6 +925,21 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const hv = await p.evaluate(() => ({ title: document.querySelector(".sd-top h2")?.textContent ?? "", dots: document.querySelectorAll(".sd-tm").length, rows: document.querySelectorAll(".sd-steps").length }));
   check(`Hint history: note left (${!!note}); ${hl.n} hints kept in order (${hl.inOrder}) within the solve (${hl.within}); Solved card's "See your hints" (${hl.btn}) opens "${hv.title}" with ${hv.dots} dots and ${hv.rows} rows`,
     !!note && hl.n > 0 && hl.inOrder && hl.within && hl.steps && hl.btn && /^Shikaku #1$/.test(hv.title) && hv.dots === hl.n && hv.rows === hl.n);
+  // Hint replay (Colin 11/1): each of those hints kept a frame; Stats lists them as tappable; the game opened with
+  // ?replay= shows the board + hint card read-only, steps through Nudge/Explain, and saves nothing.
+  const rows = await p.evaluate(() => document.querySelectorAll("[data-replay]").length);
+  const before = await p.evaluate(() => ({ solves: localStorage.getItem("solvebuddy.solves"), saved: localStorage.getItem("solvebuddy.saved"), at: JSON.parse(localStorage.getItem("solvebuddy.solves")).filter((e) => e.g === "shikaku").at(-1).at }));
+  await p.goto(`${BASE}shikaku.html?pack=easy&p=1&replay=${before.at}&i=1`); await p.waitForTimeout(1500);
+  const rp1 = await p.evaluate(() => ({ title: document.querySelector(".rp-r1 b")?.textContent, card: !document.getElementById("hint").hidden, step: document.getElementById("hintStep")?.textContent,
+    blocked: getComputedStyle(document.querySelector(".screen")).pointerEvents === "none" }));
+  await p.evaluate(() => document.querySelector('.rp-steps button[data-l="2"]').click()); await p.waitForTimeout(200);
+  const rp2 = await p.evaluate(() => document.getElementById("hintStep")?.textContent);
+  await p.evaluate(() => document.querySelector('[data-rp="next"]').click()); await p.waitForTimeout(200);
+  const rp3 = await p.evaluate(() => document.querySelector(".rp-r1 b")?.textContent);
+  await p.waitForTimeout(1200);
+  const rpSame = await p.evaluate((b) => localStorage.getItem("solvebuddy.solves") === b.solves && localStorage.getItem("solvebuddy.saved") === b.saved, before);
+  check(`Hint replay: ${rows} hints tappable on Stats; "${rp1.title}" shows the card (${rp1.card}, ${rp1.step}) read-only (${rp1.blocked}); Explain → "${rp2}"; next → "${rp3}"; nothing saved (${rpSame})`,
+    rows === hl.n && /^Hint 2 of /.test(rp1.title ?? "") && rp1.card && rp1.step === "Nudge" && rp1.blocked && rp2 === "Explain" && /^Hint 3 of /.test(rp3 ?? "") && rpSame);
   // A puzzle whose first blank-board hints include a partial patch (checks/shikaku.ts counts them in every pack).
   await p.goto(`${BASE}shikaku.html?pack=hard&p=1`);
   await p.waitForTimeout(1200);

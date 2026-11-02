@@ -168,6 +168,7 @@ export function finalBoard(game, pack, p) {
   try { return JSON.parse(localStorage.getItem(FINALS_KEY) || "{}")[`${game}/${pack}/${p}`] ?? null; } catch { return null; }
 }
 export function saveFinal(game, pack, p, data) {
+  if (REPLAY) return;
   try {
     const all = JSON.parse(localStorage.getItem(FINALS_KEY) || "{}");
     localStorage.setItem(FINALS_KEY, JSON.stringify({ ...all, [`${game}/${pack}/${p}`]: data }));
@@ -185,9 +186,34 @@ export function hintStep(s, step, trick) {
   d.steps[step - 1]++;
   if (trick) d.tricks[trick] = (d.tricks[trick] ?? 0) + 1;
   const log = (d.log ??= []), t = Math.max(0, Math.round((s.pausedAt ?? Date.now()) - (s.started ?? Date.now())));
-  if (step === 1 || !log.length) log.push({ t, k: trick || "", n: step });
-  else log.at(-1).n = Math.max(log.at(-1).n, step);
+  if (step === 1 || !log.length) {
+    const h = { t, k: trick || "", n: step };
+    if (frameOf) { h.r = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; keepFrame(h.r); }
+    log.push(h);
+  } else log.at(-1).n = Math.max(log.at(-1).n, step);
 }
+// Hint replay (Colin 11/1, mockup https://claude.ai/artifact/XLb4R3AJPcqALtAwC2obDP): each hint also keeps a "frame",
+// the board and the hint card the moment you asked, so Stats can open the game as it was. Frames stay on this device
+// (a board per hint is too much for iCloud), the newest MAX_FRAMES. A game says how to take one with replaySource().
+// The frame is taken a moment later, because some games set s.hint just after hintStep.
+export const REPLAY_KEY = "solvebuddy.replays";
+const MAX_FRAMES = 400;
+let frameOf = null;
+export const replaySource = (fn) => { frameOf = fn; };
+export function frames() { try { return JSON.parse(localStorage.getItem(REPLAY_KEY) || "{}"); } catch { return {}; } }
+function keepFrame(id) {
+  Promise.resolve().then(() => {
+    let f; try { f = JSON.parse(JSON.stringify(frameOf())); } catch { return; }
+    const all = frames(); all[id] = { ...f, at: Date.now() };
+    const ids = Object.keys(all);
+    if (ids.length > MAX_FRAMES) ids.sort((a, b) => all[a].at - all[b].at).slice(0, ids.length - MAX_FRAMES).forEach((k) => delete all[k]);
+    try { localStorage.setItem(REPLAY_KEY, JSON.stringify(all)); } catch {}
+  });
+}
+// A game page opened as a replay (?replay=<the solve's time>&i=<which hint>) never saves anything.
+const RQ = new URLSearchParams(globalThis.location?.search ?? "");
+export const REPLAY = RQ.has("replay") ? { at: Number(RQ.get("replay")), i: Number(RQ.get("i") || 0) } : null;
+if (REPLAY) globalThis.document?.documentElement.classList.add("replaying");
 // "See your hints" on the Solved card: Stats opens that puzzle's hints. A game page can't switch tabs in the app
 // (Colin 11/1: the button did nothing), so it leaves a note and closes; the tab page it lands on sees the note on
 // sbRefresh and switches to Stats (hopToStats), and Stats opens the puzzle.
@@ -205,6 +231,7 @@ export function hopToStats() {
   return true;
 }
 export function logSolve(entry) {
+  if (REPLAY) return;
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}
 }
 // Every game left half-done, each puzzle its own (Colin, 10/21: starting another must never lose the first).
@@ -219,9 +246,11 @@ function allSaved() {
 }
 export const savedGame = (game, pack, p) => allSaved()[`${game}/${pack}/${p}`] ?? null;
 export function saveGame(game, pack, data) {
+  if (REPLAY) return;
   try { localStorage.setItem(SAVE_KEY, JSON.stringify({ ...allSaved(), [`${game}/${pack}/${data.p}`]: { ...data, at: Date.now() } })); } catch {}
 }
 export function clearSaved(game, pack, p) {
+  if (REPLAY) return;
   const all = allSaved();
   delete all[`${game}/${pack}/${p}`];
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(all)); } catch {}

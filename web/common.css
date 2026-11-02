@@ -326,3 +326,22 @@ html.tablet.port .phone[data-tablet] .screen > .zview { align-self: center; }
 /* A solved picture as the medal (Nonogram): a white rounded square instead of the blue disc. */
 .medal .disc.pic { border-radius: 22px; background: #FFFDF9; box-shadow: 0 12px 28px rgba(194,78,42,0.3); overflow: hidden; }
 .medal .disc.pic svg { width: 100%; height: 100%; }
+/* Hint replay (Colin 11/1): a game page opened from a puzzle's hint history. The bar covers the title and timer;
+   nothing on the board can be played; the hint card's own buttons are hidden (the bar steps through it). */
+html.replaying .screen { pointer-events: none; }
+html.replaying .dock, html.replaying #hintNext, html.replaying #hintClose, html.replaying #hintsUsed { visibility: hidden; }
+.rp-bar { position: absolute; left: 0; right: 0; top: 0; z-index: 60; padding: calc(var(--safetop, 0px) + 14px) 16px 12px; background: var(--bg);
+  border-bottom: 1px solid rgba(42,33,27,0.08); box-shadow: 0 6px 18px rgba(42,33,27,0.06); display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+.rp-r1, .rp-r2 { display: flex; align-items: center; gap: 8px; }
+.rp-r1 b { flex: 1; text-align: center; font: 800 19px 'Bricolage Grotesque', sans-serif; color: var(--ink); }
+.rp-back { display: flex; align-items: center; gap: 2px; min-width: 76px; height: 44px; border: 0; background: none; padding: 0; font: 600 15px Inter, sans-serif; color: var(--brand); }
+html.nativeback .rp-back { visibility: hidden; } /* the app draws its own back button there */
+.rp-when { min-width: 76px; text-align: right; font: 600 13px Inter, sans-serif; color: var(--muted); }
+.rp-nav { flex: none; width: 36px; height: 36px; border-radius: 11px; border: 1px solid rgba(42,33,27,0.12); background: #fff; font: 800 18px Inter, sans-serif; color: var(--ink); }
+.rp-nav:disabled { opacity: 0.3; }
+.rp-trick { flex: 1; min-width: 0; font: 700 13.5px Inter, sans-serif; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-steps { display: flex; gap: 4px; }
+.rp-steps button { border: 0; border-radius: 99px; padding: 6px 9px; font: 700 11.5px Inter, sans-serif; background: rgba(42,33,27,0.07); color: var(--body); }
+.rp-steps button.on { background: var(--brand); color: #fff; }
+.rp-steps button:disabled { opacity: 0.35; }
+.rp-none { margin: 0; font-size: 12.5px; color: var(--muted); text-align: center; }
