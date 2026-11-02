@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-11-02 — iPad: Library, Packs and Import use the whole width (pages only)
+- Mockup: https://claude.ai/artifact/BLituBXhDCeNySmrSmMSmy. Colin: "this mockup looks great, lets do it".
+- home/packs/import.html: `.phone data-tablet="wide"` (like Stats). screens.css "iPad Library, Packs and Import": game tiles 3 across; a game's packs 2 across; a pack's numbers 10 across (sideways the levels sit 2×2, 5 across); Packs + Import cards 4 across (3 upright); New import 340px wide; pop-up sheets max 560px; Import's steps max 640px; the header strip spans the screen (Stats too). Every iPhone rule untouched (all under html.tablet).
+- Checks: pages_smoke "F1 iPad upright" now measures Library 3 / pack 10 / Packs 3 a row and Import full width (replaced "Import shows the phone layout scaled"); 166 PASS; run_all 55 PASS.
+
 ## 2026-11-02 — "See your hints" on a finished puzzle + Sudoku grey-out keys (pages only)
 - Mockup: https://claude.ai/artifact/AhfPBjChSm6HggFEDsrKLD. Colin: "go".
 - Finished puzzle from the Library (celebrate.js solvedBar, all games with hints): if any solve of that puzzle used hints, the pill becomes a button "Solved in m:ss / See your N hints ›" → openSolve(newest solve with hints) → Stats opens it. No hints = the plain pill as before.

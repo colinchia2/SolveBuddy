@@ -1,6 +1,4 @@
-/* Draft iPad layout for Library (home), Packs and Import (Colin 11/2, mockup https://claude.ai/artifact/BLituBXhDCeNySmrSmMSmy).
-   Used for the mockup screenshots by injecting it and setting data-tablet="wide" on .phone. To build: add data-tablet="wide" to
-   home/packs/import .html, move these rules into screens.css (the width rule is already there under html.tablet.app), add a check. */
+/* The draft that made the iPad tabs mockup (11/2). Built: the live rules are in web/screens.css "iPad Library, Packs and Import". */
 html.tablet .phone[data-tablet="wide"] { width: 100% !important; max-width: none; border-radius: 0; box-shadow: none; }
 html.tablet .phone[data-tablet="wide"] .page { max-width: 1120px; margin: 0 auto; padding-left: 32px; padding-right: 32px; }
 /* Library */

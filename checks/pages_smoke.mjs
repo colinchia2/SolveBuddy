@@ -1707,10 +1707,19 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await p.goto(`${BASE}stats.html`); await p.waitForTimeout(800);
   const stUp = await p.evaluate(() => { const c = [...document.querySelectorAll(".st-wrap > .st")].map((x) => x.getBoundingClientRect());
     return { w: Math.round(document.getElementById("stats").getBoundingClientRect().width), pairs: c.filter((r, i) => c.some((q, j) => j !== i && Math.abs(q.top - r.top) < 2)).length }; });
-  await p.goto(`${BASE}import.html`); await p.waitForTimeout(1500); // a page without the split layout
-  const pz = await p.evaluate(() => Number(getComputedStyle(document.querySelector(".phone")).zoom));
-  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Nonogram ${nnUp}px; Water Sort tubes ${wsUp}px; Block Drop well ${bdUp.w}px, panels beside it (${bdUp.sideRight}), on screen (${bdUp.onScreen}); Stats ${stUp.w}px wide, ${stUp.pairs} cards side by side; Import shows the phone layout ×${pz.toFixed(2)}`,
-    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && nnUp > 650 && wsUp > 80 && bdUp.w > 450 && bdUp.sideRight && bdUp.onScreen && stUp.w > 700 && stUp.pairs >= 2 && pz > 1.2);
+  // Library, Packs and Import (Colin 11/2): the whole width too, not the phone layout scaled up.
+  const perRow = (sel) => p.evaluate((s) => { const t = [...document.querySelectorAll(s)].map((e) => Math.round(e.getBoundingClientRect().top)); return t.filter((v) => v === t[0]).length; }, sel);
+  await p.goto(`${BASE}home.html`); await p.waitForTimeout(1200);
+  const lib = await perRow(".tiles .tile");
+  await p.goto(`${BASE}home.html?g=sudoku&set=0`); await p.waitForTimeout(2500);
+  const nums = await perRow(".gp-tiles .ptile");
+  await p.goto(`${BASE}packs.html`); await p.waitForTimeout(1200);
+  const pks = await perRow(".btiles .btile");
+  await p.goto(`${BASE}import.html`); await p.waitForTimeout(1500);
+  const imp = await p.evaluate(() => ({ zoom: Number(getComputedStyle(document.querySelector(".phone")).zoom), w: Math.round(document.querySelector(".page").getBoundingClientRect().width),
+    btn: Math.round(document.querySelector(".c-new")?.getBoundingClientRect().width ?? 0) }));
+    check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Nonogram ${nnUp}px; Water Sort tubes ${wsUp}px; Block Drop well ${bdUp.w}px, panels beside it (${bdUp.sideRight}), on screen (${bdUp.onScreen}); Stats ${stUp.w}px wide, ${stUp.pairs} cards side by side; Library ${lib} tiles a row, a pack ${nums} numbers a row, Packs ${pks} cards a row, Import ${imp.w}px wide (zoom ${imp.zoom}), New import ${imp.btn}px`,
+    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && nnUp > 650 && wsUp > 80 && bdUp.w > 450 && bdUp.sideRight && bdUp.onScreen && stUp.w > 700 && stUp.pairs >= 2 && lib === 3 && nums === 10 && pks === 3 && imp.w > 700 && imp.zoom === 1 && imp.btn > 0 && imp.btn <= 360);
   await ctx.close();
 }
 
