@@ -1783,6 +1783,21 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     && /Nudge 67%/.test(all.hints) && /Explain 33%/.test(all.hints) && /Star rules out/.test(all.hints) && !/Check this/.test(all.hints) && all.tips.length > 10);
   check(`Stats filter: Sudoku chip on (${one.on}), ${one.big} solves, pack-by-pack table ("${one.games.split("\n").slice(4, 6).join(" ")}")`,
     one.on === "sudoku" && one.big === "12" && /Not tried yet/.test(one.games) && !/Star Battle/.test(one.games));
+  // Detail screens (Colin 11/1, https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76): every card opens its own screen,
+  // the filter carries over (Sudoku chip is on now), "‹ Stats" comes back to the same spot.
+  const opened = [];
+  for (const k of ["week", "play", "heat", "clock", "podium", "speed", "good", "hints", "tips"]) {
+    await page.evaluate((k) => { const c = document.querySelector(`[data-open="${k}"]`); c.scrollIntoView(); window.__y = scrollY; c.click(); }, k);
+    await page.waitForTimeout(k === "good" ? 600 : 150);
+    const d = await page.evaluate(() => ({ title: document.querySelector(".sd-top h2")?.textContent ?? "", sub: document.querySelector(".sd-top p")?.textContent ?? "",
+      cards: document.querySelectorAll(".sd .st").length }));
+    await page.click("#sdBack"); await page.waitForTimeout(150);
+    const backOk = await page.evaluate(() => !!document.getElementById("week") && Math.abs(scrollY - window.__y) < 4);
+    opened.push({ k, ...d, backOk });
+  }
+  const bad = opened.filter((o) => !o.title || !o.cards || !o.backOk || (o.k !== "week" && !/Sudoku/.test(o.sub)));
+  check(`Stats detail screens: ${opened.map((o) => `${o.title} (${o.cards})`).join(", ")}; filter carries over, back lands on the same spot${bad.length ? ` — BAD: ${bad.map((o) => o.k).join(",")}` : ""}`,
+    opened.length === 9 && !bad.length);
   await page.evaluate(() => localStorage.removeItem("solvebuddy.solves"));
 }
 

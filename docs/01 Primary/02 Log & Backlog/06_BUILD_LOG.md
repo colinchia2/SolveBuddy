@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-01 — Stats detail screens: every card opens its own page (pages only)
+- Mockup: https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76. Colin: "Lets do these".
+- `web/statsdetail.js`: Your streak (each day this week + 12 weeks), How much you play (week bars + by game/pack), Every day you played (heat map with counts, longest run, busiest days), When you play (clock + weekdays + fastest time of day vs the pack's usual), Your favourites (every pack ranked), How fast you are (one pack: every solve, best star, usual line, trend, fastest 5), What you're good at (each level: n of total, usual, % no hints, badge), How you use hints (no-hint share by week, Nudge/Explain/Show me, tricks with "Still learning"/"Got it" = asked in last 14 days, most hints), How to get better (all tips, "Open <game>" buttons).
+- stats.js: cards carry `data-open` + a corner arrow; `view` state; "‹ Stats" returns to the same scroll spot; tapping the Stats tab again = back. Filter carries over (the streak always counts every puzzle).
+- Check: pages_smoke "Stats detail screens" (all 9 open, filter carries, back works). 158 PASS, run_all 52 PASS.
+
 ## 2026-11-01 — iCloud status line on Stats (Colin: build went through, but "the stats dont match")
 - Bottom of Stats, in the app only: "iCloud sync on · N kept in iCloud · sent … · from your other device …" (or "not in this version of the app"). Tap = send everything again (`sbResync`). Kept in `solvebuddy.syncInfo` (not synced).
 - Next: Colin reads the line on both devices; that says which half is stuck (no SB_CLOUD = build/native; never sent = page; sent but never from the other device = iCloud delivery).

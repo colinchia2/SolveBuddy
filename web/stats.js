@@ -3,15 +3,19 @@
 // Everything comes from the solve log on this phone (bridge.js). The tips are plain rules run here, no AI.
 import { GAMES, inApp, post, solves } from "./bridge.js";
 import { syncStatus } from "./sync.js";
+import { detail, loadSizes, openTip } from "./statsdetail.js";
 import { $, LOOK, WEEK_GOAL, dayKey, esc, fmt, headerLogo, streaks, tabs, weekCounts, weekKey, weekStart } from "./screens.js";
 
-const LEVELS = ["Easy", "Medium", "Hard", "Expert"];
-const DAY = 864e5;
-const NOT_TRICKS = new Set(["", "Check this", "Wrong patch"]); // mistakes and "done" aren't tricks
+export const LEVELS = ["Easy", "Medium", "Hard", "Expert"];
+export const DAY = 864e5;
+export const NOT_TRICKS = new Set(["", "Check this", "Wrong patch"]); // mistakes and "done" aren't tricks
 let filter = "all";
+// Which detail screen is open (null = the Stats page itself), the pack picked on "How fast you are", and where the
+// Stats page was scrolled to, so "‹ Stats" lands back on the card you tapped (Colin 11/1).
+let view = null, speedPick = null, backY = 0;
 
 // A pack's own name: "Starter · Easy", "5×5 · Easy", "Trick tests"; anything not in GAMES (imports) is "Imported".
-function packInfo(g, pack) {
+export function packInfo(g, pack) {
   const row = GAMES[g]?.packs.find((p) => p[0] === pack);
   if (!row) return { label: "Imported", level: null, order: 99 };
   const set = GAMES[g].sets.find((s) => s.levels.includes(pack));
@@ -19,14 +23,16 @@ function packInfo(g, pack) {
   const label = !set || set.name === row[2] || (set.name === "Starter" && level) ? row[2] : level ? `${set.name} · ${level}` : set.name;
   return { label, level, order: GAMES[g].packs.indexOf(row) };
 }
-const hintFree = (e) => !(e.hints > 0.01);
-const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
-const card = (inner, cls = "") => `<section class="card-glass st ${cls}">${inner}</section>`;
-const head = (t, sub) => `<h2 class="st-h">${t}</h2>${sub ? `<p class="st-sub">${sub}</p>` : ""}`;
-const emptyNote = (t) => `<p class="st-empty">${t}</p>`;
+export const hintFree = (e) => !(e.hints > 0.01);
+export const plural = (n, w) => `${n} ${w}${n === 1 ? "" : "s"}`;
+// open = the detail screen this card opens (a small arrow in its corner says it can be tapped).
+const OPEN = `<span class="st-open" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>`;
+export const card = (inner, cls = "", open = "") => `<section class="card-glass st ${cls}"${open ? ` data-open="${open}" role="button" tabindex="0"` : ""}>${open ? OPEN : ""}${inner}</section>`;
+export const head = (t, sub) => `<h2 class="st-h">${t}</h2>${sub ? `<p class="st-sub">${sub}</p>` : ""}`;
+export const emptyNote = (t) => `<p class="st-empty">${t}</p>`;
 
 // A ring cut in thirds: one third per puzzle (colors = what fills each third), with a check in the middle when done.
-function thirds(size, stroke, fills, empty, check) {
+export function thirds(size, stroke, fills, empty, check) {
   const c = size / 2, r = c - stroke / 2 - 1, gap = 0.22;
   const pt = (a) => `${(c + r * Math.sin(a)).toFixed(2)} ${(c - r * Math.cos(a)).toFixed(2)}`;
   let o = "";
@@ -55,8 +61,8 @@ function hero(log, now) {
   }).join("");
   const { current, best } = streaks(log, now);
   const streakTxt = current ? `<b>${current}-week streak</b>best: ${best}` : `<b>No streak yet</b>${WEEK_GOAL} puzzles in a week starts one`;
-  return `<section class="st-hero" id="week">
-    <div class="hd-top"><div><h2>This week</h2><p>${range} · goal: ${WEEK_GOAL} puzzles</p></div>
+  return `<section class="st-hero" id="week" data-open="week" role="button" tabindex="0">
+    <div class="hd-top"><div><h2>This week <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.8"><path d="M9 6l6 6-6 6"/></svg></h2><p>${range} · goal: ${WEEK_GOAL} puzzles</p></div>
       <div class="hd-goal">${thirds(58, 7, [0, 1, 2].map((j) => (j < wk.length ? "#fff" : null)), "rgba(255,255,255,0.25)", done)}<small>${Math.min(wk.length, WEEK_GOAL)} of ${WEEK_GOAL} done</small></div></div>
     <div class="hd-days">${days}</div>
     <div class="hd-weeks">${past}<div class="hd-streak" id="streakTxt">${streakTxt}</div></div></section>`;
@@ -87,7 +93,7 @@ function playCard(F, now) {
   return card(`<div class="st-big">${recent.length}</div><p class="st-sub">${recent.length === 1 ? "puzzle" : "puzzles"} solved in the last 12 weeks</p>
     <svg viewBox="0 0 ${W} ${H + 18}" width="100%" role="img" aria-label="Puzzles per week"><text x="0" y="10" font-size="9.5" fill="var(--muted)">${max}</text>
     <line x1="20" x2="${W}" y1="${H + 1}" y2="${H + 1}" stroke="rgba(42,33,27,0.12)"/>${bars}</svg>
-    <div class="st-legend">${games.map((g) => `<span><i style="background:${LOOK[g].ink}"></i>${GAMES[g].name}</span>`).join("")}</div>`, "play");
+    <div class="st-legend">${games.map((g) => `<span><i style="background:${LOOK[g].ink}"></i>${GAMES[g].name}</span>`).join("")}</div>`, "play", "play");
 }
 
 function heatCard(F, now) {
@@ -102,10 +108,10 @@ function heatCard(F, now) {
       : `<rect x="${24 + w * (cs + g)}" y="${d * (cs + g)}" width="${cs}" height="${cs}" rx="5" fill="${SH[Math.min(per[dayKey(t)] ?? 0, 3)]}"/>`;
   }
   return card(`${head("Days you played", "Darker = more puzzles that day")}<svg viewBox="0 0 ${24 + 12 * (cs + g)} ${7 * (cs + g)}" width="100%" role="img" aria-label="Days you played, last 12 weeks">${o}</svg>
-    <div class="st-legend">${SH.map((c, i) => `<span><i style="background:${c}"></i>${i === 3 ? "3+" : i}</span>`).join("")}</div>`);
+    <div class="st-legend">${SH.map((c, i) => `<span><i style="background:${c}"></i>${i === 3 ? "3+" : i}</span>`).join("")}</div>`, "", "heat");
 }
 
-function clockCard(F) {
+export function clockCard(F, open = "") {
   if (!F.length) return card(`${head("When you play")}${emptyNote("Solve a puzzle and your hours show up here.")}`);
   const hrs = Array(24).fill(0); F.forEach((e) => hrs[new Date(e.at).getHours()]++);
   const max = Math.max(...hrs), top = hrs.indexOf(max), lab = (h) => `${h % 12 || 12}${h < 12 ? "am" : "pm"}`;
@@ -115,10 +121,10 @@ function clockCard(F) {
     o += `<line x1="${(c + r0 * Math.sin(a)).toFixed(1)}" y1="${(c - r0 * Math.cos(a)).toFixed(1)}" x2="${(c + (r0 + len) * Math.sin(a)).toFixed(1)}" y2="${(c - (r0 + len) * Math.cos(a)).toFixed(1)}" stroke="${hrs[h] ? "var(--brand)" : "rgba(42,33,27,0.12)"}" stroke-width="7" stroke-linecap="round" opacity="${hrs[h] ? (0.35 + (0.65 * hrs[h]) / max).toFixed(2) : 1}"/>`;
   }
   [["12am", 0], ["6am", 6], ["12pm", 12], ["6pm", 18]].forEach(([t, h]) => { const a = (h / 24) * 2 * Math.PI; o += `<text x="${(c + (r0 - 18) * Math.sin(a)).toFixed(1)}" y="${(c - (r0 - 18) * Math.cos(a) + 3.5).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="600" fill="var(--body)">${t}</text>`; });
-  return card(`${head("When you play", `Mostly around ${lab(top)}`)}<svg viewBox="0 0 ${S} ${S}" width="100%" class="st-clock" role="img" aria-label="Puzzles by hour of the day">${o}</svg>`);
+  return card(`${head("When you play", `Mostly around ${lab(top)}`)}<svg viewBox="0 0 ${S} ${S}" width="100%" class="st-clock" role="img" aria-label="Puzzles by hour of the day">${o}</svg>`, "", open);
 }
 
-function groups(F) {
+export function groups(F) {
   const out = {};
   for (const e of F) (out[`${e.g}|${e.pack}`] ??= []).push(e);
   return Object.entries(out).map(([k, ss]) => { const [g, pack] = k.split("|"); return { g, pack, ss, ...packInfo(g, pack) }; });
@@ -133,10 +139,10 @@ function podiumCard(F, one) {
     return `<div class="pod"><span class="pod-m" style="background:${medal[i]}">${i + 1}</span><b>${esc(one ? t.label : GAMES[t.g].name)}</b><small>${one ? "" : esc(t.label)}</small>
       <div class="pod-step" style="height:${hts[i]}px;background:${LOOK[t.g].ink}"><strong>${t.ss.length}</strong><span>solved</span><span class="pod-best">best ${fmt(Math.min(...t.ss.map((e) => e.ms)))}</span></div></div>`;
   }).join("");
-  return card(`${head("Your podium", `Most-played ${one ? "packs" : "puzzles"}, with your fastest time`)}<div class="podium" id="podium">${pod}</div>`);
+  return card(`${head("Your podium", `Most-played ${one ? "packs" : "puzzles"}, with your fastest time`)}<div class="podium" id="podium">${pod}</div>`, "", "podium");
 }
 
-const STAR = (x, y, R, fill) => { let d = ""; for (let i = 0; i < 10; i++) { const r = i % 2 ? R * 0.45 : R, a = (i * Math.PI) / 5; d += `${i ? "L" : "M"}${(x + r * Math.sin(a)).toFixed(1)} ${(y - r * Math.cos(a)).toFixed(1)}`; } return `<path d="${d}Z" fill="${fill}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>`; };
+export const STAR = (x, y, R, fill) => { let d = ""; for (let i = 0; i < 10; i++) { const r = i % 2 ? R * 0.45 : R, a = (i * Math.PI) / 5; d += `${i ? "L" : "M"}${(x + r * Math.sin(a)).toFixed(1)} ${(y - r * Math.cos(a)).toFixed(1)}`; } return `<path d="${d}Z" fill="${fill}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>`; };
 
 function speedCard(F, one) {
   let rows = groups(F).filter((r) => r.ss.length >= 2);
@@ -157,7 +163,7 @@ function speedCard(F, one) {
   }).join("");
   return card(`${head("How fast you are", sub)}<svg viewBox="0 0 ${W} ${rows.length * rowH}" width="100%" role="img" aria-label="Your best and average times">${o}</svg>
     <div class="st-legend"><span><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.8 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z" fill="var(--body)"/></svg>your best</span><span><i style="width:3px;height:12px;background:var(--ink)"></i>your average</span><span><i style="width:16px;background:rgba(42,33,27,0.1)"></i>fastest to slowest</span></div>
-    ${fasterRows(F, one)}`, "speed");
+    ${fasterRows(F, one)}`, "speed", "speed");
 }
 
 // Getting faster: each solve as a share of that pack's usual (median) time, averaged per two weeks; first vs last.
@@ -190,7 +196,7 @@ function goodCard(F, one) {
       return k.length ? `<div class="pk"><b>${esc(info.label)}</b><span>${k.length}</span><span>${Math.round((k.filter(hintFree).length / k.length) * 100)}%</span><span style="color:${LOOK[one].ink};font-weight:700">${fmt(Math.min(...k.map((e) => e.ms)))}</span></div>`
         : `<div class="pk off"><b>${esc(info.label)}</b><span class="pk-none">Not tried yet</span></div>`;
     }).join("");
-    return card(`${head(`${GAMES[one].name}, pack by pack`, "Your own mini stats for each pack")}<div id="games"><div class="pk head"><b>Pack</b><span>Solved</span><span>No hints</span><span>Best</span></div>${rows}</div>`);
+    return card(`${head(`${GAMES[one].name}, pack by pack`, "Your own mini stats for each pack")}<div id="games"><div class="pk head"><b>Pack</b><span>Solved</span><span>No hints</span><span>Best</span></div>${rows}</div>`, "", "good");
   }
   let strong = null;
   const rows = Object.keys(GAMES).map((g) => {
@@ -206,7 +212,7 @@ function goodCard(F, one) {
   }).join("");
   const top = strong ? `<div class="st-strong">${thirds(40, 6, [LOOK[strong.g].ink, LOOK[strong.g].ink, LOOK[strong.g].ink], "", false)}<span><b>Strongest: ${GAMES[strong.g].name} ${LEVELS[strong.li]}</b>Mostly solved with no hints</span></div>` : "";
   return card(`${head("What you're good at", "The levels you've cleared, per puzzle")}${top}<div id="games">${rows}</div>
-    <div class="st-legend"><span><i style="background:var(--ink)"></i>Solid = mostly no hints</span><span><i style="background:rgba(42,33,27,0.08)"></i>Light = with hints</span><span><i style="border:1.5px dashed var(--muted);background:none"></i>Not tried</span></div>`);
+    <div class="st-legend"><span><i style="background:var(--ink)"></i>Solid = mostly no hints</span><span><i style="background:rgba(42,33,27,0.08)"></i>Light = with hints</span><span><i style="border:1.5px dashed var(--muted);background:none"></i>Not tried</span></div>`, "", "good");
 }
 
 function hintsCard(F, one) {
@@ -229,19 +235,21 @@ function hintsCard(F, one) {
   const top = Object.entries(tricks).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const trickList = top.length ? top.map(([t, n]) => `<div class="st-trick"><span>${esc(t)}</span><small>${n}×</small></div>`).join("") : `<p class="st-fine">Ask for a hint and the trick it teaches shows up here.</p>`;
   return card(`${head("Hints you use", sub)}<div class="st-row"><span class="st-big">${pct}%</span><span class="st-sub" style="margin:0">solved with no hints</span></div>
-    <h3 class="st-h3">How far you go when you ask</h3>${steps}${per}<h3 class="st-h3">Tricks you ask about most</h3>${trickList}`, "hints");
+    <h3 class="st-h3">How far you go when you ask</h3>${steps}${per}<h3 class="st-h3">Tricks you ask about most</h3>${trickList}`, "hints", "hints");
 }
 
 const ICON = { up: "M7 17 17 7M9 7h8v8", bulb: "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z", clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2", star: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z" };
 // Tips: plain rules over your own solves, worked out each time Stats opens (no AI, nothing leaves the phone).
-export function tips(F, one, now = Date.now()) {
+const setOf = (g, pack) => GAMES[g]?.sets.find((s) => s.levels.includes(pack))?.name ?? GAMES[g]?.sets[0]?.name;
+// Each tip: [icon, game, title, why, the set its button opens (or none)]. Stats shows 3; its detail screen shows all.
+export function tips(F, one, now = Date.now(), max = 3) {
   const out = [], games = one ? [one] : Object.keys(GAMES);
   for (const g of games) { // next level: you clear one level with no hints, and haven't tried the next
     const packs = GAMES[g].packs.filter((p) => LEVELS.includes(p[2]));
     for (let i = 0; i < packs.length - 1; i++) {
       const a = F.filter((e) => e.g === g && e.pack === packs[i][0]), b = F.filter((e) => e.g === g && e.pack === packs[i + 1][0]);
       const r = a.length ? a.filter(hintFree).length / a.length : 0;
-      if (a.length >= 3 && r >= 0.6 && !b.length) { out.push(["up", g, `Ready for ${GAMES[g].name} ${packInfo(g, packs[i + 1][0]).label}`, `You solve ${packInfo(g, packs[i][0]).label} with no hints ${Math.round(r * 100)}% of the time.`]); break; }
+      if (a.length >= 3 && r >= 0.6 && !b.length) { out.push(["up", g, `Ready for ${GAMES[g].name} ${packInfo(g, packs[i + 1][0]).label}`, `You solve ${packInfo(g, packs[i][0]).label} with no hints ${Math.round(r * 100)}% of the time.`, setOf(g, packs[i + 1][0])]); break; }
     }
   }
   let worst = null; // most hints: a pack you've played 3+ times
@@ -249,23 +257,24 @@ export function tips(F, one, now = Date.now()) {
   if (worst && worst.h >= 0.5) out.push(["bulb", worst.g, `${GAMES[worst.g].name} ${worst.label}: one fewer hint`, `You use about ${worst.h.toFixed(1)} hints there. Try waiting a minute before the next one.`]);
   const last = {}; for (const e of F) last[e.g] = Math.max(last[e.g] ?? 0, e.at);
   const stale = Object.entries(last).sort((a, b) => a[1] - b[1])[0];
-  if (stale && now - stale[1] >= 7 * DAY) out.push(["clock", stale[0], `Back to ${GAMES[stale[0]].name}?`, `Your last one was ${Math.round((now - stale[1]) / DAY)} days ago. A quick Easy keeps it fresh.`]);
+  if (stale && now - stale[1] >= 7 * DAY) out.push(["clock", stale[0], `Back to ${GAMES[stale[0]].name}?`, `Your last one was ${Math.round((now - stale[1]) / DAY)} days ago. A quick Easy keeps it fresh.`, setOf(stale[0])]);
   const fresh = Object.keys(GAMES).filter((g) => !F.some((e) => e.g === g));
-  if (!one && fresh.length && F.length >= 3) out.push(["star", fresh[0], `Try ${GAMES[fresh[0]].name}`, "You haven't played it yet. The Easy pack starts gentle."]);
-  return out.slice(0, 3);
+  if (!one && fresh.length && F.length >= 3) out.push(["star", fresh[0], `Try ${GAMES[fresh[0]].name}`, "You haven't played it yet. The Easy pack starts gentle.", setOf(fresh[0])]);
+  return out.slice(0, max);
 }
 function tipsCard(F, one) {
   const t = tips(F, one);
   return card(`${head("How to get better", "Picked from your own solves")}<div id="tips">${t.length ? t.map(([k, g, a, b]) =>
     `<div class="st-tip"><span class="tip-ic" style="background:${LOOK[g].bg}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${LOOK[g].ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[k]}"/></svg></span><span><b>${esc(a)}</b>${esc(b)}</span></div>`).join("")
-    : emptyNote("Solve a few more and tips show up here.")}</div>`);
+    : emptyNote("Solve a few more and tips show up here.")}</div>`, "", "tips");
 }
 
 function render() {
   const log = solves(), now = Date.now();
   const F = filter === "all" ? log : log.filter((e) => e.g === filter), one = filter === "all" ? null : filter;
+  if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick })}</div>`; return; }
   $("stats").innerHTML = hero(log, now) + chips() + (one ? `<p class="st-fine" style="margin:-6px 4px 0">Your streak counts every puzzle.</p>` : "")
-    + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F) + podiumCard(F, one)
+    + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F, "clock") + podiumCard(F, one)
     + `<p class="st-sec">How fast you are</p>` + speedCard(F, one)
     + `<p class="st-sec">What you're good at</p>` + goodCard(F, one) + hintsCard(F, one)
     + `<p class="st-sec">How to get better</p>` + tipsCard(F, one) + syncLine();
@@ -279,8 +288,21 @@ function syncLine() {
     : `iCloud sync on · ${s.keys} kept in iCloud · sent ${ago(s.sentAt)} · from your other device ${ago(s.gotAt)}`;
   return `<button class="st-fine st-sync" id="syncLine">${esc(text)}</button>`;
 }
+// Open a detail screen / go back to Stats.
+async function open(kind) {
+  backY = scrollY; view = kind;
+  if (kind === "good") await loadSizes();
+  render(); scrollTo(0, 0);
+}
+function back() { view = null; render(); scrollTo(0, backY); }
+$("stats").addEventListener("keydown", (ev) => { const c = ev.target.closest?.("[data-open]"); if (c && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); open(c.dataset.open); } });
 $("stats").addEventListener("click", (ev) => {
   if (ev.target.closest("#syncLine")) { globalThis.sbResync?.(); setTimeout(render, 600); return; }
+  if (ev.target.closest("#sdBack")) return back();
+  const sp = ev.target.closest("[data-sp]");
+  if (sp) { speedPick = sp.dataset.sp; const x = sp.parentElement.scrollLeft; render(); const c = document.querySelector(".sd-packs"); if (c) c.scrollLeft = x; return; }
+  const go = ev.target.closest("[data-go]"); if (go) return openTip(go.dataset.go);
+  const op = ev.target.closest("[data-open]"); if (op) return open(op.dataset.open);
   const b = ev.target.closest(".st-chip"); if (!b) return;
   filter = b.dataset.f;
   const x = document.querySelector(".st-chips")?.scrollLeft ?? 0;
@@ -292,5 +314,5 @@ $("stats").addEventListener("click", (ev) => {
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("stats"));
 globalThis.sbRefresh = render;
-globalThis.sbHome = () => scrollTo({ top: 0, behavior: "smooth" }); // tapping this tab again (Colin 10/24)
+globalThis.sbHome = () => (view ? back() : scrollTo({ top: 0, behavior: "smooth" })); // tapping this tab again (Colin 10/24); on a detail screen = back to Stats
 render();
