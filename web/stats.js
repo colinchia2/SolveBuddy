@@ -12,7 +12,7 @@ export const NOT_TRICKS = new Set(["", "Check this", "Wrong patch"]); // mistake
 let filter = "all";
 // Which detail screen is open (null = the Stats page itself), the pack picked on "How fast you are", and where the
 // Stats page was scrolled to, so "‹ Stats" lands back on the card you tapped (Colin 11/1).
-let view = null, speedPick = null, backY = 0;
+let view = null, speedPick = null, backY = 0, openDay = null;
 
 // A pack's own name: "Starter · Easy", "5×5 · Easy", "Trick tests"; anything not in GAMES (imports) is "Imported".
 export function packInfo(g, pack) {
@@ -272,7 +272,7 @@ function tipsCard(F, one) {
 function render() {
   const log = solves(), now = Date.now();
   const F = filter === "all" ? log : log.filter((e) => e.g === filter), one = filter === "all" ? null : filter;
-  if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick })}</div>`; return; }
+  if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick, day: openDay })}</div>`; return; }
   $("stats").innerHTML = hero(log, now) + chips() + (one ? `<p class="st-fine" style="margin:-6px 4px 0">Your streak counts every puzzle.</p>` : "")
     + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F, "clock") + podiumCard(F, one)
     + `<p class="st-sec">How fast you are</p>` + speedCard(F, one)
@@ -294,11 +294,12 @@ async function open(kind) {
   if (kind === "good") await loadSizes();
   render(); scrollTo(0, 0);
 }
-function back() { view = null; render(); scrollTo(0, backY); }
+function back() { view = null; openDay = null; render(); scrollTo(0, backY); }
 $("stats").addEventListener("keydown", (ev) => { const c = ev.target.closest?.("[data-open]"); if (c && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); open(c.dataset.open); } });
 $("stats").addEventListener("click", (ev) => {
   if (ev.target.closest("#syncLine")) { globalThis.sbResync?.(); setTimeout(render, 600); return; }
   if (ev.target.closest("#sdBack")) return back();
+  const wd = ev.target.closest("[data-wd]"); if (wd) { const i = Number(wd.dataset.wd); openDay = openDay === i ? null : i; const y = scrollY; render(); scrollTo(0, y); return; }
   const sp = ev.target.closest("[data-sp]");
   if (sp) { speedPick = sp.dataset.sp; const x = sp.parentElement.scrollLeft; render(); const c = document.querySelector(".sd-packs"); if (c) c.scrollLeft = x; return; }
   const go = ev.target.closest("[data-go]"); if (go) return openTip(go.dataset.go);

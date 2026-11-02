@@ -327,3 +327,10 @@ html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on scre
 .sd-medal { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 800 11px Inter, sans-serif; color: var(--body); background: rgba(42,33,27,0.07); }
 .sd-packs { margin: 0; }
 .sd-go { margin-top: 8px; border: 0; border-radius: 10px; padding: 7px 12px; background: #DCEAFE; color: #1F57B5; font: 700 12.5px Inter, sans-serif; }
+/* "When you play" → tap a weekday: its puzzles, by date (Colin 11/1). */
+.sd-wd { width: 100%; border: 0; background: none; text-align: left; font: inherit; cursor: pointer; }
+.sd-wd:disabled { cursor: default; }
+.sd-day { display: flex; flex-direction: column; gap: 4px; padding: 2px 0 10px 12px; margin-left: 4px; border-left: 2px solid #DCEAFE; font-size: 13px; color: var(--ink); }
+.sd-day small { font-size: 11.5px; color: var(--muted); }
+.sd-date { margin: 8px 0 1px; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.sd-date:first-child { margin-top: 2px; }

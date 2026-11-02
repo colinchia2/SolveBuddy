@@ -1798,6 +1798,15 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const bad = opened.filter((o) => !o.title || !o.cards || !o.backOk || (o.k !== "week" && !/Sudoku/.test(o.sub)));
   check(`Stats detail screens: ${opened.map((o) => `${o.title} (${o.cards})`).join(", ")}; filter carries over, back lands on the same spot${bad.length ? ` — BAD: ${bad.map((o) => o.k).join(",")}` : ""}`,
     opened.length === 9 && !bad.length);
+  // "When you play" → tap a weekday: that day's puzzles appear, grouped by date; tap again closes it.
+  await page.evaluate(() => document.querySelector('[data-open="clock"]').click()); await page.waitForTimeout(150);
+  const wdi = await page.evaluate(() => [...document.querySelectorAll("[data-wd]")].find((b) => !b.disabled)?.dataset.wd);
+  await page.click(`[data-wd="${wdi}"]`); await page.waitForTimeout(150);
+  const wdOpen = await page.evaluate(() => ({ dates: document.querySelectorAll(".sd-date").length, items: document.querySelectorAll(".sd-day > span").length }));
+  await page.click(`[data-wd="${wdi}"]`); await page.waitForTimeout(150);
+  const wdShut = await page.evaluate(() => document.querySelectorAll(".sd-day").length);
+  await page.click("#sdBack"); await page.waitForTimeout(150);
+  check(`Stats "When you play": tapping a weekday lists its puzzles (${wdOpen.items} on ${wdOpen.dates} dates), tapping again closes it (${wdShut === 0})`, wdOpen.dates >= 1 && wdOpen.items >= 1 && wdShut === 0);
   await page.evaluate(() => localStorage.removeItem("solvebuddy.solves"));
 }
 

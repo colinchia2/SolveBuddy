@@ -97,10 +97,22 @@ function heat(F, one, now) {
 }
 
 // 4. When you play: the clock, the days of the week, and when you're fastest
-function clock(F, one) {
+function clock(F, one, day = null) {
   const wd = Array(7).fill(0); F.forEach((e) => wd[(new Date(e.at).getDay() + 6) % 7]++);
   const wm = Math.max(1, ...wd);
-  const days = DAYS.map((d, i) => row("40px 1fr 28px", `<span>${d}</span>${bar((wd[i] / wm) * 100, "var(--brand)")}<b class="r">${wd[i]}</b>`)).join("");
+  // Tap a day (Colin 11/1): every puzzle played on that weekday, newest first, grouped by date, with the time of day.
+  const time = (t) => new Date(t).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const days = DAYS.map((d, i) => {
+    const on = day === i && wd[i];
+    let list = "";
+    if (on) {
+      const l = F.filter((e) => (new Date(e.at).getDay() + 6) % 7 === i).sort((a, b) => b.at - a.at), dates = [...new Set(l.map((e) => dayKey(e.at)))];
+      list = `<div class="sd-day">${dates.map((k) => { const ss = l.filter((e) => dayKey(e.at) === k);
+        return `<p class="sd-date">${d} ${md(ss[0].at)} · ${plural(ss.length, "puzzle")}</p>${ss.map((e) => `<span>${dot(e.g)}${esc(name(e.g, e.pack, one))} <small>· ${time(e.at)} · ${fmt(e.ms)}</small></span>`).join("")}`; }).join("")}</div>`;
+    }
+    return `<button class="sd-row sd-wd${on ? " on" : ""}" data-wd="${i}" style="grid-template-columns:40px 1fr 28px 14px"${wd[i] ? "" : " disabled"}><span>${d}</span>${bar((wd[i] / wm) * 100, "var(--brand)")}<b class="r">${wd[i]}</b>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted);opacity:${wd[i] ? 1 : 0}"><path d="${on ? "M6 9l6 6 6-6" : "M9 6l6 6-6 6"}"/></svg></button>${list}`;
+  }).join("");
   const med = {}; for (const r of groups(F)) med[`${r.g}|${r.pack}`] = median(r.ss.map((e) => e.ms));
   const rel = (e) => e.ms / (med[`${e.g}|${e.pack}`] || e.ms);
   const bands = [["Morning", "6 am – noon", 6, 12], ["Afternoon", "noon – 6 pm", 12, 18], ["Evening", "6 – 10 pm", 18, 22], ["Late", "10 pm – 6 am", 22, 30]];
@@ -111,7 +123,7 @@ function clock(F, one) {
     return row("1fr auto", `<span><b>${n}</b> <small>${t} · ${plural(l.length, "puzzle")}</small></span>${badge(pct === 0 ? "your usual" : `${Math.abs(pct)}% ${pct > 0 ? "faster" : "slower"}`, pct > 0)}`);
   }).join("");
   return top("When you play", `${filtered(one)} · your puzzle hours and days`) + clockCard(F)
-    + card(`${head("Through the week")}${days}`)
+    + card(`${head("Through the week", "Tap a day to see what you played")}${days}`)
     + card(`${head("When you're fastest", "Compared with your usual time for the same pack")}${fast || emptyNote("Play at a few different times and it shows up here.")}`);
 }
 
@@ -213,9 +225,10 @@ function tipsAll(F, one) {
 }
 
 export const DETAILS = { week, play, heat, clock, podium, speed, good, hints, tips: tipsAll };
-export function detail(kind, { log, F, one, now, pick }) {
+export function detail(kind, { log, F, one, now, pick, day }) {
   if (kind === "week") return week(log, now);
   if (kind === "speed") return speed(F, one, pick);
+  if (kind === "clock") return clock(F, one, day);
   return DETAILS[kind]?.(F, one, now) ?? "";
 }
 export const openTip = (go) => { const [g, set] = go.split("|"); openPack(g, set); };

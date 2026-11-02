@@ -2,6 +2,10 @@
 
 Newest first.
 
+## 2026-11-01 — "When you play": tap a weekday to see its puzzles
+- Colin (screenshot of Mon 15): tap Mon → every Monday's puzzles, newest first, by date, with the time of day and solve time. Tap again closes. Check in pages_smoke (159 PASS).
+- Next (mockup first): hint history per puzzle (needs each hint saved with when it happened; old solves have no detail) and iPad Stats using the full width. Sync: waiting on Colin's status-line screenshots.
+
 ## 2026-11-01 — Stats detail screens: every card opens its own page (pages only)
 - Mockup: https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76. Colin: "Lets do these".
 - `web/statsdetail.js`: Your streak (each day this week + 12 weeks), How much you play (week bars + by game/pack), Every day you played (heat map with counts, longest run, busiest days), When you play (clock + weekdays + fastest time of day vs the pack's usual), Your favourites (every pack ranked), How fast you are (one pack: every solve, best star, usual line, trend, fastest 5), What you're good at (each level: n of total, usual, % no hints, badge), How you use hints (no-hint share by week, Nudge/Explain/Show me, tricks with "Still learning"/"Got it" = asked in last 14 days, most hints), How to get better (all tips, "Open <game>" buttons).
