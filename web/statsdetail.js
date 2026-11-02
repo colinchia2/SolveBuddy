@@ -1,7 +1,7 @@
 // Stats detail screens (Colin 11/1, mockup https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76): tap a card on Stats
 // and its own page opens, one level deeper; "‹ Stats" goes back. The filter (All or one puzzle) carries over, except
 // the streak, which always counts every puzzle. All from the solve log on this device, plain rules, no AI.
-import { GAMES, hintAmount, loadPack, openPack } from "./bridge.js";
+import { GAMES, hintAmount, hintShort, loadPack, openPack } from "./bridge.js";
 import { LOOK, WEEK_GOAL, dayKey, esc, fmt, streaks, weekCounts, weekKey, weekStart } from "./screens.js";
 import { DAY, LEVELS, NOT_TRICKS, STAR, card, clockCard, emptyNote, groups, head, hintFree, packInfo, plural, thirds, tips } from "./stats.js";
 
@@ -17,7 +17,10 @@ const bar = (pct, color) => `<span class="sd-bar"><i style="width:${Math.max(0, 
 const badge = (t, on) => `<span class="sd-badge${on ? " on" : ""}">${t}</span>`;
 const filtered = (one) => (one ? `${GAMES[one].name} only` : "All puzzles");
 const BACK = `<button class="sd-back" id="sdBack"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Stats</button>`;
-const top = (title, sub) => `<div class="sd-top">${BACK}<h2>${title}</h2><p>${sub}</p></div>`;
+const when = (t) => { const d = new Date(t), days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / DAY);
+  return days === 0 ? "Today" : days === 1 ? "Yesterday" : md(t); };
+const CHEV = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 6l6 6-6 6"/></svg>`;
+const top = (title, sub, backTo = "Stats") => `<div class="sd-top">${BACK.replace("Stats</button>", `${backTo}</button>`)}<h2>${title}</h2><p>${sub}</p></div>`;
 
 // 1. This week → your streak (always every puzzle)
 function week(log, now) {
@@ -203,14 +206,17 @@ function hints(F, one, now) {
   const trickRows = topT.length ? topT.map(([t, r]) => { const fresh = now - r.last < 14 * DAY;
     return row("1fr auto auto", `<span><b>${esc(t)}</b><br><small>${GAMES[r.g]?.name ?? ""} · last asked ${md(r.last)}</small></span><b class="r">${r.n}×</b>${badge(fresh ? "Still learning" : "Got it", fresh)}`); }).join("")
     : emptyNote("Ask for a hint and the trick it teaches shows up here.");
-  const most = F.filter((e) => e.hints > 0.01).sort((a, b) => b.hints - a.hints || b.at - a.at).slice(0, 3)
-    .map((e) => row("1fr auto", `<span>${dot(e.g)}${esc(name(e.g, e.pack, one))} <small>· ${md(e.at)}</small></span><small class="r">${hintAmount(e.hints)}</small>`)).join("");
+  // Your puzzles with hints (Colin 11/1): newest first; tap one for its hint history (solves from before 11/1 have none).
+  const withHints = F.filter((e) => e.hints > 0.01).sort((a, b) => b.at - a.at).slice(0, 40);
+  const most = withHints.map((e) => { const has = !!e.hd?.log?.length, tr = [...new Set((e.hd?.log ?? []).map((h) => h.k).filter((k) => k && !NOT_TRICKS.has(k)))];
+    const inner = `<span>${dot(e.g)}<b>${esc(name(e.g, e.pack, one))}${e.p ? ` #${e.p}` : ""}</b><br><small>${when(e.at)} · ${fmt(e.ms)}${has ? (tr.length ? ` · ${esc(tr.join(", "))}` : "") : " · before hint history"}</small></span><b class="r">${hintShort(e.hints)}</b>${has ? CHEV : "<span></span>"}`;
+    return has ? `<button class="sd-row sd-solve" data-solve="${e.at}" style="grid-template-columns:1fr auto 14px">${inner}</button>` : row("1fr auto 14px", inner); }).join("");
   return top("How you use hints", `${filtered(one)} · which tricks you ask about, and whether it's dropping`)
     + kpis([[`${pct}%`, "solved with none"], [per.toFixed(1), "hints a puzzle"], [topT[0] ? esc(topT[0][0]) : "—", "most asked"]])
     + card(`${head("Solved with no hints", "Each week, the share of puzzles with no hints")}<svg viewBox="0 0 ${W} ${H + 16}" width="100%" role="img" aria-label="Share solved with no hints each week">${o}</svg>`)
     + card(`${head("How far you go")}${funnel}`)
     + card(`${head("Tricks you've asked about", "\"Got it\" = you haven't needed it in 2 weeks")}${trickRows}`)
-    + card(`${head("Most hints in one puzzle")}${most || emptyNote("No hints yet.")}`);
+    + card(`${head("Your puzzles with hints", "Newest first. Tap one to see each hint.")}${most || emptyNote("No hints yet.")}`);
 }
 
 // 9. How to get better: every tip, with a button where there's somewhere to go
@@ -224,8 +230,28 @@ function tipsAll(F, one) {
     + `<p class="st-fine" style="margin:0 4px">Worked out by plain rules on this device each time you open Stats. No AI.</p>`;
 }
 
+// One puzzle's hints (Colin 11/1): when you asked, on a line from start to solved, then each hint in order.
+const STEP = ["Nudge", "Explain", "Show me"], SHADE = ["#7EA6E8", "#2F6FD6", "#18337A"];
+function solve(log, at, backTo) {
+  const e = log.find((x) => x.at === at);
+  if (!e) return top("Your hints", "That puzzle isn't on this device.", backTo);
+  const L = e.hd?.log ?? [], tr = {};
+  for (const h of L) if (h.k && !NOT_TRICKS.has(h.k)) tr[h.k] = (tr[h.k] ?? 0) + 1;
+  const topT = Object.entries(tr).sort((a, b) => b[1] - a[1])[0];
+  const at12 = new Date(e.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase();
+  const marks = L.map((h, i) => `<span class="sd-tm" style="left:${Math.min(100, (h.t / Math.max(e.ms, 1)) * 100).toFixed(1)}%;background:${SHADE[h.n - 1]}">${i + 1}</span>`).join("");
+  const steps = L.map((h) => row("48px 1fr", `<b class="sd-t">${fmt(h.t)}</b><span><b>${esc(h.k && !NOT_TRICKS.has(h.k) ? h.k : h.k || "Hint")}</b>
+    <span class="sd-steps">${STEP.map((s, j) => `<i class="${j < h.n ? "on" : ""}">${s}</i>`).join("")}</span></span>`)).join("");
+  return top(`${GAMES[e.g]?.name ?? e.g}${e.p ? ` #${e.p}` : ""}`, `${esc(packInfo(e.g, e.pack).label)} · ${when(e.at).toLowerCase() === "today" ? "today" : when(e.at)} at ${at12} · solved in ${fmt(e.ms)}`, backTo)
+    + kpis([[hintShort(e.hints), "hints"], [L.length ? fmt(L[0].t) : "—", "first one"], [topT ? esc(topT[0]) : "—", topT ? "needed most" : "trick"]])
+    + (L.length ? card(`${head("When you asked", "Start to solved. Darker = you went further.")}<div class="sd-tl"><span class="sd-tline"></span>${marks}<span class="sd-tend"></span><small style="left:0">0:00</small><small style="right:0">${fmt(e.ms)}</small></div>`)
+      + card(`${head("Each hint")}${steps}`)
+      : card(emptyNote("This puzzle was solved before hint history, so only the total is kept.")));
+}
+
 export const DETAILS = { week, play, heat, clock, podium, speed, good, hints, tips: tipsAll };
-export function detail(kind, { log, F, one, now, pick, day }) {
+export function detail(kind, { log, F, one, now, pick, day, at, backTo }) {
+  if (kind === "solve") return solve(log, at, backTo);
   if (kind === "week") return week(log, now);
   if (kind === "speed") return speed(F, one, pick);
   if (kind === "clock") return clock(F, one, day);

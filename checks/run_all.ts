@@ -422,6 +422,8 @@ if (existsSync(sbExpertFile)) {
   hintStep(s, 1, "Pointing"); hintStep(s, 2); hintStep(s, 3); hintStep(s, 1, "Pointing"); hintStep(s, 1, "X-wing");
   check(`hint detail: steps ${s.hd.steps.join("/")}, tricks ${JSON.stringify(s.hd.tricks)}`,
     s.hd.steps.join() === "3,1,1" && s.hd.tricks.Pointing === 2 && s.hd.tricks["X-wing"] === 1);
+  // Hint history (11/1): one entry per hint asked, with how far it went.
+  check(`hint history: ${s.hd.log.map((h: any) => `${h.k} ${h.n}`).join(", ")}`, s.hd.log.length === 3 && s.hd.log.map((h: any) => `${h.k}${h.n}`).join() === "Pointing3,Pointing1,X-wing1");
   const wired = ["sudoku", "starbattle", "watersort", "nonogram", "shikaku"].filter((g) => {
     const t = readFileSync(`web/${g}.js`, "utf8");
     return (t.match(/hintStep\(s, /g) ?? []).length >= 2 && t.includes(`logSolve({ hd: s.hd, g: "${g}"`) && t.includes("hd: s.hd") && t.includes("s.hd = saved.hd");

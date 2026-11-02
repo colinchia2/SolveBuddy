@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 2026-11-01 — Hint history per puzzle + Stats on iPad at full width (pages only)
+- Mockup: https://claude.ai/artifact/WXwAwjjzrB2jcyssiCABFs. Colin: "Go on both".
+- Hint history: `hintStep` (bridge.js) now also keeps `hd.log` = [{ t: ms into the puzzle, k: trick, n: 1 Nudge / 2 Explain / 3 Show me }] (every game times a puzzle as (pausedAt ?? now) - started). Solves from before 11/1 have no log and show "before hint history". Text of each hint is not kept, only the trick.
+- Stats "How you use hints" ends with "Your puzzles with hints" (newest first, 40) → one puzzle: kpis, a start-to-solved line with a dot per hint (darker = further), each hint with Nudge/Explain/Show me. "‹ Hints" goes back to the list.
+- Solved card: "See your hints" when hints were used → `openSolve(at)` leaves `solvebuddy.openSolve` and switches to the Stats tab (app) / goes to stats.html (browser); Stats opens that puzzle (note must be < 60 s old).
+- iPad: stats.html `.phone data-tablet="wide"`: not the scaled phone; up to 1120px, cards two across (week, filter, section names, speed and tips full width); detail screens too. --safetop is multiplied back by --pz there.
+- Checks: pages_smoke "Hint history" (real Shikaku solve by hints → Solved card → Stats), "Stats hint list", F1 iPad upright now includes Stats (161 PASS); run_all "hint history" (53 PASS).
+
 ## 2026-11-01 — "When you play": tap a weekday to see its puzzles
 - Colin (screenshot of Mon 15): tap Mon → every Monday's puzzles, newest first, by date, with the time of day and solve time. Tap again closes. Check in pages_smoke (159 PASS).
 - Next (mockup first): hint history per puzzle (needs each hint saved with when it happened; old solves have no detail) and iPad Stats using the full width. Sync: waiting on Colin's status-line screenshots.

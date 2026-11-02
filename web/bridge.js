@@ -178,10 +178,22 @@ export function solves() {
 }
 // Hint detail for Stats (Colin 11/1): s.hd = { steps: [asked, reached Explain, reached Show me], tricks: { name: times } }.
 // It rides along in the saved game and the solve log; s.hints (the thirds count) stays the one the screens show.
+// Hint history (Colin 11/1): d.log = each hint in order, { t: ms into the puzzle, k: its trick, n: how far it went
+// (1 Nudge, 2 Explain, 3 Show me) }. Every game times a puzzle as (pausedAt ?? now) - started.
 export function hintStep(s, step, trick) {
   const d = (s.hd ??= { steps: [0, 0, 0], tricks: {} });
   d.steps[step - 1]++;
   if (trick) d.tricks[trick] = (d.tricks[trick] ?? 0) + 1;
+  const log = (d.log ??= []), t = Math.max(0, Math.round((s.pausedAt ?? Date.now()) - (s.started ?? Date.now())));
+  if (step === 1 || !log.length) log.push({ t, k: trick || "", n: step });
+  else log.at(-1).n = Math.max(log.at(-1).n, step);
+}
+// "See your hints" on the Solved card: Stats opens that puzzle's hints (the app switches to the Stats tab).
+export const OPEN_SOLVE_KEY = "solvebuddy.openSolve";
+export function openSolve(at) {
+  try { localStorage.setItem(OPEN_SOLVE_KEY, JSON.stringify({ at, when: Date.now() })); } catch {}
+  if (inApp) post({ type: "tab", name: "Stats" });
+  else location.href = "stats.html";
 }
 export function logSolve(entry) {
   try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}

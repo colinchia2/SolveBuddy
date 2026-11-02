@@ -1,7 +1,7 @@
 // Stats tab (Colin 11/1, the "mix" mockup): this week + weekly streak on top, then a filter (All or one puzzle) that
 // changes everything below: how much you play, how fast you are, what you're good at, hints, and tips.
 // Everything comes from the solve log on this phone (bridge.js). The tips are plain rules run here, no AI.
-import { GAMES, inApp, post, solves } from "./bridge.js";
+import { GAMES, OPEN_SOLVE_KEY, inApp, post, solves } from "./bridge.js";
 import { syncStatus } from "./sync.js";
 import { detail, loadSizes, openTip } from "./statsdetail.js";
 import { $, LOOK, WEEK_GOAL, dayKey, esc, fmt, headerLogo, streaks, tabs, weekCounts, weekKey, weekStart } from "./screens.js";
@@ -13,6 +13,8 @@ let filter = "all";
 // Which detail screen is open (null = the Stats page itself), the pack picked on "How fast you are", and where the
 // Stats page was scrolled to, so "‹ Stats" lands back on the card you tapped (Colin 11/1).
 let view = null, speedPick = null, backY = 0, openDay = null;
+// A puzzle's hint history: which solve (its time stamp), and what "‹" goes back to (the hints screen, or Stats).
+let solveAt = null, solveFrom = null;
 
 // A pack's own name: "Starter · Easy", "5×5 · Easy", "Trick tests"; anything not in GAMES (imports) is "Imported".
 export function packInfo(g, pack) {
@@ -272,7 +274,7 @@ function tipsCard(F, one) {
 function render() {
   const log = solves(), now = Date.now();
   const F = filter === "all" ? log : log.filter((e) => e.g === filter), one = filter === "all" ? null : filter;
-  if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick, day: openDay })}</div>`; return; }
+  if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick, day: openDay, at: solveAt, backTo: solveFrom === "hints" ? "Hints" : "Stats" })}</div>`; return; }
   $("stats").innerHTML = hero(log, now) + chips() + (one ? `<p class="st-fine" style="margin:-6px 4px 0">Your streak counts every puzzle.</p>` : "")
     + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F, "clock") + podiumCard(F, one)
     + `<p class="st-sec">How fast you are</p>` + speedCard(F, one)
@@ -294,7 +296,19 @@ async function open(kind) {
   if (kind === "good") await loadSizes();
   render(); scrollTo(0, 0);
 }
-function back() { view = null; openDay = null; render(); scrollTo(0, backY); }
+function back() {
+  if (view === "solve" && solveFrom === "hints") { view = "hints"; solveFrom = null; render(); scrollTo(0, hintsY); return; }
+  view = null; openDay = null; render(); scrollTo(0, backY);
+}
+let hintsY = 0;
+// "See your hints" on a Solved card left a note: open that puzzle's hints (once, and only if it's fresh).
+function openFromNote() {
+  let n = null;
+  try { n = JSON.parse(localStorage.getItem(OPEN_SOLVE_KEY) || "null"); localStorage.removeItem(OPEN_SOLVE_KEY); } catch {}
+  if (!n?.at || Date.now() - n.when > 60000) return false;
+  backY = 0; view = "solve"; solveAt = n.at; solveFrom = null; render(); scrollTo(0, 0);
+  return true;
+}
 $("stats").addEventListener("keydown", (ev) => { const c = ev.target.closest?.("[data-open]"); if (c && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); open(c.dataset.open); } });
 $("stats").addEventListener("click", (ev) => {
   if (ev.target.closest("#syncLine")) { globalThis.sbResync?.(); setTimeout(render, 600); return; }
@@ -303,6 +317,7 @@ $("stats").addEventListener("click", (ev) => {
   const sp = ev.target.closest("[data-sp]");
   if (sp) { speedPick = sp.dataset.sp; const x = sp.parentElement.scrollLeft; render(); const c = document.querySelector(".sd-packs"); if (c) c.scrollLeft = x; return; }
   const go = ev.target.closest("[data-go]"); if (go) return openTip(go.dataset.go);
+  const so = ev.target.closest("[data-solve]"); if (so) { hintsY = scrollY; solveFrom = view; solveAt = Number(so.dataset.solve); view = "solve"; render(); scrollTo(0, 0); return; }
   const op = ev.target.closest("[data-open]"); if (op) return open(op.dataset.open);
   const b = ev.target.closest(".st-chip"); if (!b) return;
   filter = b.dataset.f;
@@ -314,6 +329,6 @@ $("stats").addEventListener("click", (ev) => {
 // The header face: tap = hello, and back to Library (Buddy standard §2); it also winks when idle.
 headerLogo($("logoBtn"), () => (inApp ? post({ type: "tab", name: "Library" }) : (location.href = "home.html")));
 document.querySelector(".phone").insertAdjacentHTML("beforeend", tabs("stats"));
-globalThis.sbRefresh = render;
+globalThis.sbRefresh = () => { if (!openFromNote()) render(); };
 globalThis.sbHome = () => (view ? back() : scrollTo({ top: 0, behavior: "smooth" })); // tapping this tab again (Colin 10/24); on a detail screen = back to Stats
-render();
+if (!openFromNote()) render();

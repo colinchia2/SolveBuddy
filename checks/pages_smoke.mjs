@@ -916,6 +916,15 @@ const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   check(`Shikaku hints alone finish it (${Object.entries(tally).map(([k, n]) => `${k} ${n}`).join(", ")}); the first points at the red patch; partial patches drawn dashed (${run.drawn.length}); solved: wave + solid (${run.solid}), card "${run.card}", logged (${run.logged})`,
     run.kinds[0] === "mistake" && tally.full > 0 && run.won && run.wave && run.logged && run.card === "Solved!" && !/253, 253, 249/.test(run.solid)
     && (tally.partial ? run.drawn.every((c) => /part/.test(c)) : true));
+  // Hint history (Colin 11/1): that solve kept each hint with its time; "See your hints" on the Solved card opens it on Stats.
+  const hl = await p.evaluate(() => { const e = JSON.parse(localStorage.getItem("solvebuddy.solves") || "[]").filter((x) => x.g === "shikaku").at(-1);
+    const L = e?.hd?.log ?? []; return { n: L.length, inOrder: L.every((h, i) => !i || h.t >= L[i - 1].t), within: L.every((h) => h.t <= e.ms), steps: L.every((h) => h.n >= 1 && h.n <= 3), btn: !!document.querySelector(".won-hints") }; });
+  await p.click(".won-hints"); await p.waitForTimeout(200); // in the app this switches to the Stats tab; here, open Stats as the tab would
+  const note = await p.evaluate(() => localStorage.getItem("solvebuddy.openSolve"));
+  await p.goto(`${BASE}stats.html`); await p.waitForTimeout(800);
+  const hv = await p.evaluate(() => ({ title: document.querySelector(".sd-top h2")?.textContent ?? "", dots: document.querySelectorAll(".sd-tm").length, rows: document.querySelectorAll(".sd-steps").length }));
+  check(`Hint history: note left (${!!note}); ${hl.n} hints kept in order (${hl.inOrder}) within the solve (${hl.within}); Solved card's "See your hints" (${hl.btn}) opens "${hv.title}" with ${hv.dots} dots and ${hv.rows} rows`,
+    !!note && hl.n > 0 && hl.inOrder && hl.within && hl.steps && hl.btn && /^Shikaku #1$/.test(hv.title) && hv.dots === hl.n && hv.rows === hl.n);
   // A puzzle whose first blank-board hints include a partial patch (checks/shikaku.ts counts them in every pack).
   await p.goto(`${BASE}shikaku.html?pack=hard&p=1`);
   await p.waitForTimeout(1200);
@@ -1678,10 +1687,14 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await p.goto(`${BASE}watersort.html?pack=medium&p=1`); await p.waitForTimeout(1500);
   const wsUp = await p.evaluate(() => Math.round(document.querySelector(".tube").getBoundingClientRect().width));
   const bdUp = await well();
+  // Stats on iPad (Colin 11/1): the whole width, cards two across.
+  await p.goto(`${BASE}stats.html`); await p.waitForTimeout(800);
+  const stUp = await p.evaluate(() => { const c = [...document.querySelectorAll(".st-wrap > .st")].map((x) => x.getBoundingClientRect());
+    return { w: Math.round(document.getElementById("stats").getBoundingClientRect().width), pairs: c.filter((r, i) => c.some((q, j) => j !== i && Math.abs(q.top - r.top) < 2)).length }; });
   await p.goto(`${BASE}import.html`); await p.waitForTimeout(1500); // a page without the split layout
   const pz = await p.evaluate(() => Number(getComputedStyle(document.querySelector(".phone")).zoom));
-  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Nonogram ${nnUp}px; Water Sort tubes ${wsUp}px; Block Drop well ${bdUp.w}px, panels beside it (${bdUp.sideRight}), on screen (${bdUp.onScreen}); Import shows the phone layout ×${pz.toFixed(2)}`,
-    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && nnUp > 650 && wsUp > 80 && bdUp.w > 450 && bdUp.sideRight && bdUp.onScreen && pz > 1.2);
+  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Nonogram ${nnUp}px; Water Sort tubes ${wsUp}px; Block Drop well ${bdUp.w}px, panels beside it (${bdUp.sideRight}), on screen (${bdUp.onScreen}); Stats ${stUp.w}px wide, ${stUp.pairs} cards side by side; Import shows the phone layout ×${pz.toFixed(2)}`,
+    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && nnUp > 650 && wsUp > 80 && bdUp.w > 450 && bdUp.sideRight && bdUp.onScreen && stUp.w > 700 && stUp.pairs >= 2 && pz > 1.2);
   await ctx.close();
 }
 
@@ -1798,6 +1811,16 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const bad = opened.filter((o) => !o.title || !o.cards || !o.backOk || (o.k !== "week" && !/Sudoku/.test(o.sub)));
   check(`Stats detail screens: ${opened.map((o) => `${o.title} (${o.cards})`).join(", ")}; filter carries over, back lands on the same spot${bad.length ? ` — BAD: ${bad.map((o) => o.k).join(",")}` : ""}`,
     opened.length === 9 && !bad.length);
+  // Hints → a puzzle with hint history → its screen → "‹ Hints" goes back to the hints screen.
+  await page.evaluate(() => { const l = JSON.parse(localStorage.getItem("solvebuddy.solves")); const e = l.find((x) => x.g === "sudoku");
+    e.hints = 1; e.hd = { steps: [1, 1, 1], tricks: { Pointing: 1 }, log: [{ t: 1000, k: "Pointing", n: 3 }] }; localStorage.setItem("solvebuddy.solves", JSON.stringify(l)); });
+  await page.evaluate(() => document.querySelector('[data-open="hints"]').click()); await page.waitForTimeout(150);
+  await page.evaluate(() => document.querySelector("[data-solve]").click()); await page.waitForTimeout(150);
+  const hOne = await page.evaluate(() => ({ title: document.querySelector(".sd-top h2")?.textContent, back: document.getElementById("sdBack")?.textContent.trim(), on: document.querySelectorAll(".sd-steps i.on").length }));
+  await page.click("#sdBack"); await page.waitForTimeout(150);
+  const after = await page.evaluate(() => document.querySelector(".sd-top h2")?.textContent);
+  await page.click("#sdBack"); await page.waitForTimeout(150);
+  check(`Stats hint list: a puzzle opens "${hOne.title}" (${hOne.on} steps lit), "‹ ${hOne.back}" goes back to "${after}"`, /^Sudoku/.test(hOne.title ?? "") && hOne.on === 3 && hOne.back === "Hints" && after === "How you use hints");
   // "When you play" → tap a weekday: that day's puzzles appear, grouped by date; tap again closes it.
   await page.evaluate(() => document.querySelector('[data-open="clock"]').click()); await page.waitForTimeout(150);
   const wdi = await page.evaluate(() => [...document.querySelectorAll("[data-wd]")].find((b) => !b.disabled)?.dataset.wd);

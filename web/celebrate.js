@@ -2,7 +2,7 @@
 // - celebrate(): the Solved! card (medal, star burst, badges, Next / View puzzle / Home) with a buzz.
 // - openWipe(): the blue wipe as a game opens.
 // - shootingStar(): a star arcs from one spot into another (Star Battle's counter).
-import { goHome, haptic, hintAmount, hintThirds, solves } from "./bridge.js";
+import { goHome, haptic, hintAmount, hintThirds, openSolve, solves } from "./bridge.js";
 import { streaks } from "./screens.js";
 
 const STAR = "M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z";
@@ -49,6 +49,7 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, 
       </div>
       <div class="won-in" style="--at:.5s"><h2>${heading}</h2><p>You finished ${title} in <b>${fmt(facts.ms)}</b></p></div>
       ${badges ? `<div class="badges">${badges}</div>` : ""}
+      ${hintThirds(facts.hints) > 0 ? `<button class="won-hints won-in" style="--at:1.05s" data-act="hints">See your hints<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>` : ""}
       ${hasNext ? `<button class="won-next won-in" style="--at:1.1s" data-act="next">Next puzzle<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg></button>` : ""}
       <div class="two won-in" style="--at:1.2s">
         <button class="ghost" data-act="view">View puzzle</button>
@@ -73,6 +74,7 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, 
     const act = e.target.closest("[data-act]")?.dataset.act;
     if (act === "next") { el.remove(); onNext(); }
     else if (act === "home") goHome();
+    else if (act === "hints") openSolve(solves().at(-1)?.at); // the solve was just logged
     else if (act === "view") show(false);
     else if (act === "again") { el.style.setProperty("--wait", "0s"); show(true); }
   };

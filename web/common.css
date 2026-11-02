@@ -267,6 +267,9 @@ html.tablet.port .phone[data-tablet] .screen > .zview { align-self: center; }
 .badge.gold { background: #FDF0D5; color: #7A4E00; }
 .badge.grey { background: #E6E1DA; color: var(--muted); }
 .badge.coral { background: var(--accent-soft); color: var(--accent-dark); }
+/* "See your hints" (Colin 11/1): opens this puzzle's hint history on Stats. */
+.won-hints { width: 100%; min-height: 46px; margin-bottom: 10px; border: 0; border-radius: 14px; background: #DCEAFE; color: #1F57B5; font: 700 15px Inter, sans-serif;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 16px; }
 .won-next { width: 100%; min-height: 54px; border-radius: 14px; border: 0; background: var(--brand); color: #fff; font: 700 16px Inter, sans-serif;
   display: flex; align-items: center; justify-content: center; gap: 8px; }
 .won-bar { position: absolute; z-index: 41; left: 16px; right: 16px; bottom: 30px; display: flex; gap: 10px; animation: sbIn .3s ease both; }
