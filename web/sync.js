@@ -20,6 +20,13 @@ export const SYNCED = {
   "solvebuddy.imports": "last",
 };
 const AT_KEY = "solvebuddy.syncAt"; // when this device last changed each "last" key
+// What sync has done on this device, for the line at the bottom of Stats (Colin 11/1: "the stats don't match"):
+// { on, keys (in iCloud when the page opened), sentAt, gotAt (last time the other device's data changed ours) }.
+const INFO_KEY = "solvebuddy.syncInfo";
+export function syncStatus(win = globalThis) {
+  const info = parse(win.localStorage?.getItem(INFO_KEY), {});
+  return { ...info, on: !!(win.SB_CLOUD && typeof win.SB_CLOUD === "object"), inApp: !!win.SOLVEBUDDY_APP, keys: win.SB_CLOUD ? Object.keys(win.SB_CLOUD).filter((k) => k in SYNCED).length : 0 };
+}
 
 const parse = (s, d) => { try { return s == null ? d : JSON.parse(s); } catch { return d; } };
 const solveId = (e) => `${e.g}|${e.pack}|${e.p}|${e.at}`;
@@ -55,6 +62,7 @@ export function startSync(win = globalThis) {
   const rawSet = proto.setItem;
   const set = (k, v) => rawSet.call(ls, k, v); // a write that isn't sent back out
   const ats = () => parse(ls.getItem(AT_KEY), {});
+  const note = (patch) => set(INFO_KEY, JSON.stringify({ ...parse(ls.getItem(INFO_KEY), {}), ...patch }));
   const sent = {}; // the last value sent per key, so the same thing isn't sent twice
   const send = (key) => {
     const raw = ls.getItem(key);
@@ -63,6 +71,7 @@ export function startSync(win = globalThis) {
     if (sent[key] === value) return;
     sent[key] = value;
     win.ReactNativeWebView?.postMessage(JSON.stringify({ type: "cloud", key, value }));
+    note({ sentAt: Date.now() });
   };
   // Take in what iCloud has; send back anything iCloud is missing. Returns whether this page's storage changed.
   const apply = (cloud) => {
@@ -79,6 +88,7 @@ export function startSync(win = globalThis) {
       }
       if (merged != null && (!env || outgoing(key, merged) !== env.v)) send(key);
     }
+    if (changed) note({ gotAt: Date.now() });
     return changed;
   };
   // Every write to a kept key goes out to iCloud (a moment later, so a burst of writes sends once).
@@ -93,7 +103,9 @@ export function startSync(win = globalThis) {
   win.addEventListener?.("pagehide", () => { for (const k of Object.keys(timers)) { clearTimeout(timers[k]); send(k); } });
   apply(win.SB_CLOUD);
   // The other device changed something while this page is open: merge it and redraw.
-  win.sbCloud = (changes) => { if (apply(changes)) win.sbRefresh?.(); };
+  win.sbCloud = (changes) => { note({ heardAt: Date.now() }); if (apply(changes)) win.sbRefresh?.(); };
+  // Send everything again (tapping the line on Stats).
+  win.sbResync = () => { for (const k of Object.keys(sent)) delete sent[k]; for (const k of Object.keys(SYNCED)) send(k); };
   return true;
 }
 startSync();

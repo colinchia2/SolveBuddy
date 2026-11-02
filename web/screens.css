@@ -298,3 +298,5 @@ html.app .phone:has(> .page) .scrim { position: fixed; } /* pop-ups stay on scre
 .st-tip + .st-tip { border-top: 1px solid rgba(42,33,27,0.08); padding-top: 10px; margin-top: 4px; }
 .st-tip b { display: block; font-size: 14px; color: var(--ink); }
 .tip-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; }
+/* iCloud status line at the bottom of Stats (11/1); tap = send everything again. */
+.st-sync { display: block; width: 100%; margin: 18px 0 8px; padding: 8px 4px; border: 0; background: none; text-align: center; font: 500 12px Inter, sans-serif; color: var(--muted); }

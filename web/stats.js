@@ -2,6 +2,7 @@
 // changes everything below: how much you play, how fast you are, what you're good at, hints, and tips.
 // Everything comes from the solve log on this phone (bridge.js). The tips are plain rules run here, no AI.
 import { GAMES, inApp, post, solves } from "./bridge.js";
+import { syncStatus } from "./sync.js";
 import { $, LOOK, WEEK_GOAL, dayKey, esc, fmt, headerLogo, streaks, tabs, weekCounts, weekKey, weekStart } from "./screens.js";
 
 const LEVELS = ["Easy", "Medium", "Hard", "Expert"];
@@ -267,9 +268,19 @@ function render() {
     + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F) + podiumCard(F, one)
     + `<p class="st-sec">How fast you are</p>` + speedCard(F, one)
     + `<p class="st-sec">What you're good at</p>` + goodCard(F, one) + hintsCard(F, one)
-    + `<p class="st-sec">How to get better</p>` + tipsCard(F, one);
+    + `<p class="st-sec">How to get better</p>` + tipsCard(F, one) + syncLine();
+}
+// iCloud (Colin 11/1): what sync has done on this device. Tap it to send everything again.
+const ago = (t) => { if (!t) return "never"; const m = Math.round((Date.now() - t) / 60000); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+function syncLine() {
+  const s = syncStatus();
+  if (!s.inApp) return "";
+  const text = !s.on ? "iCloud sync: not in this version of the app"
+    : `iCloud sync on · ${s.keys} kept in iCloud · sent ${ago(s.sentAt)} · from your other device ${ago(s.gotAt)}`;
+  return `<button class="st-fine st-sync" id="syncLine">${esc(text)}</button>`;
 }
 $("stats").addEventListener("click", (ev) => {
+  if (ev.target.closest("#syncLine")) { globalThis.sbResync?.(); setTimeout(render, 600); return; }
   const b = ev.target.closest(".st-chip"); if (!b) return;
   filter = b.dataset.f;
   const x = document.querySelector(".st-chips")?.scrollLeft ?? 0;

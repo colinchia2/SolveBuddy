@@ -1827,13 +1827,15 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await ph.evaluate((c) => window.sbCloud(c), up2); // the app passes the iPad's changes to the open phone page
   await ph.waitForTimeout(300);
   const after = await ph.evaluate(() => ({ big: document.querySelector(".play .st-big")?.textContent,
-    n: JSON.parse(localStorage.getItem("solvebuddy.solves")).length, best: JSON.parse(localStorage.getItem("solvebuddy.blocks") || "{}").best }));
+    n: JSON.parse(localStorage.getItem("solvebuddy.solves")).length, best: JSON.parse(localStorage.getItem("solvebuddy.blocks") || "{}").best,
+    line: document.getElementById("syncLine")?.textContent ?? "" }));
   // A new solve on the phone goes straight out.
   await ph.evaluate(() => localStorage.setItem("solvebuddy.solves", JSON.stringify([...JSON.parse(localStorage.getItem("solvebuddy.solves")), { g: "nonogram", pack: "easy", p: 2, ms: 1, hints: 0, at: Date.now() }])));
   await ph.waitForTimeout(500);
   const up3 = await upload(ph);
   check(`iCloud sync: phone sent ${Object.keys(up1).length} things; iPad merged to ${ipadSolves} solves + phone's settings (${!!ipadSettings}); Block Drop best ${cloudBlocks.best} in iCloud without the half-done game (${!("saved" in cloudBlocks)})`,
     "solvebuddy.solves" in up1 && ipadSolves === 3 && ipadSettings === '{"timer":false}' && cloudBlocks.best === 500 && !("saved" in cloudBlocks));
+  check(`iCloud sync: Stats line "${after.line}"`, /iCloud sync on/.test(after.line) && /from your other device just now/.test(after.line));
   check(`iCloud sync: the open phone Stats page redraws from ${before} to ${after.big} solves (${after.n} kept), Block Drop best ${after.best}; a new solve is sent (${JSON.parse(JSON.parse(up3["solvebuddy.solves"] ?? '{"v":"[]"}').v).length} in iCloud)`,
     before === "2" && after.big === "3" && after.n === 3 && after.best === 500 && JSON.parse(JSON.parse(up3["solvebuddy.solves"] ?? '{"v":"[]"}').v).length === 4);
   // A plain browser (no app) never syncs: no SB_CLOUD, nothing sent, sbCloud not defined.
