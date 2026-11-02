@@ -2,7 +2,7 @@
 // - celebrate(): the Solved! card (medal, star burst, badges, Next / View puzzle / Home) with a buzz.
 // - openWipe(): the blue wipe as a game opens.
 // - shootingStar(): a star arcs from one spot into another (Star Battle's counter).
-import { goHome, haptic, hintAmount, hintThirds, openSolve, solves } from "./bridge.js";
+import { goHome, haptic, hintAmount, hintThirds, openSolve, pageGame, solves } from "./bridge.js";
 import { streaks } from "./screens.js";
 
 const STAR = "M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z";
@@ -81,17 +81,27 @@ export function celebrate({ title, level, facts, hasNext, onNext, delay = 1000, 
 }
 
 // "View solved puzzle" (from a pack's numbers): the finished board with a small bar, and Play again.
+// If you used hints on it, the pill also opens them (Colin 11/2: a second way in besides Stats): the newest solve
+// of this puzzle that had hints.
 export function solvedBar(ms, onAgain) {
   document.getElementById("won")?.remove();
   const el = document.createElement("div");
   el.id = "won";
   el.className = "viewing";
+  const q = new URLSearchParams(location.search), g = pageGame(), pack = q.get("pack"), p = Number(q.get("p"));
+  const used = (e) => e.hd?.log?.length || e.hints || 0;
+  const withHints = pack ? solves().filter((e) => e.g === g && e.pack === pack && e.p === p && used(e) > 0).at(-1) : null;
+  const n = withHints ? used(withHints) : 0;
   el.innerHTML = `<div class="won-bar">
-    <span class="won-pill">${star(18, "#2F6FD6")}Solved in ${fmt(ms)}</span>
+    ${withHints ? `<button class="won-pill won-pill2" data-act="hints"><span class="wp-t">${star(14, "#2F6FD6")}Solved in ${fmt(ms)}</span>
+      <span class="wp-h">See your ${n === 1 ? "hint" : `${n} hints`}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>`
+    : `<span class="won-pill">${star(18, "#2F6FD6")}Solved in ${fmt(ms)}</span>`}
     <button class="won-go" data-act="again"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Play again</button>
   </div>`;
   document.querySelector(".phone").appendChild(el);
   el.querySelector("[data-act=again]").onclick = () => { el.remove(); onAgain(); };
+  const h = el.querySelector("[data-act=hints]");
+  if (h) h.onclick = () => { haptic("pick"); openSolve(withHints.at); };
 }
 
 // The blue wipe a game opens with: a circle grows from near the bottom, then fades to show the page.

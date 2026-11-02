@@ -2,12 +2,17 @@
 
 Newest first.
 
+## 2026-11-02 — "See your hints" on a finished puzzle + Sudoku grey-out keys (pages only)
+- Mockup: https://claude.ai/artifact/AhfPBjChSm6HggFEDsrKLD. Colin: "go".
+- Finished puzzle from the Library (celebrate.js solvedBar, all games with hints): if any solve of that puzzle used hints, the pill becomes a button "Solved in m:ss / See your N hints ›" → openSolve(newest solve with hints) → Stats opens it. No hints = the plain pill as before.
+- Sudoku setting "Grey out a number once all 9 are placed" (`settings.done`, on by default, synced with the other settings). Counts what's on the board, right or wrong; the key fades and is disabled, typing it does nothing, notes too; erase one and it comes back.
+- Checks: pages_smoke "Finished puzzle with hints", "Sudoku grey-out", "the close carries the solve" (166 PASS); run_all 55 PASS.
+
 ## 2026-11-02 — Fixes: "See your hints" landed on Library; replay bar covered the board (pages only)
 - Colin tested on the phone: the Solved card's "See your hints" went to Library and stayed; the replay bar sat on top of the board's first rows and cut the trick name ("Only sp…").
 - Cause 1: each web view's copy of storage catches up late, so Library never saw the note. Now the solve rides along with the close (`left.openSolve`, bridge.js whereLeft); home/packs/import pass `left` to `hopToStats`; Stats keeps looking for 3 s and only opens once the solve itself has arrived.
 - Fix 2: the bar now sits in the page flow in place of the game's header + timer row (both hidden while replaying). Title "Hint i of N", under it "trick · at m:ss"; second row ‹ Nudge Explain Show me ›.
 - Checks: run_all "See your hints hands the solve over" (55 PASS); pages_smoke "Hint replay … board clear of the bar" (163 PASS).
-- Colin's next asks (not built yet): "View hints" on a finished puzzle (Library → solved puzzle), and a Sudoku setting to grey out a number once all 9 are placed. Mockup first.
 
 ## 2026-11-01 — Hint replay: tap a hint, see the board and the card as they were (pages only)
 - Mockup: https://claude.ai/artifact/XLb4R3AJPcqALtAwC2obDP. Colin: "mockup looks good!" (sync confirmed working the same evening).

@@ -69,7 +69,7 @@ const undoStack = []; // board snapshots for Undo
 
 // Game settings: same names and defaults as the Settings screen mockup. Remembered in this browser.
 const SETTINGS_KEY = "solvebuddy.settings";
-const settings = { timer: true, mistakes: false, hl: true, same: true, reach: true };
+const settings = { timer: true, mistakes: false, hl: true, same: true, reach: true, done: true };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {}
@@ -146,6 +146,16 @@ const peersOf = (r, c) => {
   return out;
 };
 const valueAt = (r, c) => s.givens[r][c] || s.entries[key(r, c)] || 0;
+// "Grey out a number once all 9 are placed" (Colin 11/2, on by default): those keys fade and can't be tapped, in
+// notes too. Erase one and it comes back. Counts what's on the board, right or wrong.
+function usedUp() {
+  const out = new Set();
+  if (!settings.done || s.solved) return out;
+  const n = Array(10).fill(0);
+  for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) n[valueAt(r, c)]++;
+  for (let d = 1; d <= 9; d++) if (n[d] >= 9) out.add(d);
+  return out;
+}
 const board = () => s.givens.map((row, r) => row.map((_, c) => valueAt(r, c)));
 
 // Any change to the board closes an open hint; the next tap recomputes from the new board.
@@ -169,7 +179,7 @@ function selectOnly(r, c) {
 // they all have it already.
 function press(n) {
   const ks = pickedOpen();
-  if (!ks.length) return;
+  if (!ks.length || usedUp().has(n)) return;
   haptic("tap");
   change(() => {
     if (s.mode === "normal") {
@@ -408,6 +418,8 @@ function render() {
 
   document.querySelectorAll(".seg[data-mode]").forEach((b) => b.classList.toggle("on", b.dataset.mode === s.mode));
   $("pad").classList.toggle("pencil", s.mode !== "normal");
+  const gone = usedUp();
+  $("pad").querySelectorAll("[data-n]").forEach((k) => { const off = gone.has(Number(k.dataset.n)); k.classList.toggle("done", off); k.disabled = off; });
   $("hintBtn").classList.toggle("pressed", !!h);
 
   $("hint").hidden = !h;

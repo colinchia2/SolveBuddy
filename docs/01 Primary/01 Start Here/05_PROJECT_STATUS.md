@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-02:** Finished puzzles open their hints ("See your N hints"); Sudoku setting greys out a number once all 9 are placed (on by default). Pages only, pushed. Build log 11/2.
+
 **2026-11-02:** Fixed "See your hints" (went to Library) and the replay bar covering the board (pages only, pushed). Build log 11/2.
 
 **2026-11-01:** iPad: every game now has its own iPad layout (Shikaku, Nonogram, Water Sort, Block Drop added; pages only, pushed). iCloud sync of stats between iPhone and iPad: pages pushed, app side committed; build 4 installed; sync confirmed working 11/1. Stats cards open detail screens; hint history + hint replay per puzzle. Build log 11/1.

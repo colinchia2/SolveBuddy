@@ -1926,6 +1926,54 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const stale = await p.evaluate(() => { window.__out = []; window.sbRefresh(); return window.__out.some((m) => m.type === "tab"); });
   check(`"See your hints" in the app: the game closes (${game.join(",")}); Library/Packs/Import then switch to Stats (${Object.values(res).join(",")}); an old note doesn't (${!stale})`,
     game.includes("close") && !game.includes("tab") && Object.values(res).every(Boolean) && !stale);
+  // 11/2: Library never saw the note (each page's storage catches up late), so the solve also rides with the close.
+  const ride = await p.evaluate(() => { localStorage.removeItem("solvebuddy.openSolve"); window.__out = []; window.sbRefresh({ g: "sudoku", pack: "easy", p: 1, openSolve: 456 });
+    return window.__out.some((m) => m.type === "tab" && m.name === "Stats"); });
+  check(`"See your hints": the close carries the solve, and Library switches to Stats from it alone (${ride})`, ride);
+  await ctx.close();
+}
+
+// A finished puzzle opened from the Library (Colin 11/2): if you used hints on it, the pill opens them too.
+// Sudoku's "grey out a number once all 9 are placed" (on by default; off in Game settings).
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(300);
+  await p.evaluate(() => { localStorage.clear(); localStorage.setItem("solvebuddy.solves", JSON.stringify([
+    { g: "sudoku", pack: "easy", p: 1, ms: 226000, hints: 0, at: 1000 },
+    { g: "sudoku", pack: "easy", p: 1, ms: 300000, hints: 5, at: 2000, hd: { steps: [5, 0, 0], tricks: {}, log: [1, 2, 3, 4, 5].map((t) => ({ t, k: "", n: 1 })) } },
+    { g: "sudoku", pack: "easy", p: 2, ms: 100000, hints: 0, at: 3000 }])); });
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=1&view=1`); await p.waitForTimeout(1500);
+  const v1 = await p.evaluate(() => document.querySelector(".won-pill2")?.innerText.replace(/\s+/g, " ").trim() ?? "");
+  await p.click(".won-pill2"); await p.waitForTimeout(1200); // in a browser it goes to Stats, which opens that solve
+  const note = await p.evaluate(() => `${location.pathname.split("/").pop()} ${document.querySelector(".sd-top h2")?.textContent} ${document.querySelectorAll(".sd-tm").length}`);
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=2&view=1`); await p.waitForTimeout(1500);
+  const v2 = await p.evaluate(() => ({ plain: !!document.querySelector("span.won-pill"), btn: !!document.querySelector(".won-pill2") }));
+  check(`Finished puzzle with hints: "${v1}" opens ${note}; one without hints keeps the plain pill (${v2.plain && !v2.btn})`,
+    /Solved in 3:46 See your 5 hints/.test(v1) && note === "stats.html Sudoku #1 5" && v2.plain && !v2.btn);
+  // Fill every 5 the puzzle is missing: the 5 key greys out and can't be used; Erase one and it comes back; off = never.
+  await p.goto(`${BASE}sudoku.html?pack=easy&p=3`); await p.waitForTimeout(2500);
+  const keyState = () => p.evaluate(() => { const k = document.querySelector('#pad [data-n="5"]'); return { done: k.classList.contains("done"), off: k.disabled }; });
+  const fives = () => p.evaluate(() => [...document.querySelectorAll(".cell")].filter((c) => c.textContent.trim() === "5").length);
+  const before = await keyState();
+  let last = null; // put 5s in empty cells (right or wrong: it counts what's on the board) until there are nine
+  for (let n = 0; n < 9 && (await fives()) < 9; n++) {
+    const i = await p.evaluate(() => [...document.querySelectorAll(".cell")].findIndex((c) => !c.textContent.trim()));
+    await p.locator(".cell").nth(i).click(); await p.click('#pad [data-n="5"]'); await p.waitForTimeout(60); last = i;
+  }
+  const nine = await fives(), after = await keyState();
+  await p.locator(".cell").nth(last).click(); await p.waitForTimeout(60);
+  const blocked = await p.evaluate(() => { document.querySelector('#pad [data-n="5"]').click(); return [...document.querySelectorAll(".cell")].filter((c) => c.textContent.trim() === "5").length; });
+  await p.keyboard.press("Backspace"); await p.waitForTimeout(100);
+  const back = await keyState();
+  await p.keyboard.press("5"); await p.waitForTimeout(100);
+  await p.click("#settingsBtn"); await p.waitForTimeout(300);
+  const sw = await p.evaluate(() => document.querySelector('#settings [data-set="done"]')?.getAttribute("aria-checked"));
+  await p.click('#settings [data-set="done"]'); await p.waitForTimeout(100); // on by default → off
+  const offState = await keyState();
+  check(`Sudoku grey-out: ${nine} 5s on the board → key greyed and disabled (${after.done && after.off}), a 10th can't go in (${blocked}); erase one → back (${!back.done}); switch in Game settings, off → never greyed (${!offState.done})`,
+    !before.done && nine === 9 && after.done && after.off && blocked === 9 && !back.done && !offState.done && sw === "true");
   await ctx.close();
 }
 

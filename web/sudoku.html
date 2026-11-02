@@ -64,6 +64,7 @@
     background: rgba(255,255,255,0.36); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
     border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 4px 12px rgba(30,30,30,0.06), inset 0 1px 0 rgba(255,255,255,0.9); }
   .pad.pencil .key { font: 600 15px Inter, sans-serif; color: var(--pencil); }
+  .pad .key.done { color: rgba(42,33,27,0.22); background: rgba(42,33,27,0.045); border-color: transparent; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -151,6 +152,7 @@
           <div class="opt"><span>Highlight row, column &amp; box</span><button class="switch" role="switch" data-set="hl" aria-label="Highlight row, column and box"></button></div>
           <div class="opt"><span>Highlight matching numbers</span><button class="switch" role="switch" data-set="same" aria-label="Highlight matching numbers"></button></div>
           <div class="opt"><span>Tap a number to see where it can't go</span><button class="switch" role="switch" data-set="reach" aria-label="Tap a number to see where it can't go"></button></div>
+          <div class="opt"><span>Grey out a number once all 9 are placed</span><button class="switch" role="switch" data-set="done" aria-label="Grey out a number once all 9 are placed"></button></div>
         </div>
       </div>
       <button class="dark" data-close>Done</button>

@@ -276,6 +276,9 @@ html.tablet.port .phone[data-tablet] .screen > .zview { align-self: center; }
 .won-pill { flex: 1; min-height: 56px; border-radius: 18px; padding: 0 14px; display: flex; align-items: center; gap: 10px; font: 600 15px Inter, sans-serif;
   background: rgba(255,255,255,0.75); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%);
   border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 8px 22px rgba(30,30,30,0.1); }
+.won-pill2 { flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; text-align: left; color: var(--ink); cursor: pointer; }
+.won-pill2 .wp-t { display: flex; align-items: center; gap: 6px; font: 600 13px Inter, sans-serif; color: var(--muted); }
+.won-pill2 .wp-h { display: flex; align-items: center; gap: 4px; font: 700 15.5px Inter, sans-serif; color: var(--brand); }
 .won-go { min-height: 56px; border-radius: 18px; padding: 0 18px; border: 0; background: var(--brand); color: #fff; font: 700 15px Inter, sans-serif; display: flex; align-items: center; gap: 6px; }
 .phone:has(#won) .dock { visibility: hidden; }
 
