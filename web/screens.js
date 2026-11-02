@@ -1,5 +1,5 @@
 // Shared by Home, Packs and Stats: the face, game colours, the browser-only tab bar, and streak maths.
-import { haptic, solves } from "./bridge.js";
+import { allSolves, haptic } from "./bridge.js";
 
 export const $ = (id) => document.getElementById(id);
 export const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -151,12 +151,12 @@ const addDays = (ts, n) => { const d = new Date(ts); d.setDate(d.getDate() + n);
 export const WEEK_GOAL = 3;
 export const weekStart = (ts) => { const d = new Date(ts); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
 export const weekKey = (ts) => dayKey(weekStart(ts));
-export function weekCounts(log = solves()) {
+export function weekCounts(log = allSolves()) {
   const n = {};
   for (const e of log) n[weekKey(e.at)] = (n[weekKey(e.at)] ?? 0) + 1;
   return n;
 }
-export function streaks(log = solves(), now = Date.now()) {
+export function streaks(log = allSolves(), now = Date.now()) {
   const n = weekCounts(log), done = (t) => (n[weekKey(t)] ?? 0) >= WEEK_GOAL;
   let current = 0;
   let t = done(now) ? weekStart(now) : addDays(weekStart(now), -7);

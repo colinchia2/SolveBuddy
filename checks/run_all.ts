@@ -428,6 +428,18 @@ if (existsSync(sbExpertFile)) {
     const t = readFileSync(`web/${g}.js`, "utf8");
     return (t.match(/hintStep\(s, /g) ?? []).length >= 2 && t.includes(`logSolve({ hd: s.hd, g: "${g}"`) && t.includes("hd: s.hd") && t.includes("s.hd = saved.hd");
   });
+  // Start fresh (11/2): the solve log keeps everything, but only the streak sees solves from before FRESH_AT.
+  {
+    const b = await import("../web/bridge.js");
+    const store: Record<string, string> = {}, old = (globalThis as any).localStorage;
+    (globalThis as any).localStorage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = String(v); }, removeItem: (k: string) => { delete store[k]; } };
+    store["solvebuddy.solves"] = JSON.stringify([{ g: "sudoku", pack: "easy", p: 1, ms: 1, hints: 0, at: b.FRESH_AT - 1 }]);
+    b.logSolve({ g: "sudoku", pack: "easy", p: 2, ms: 1, hints: 0 });
+    const shown = b.solves().length, kept = b.allSolves().length;
+    (globalThis as any).localStorage = old;
+    check(`Start fresh: cutoff ${new Date(b.FRESH_AT).toDateString()}; old solve hidden but kept (${shown} shown, ${kept} kept); streak reads every solve`,
+      new Date(b.FRESH_AT).toDateString() === "Mon Nov 02 2026" && shown === 1 && kept === 2 && /streaks\(log = allSolves\(\)/.test(readFileSync("web/screens.js", "utf8")));
+  }
   check(`hint detail saved by every game (${wired.join(", ")})`, wired.length === 5);
   // Hint replay (11/1): every game keeps a frame per hint and can open as a replay, after its own puzzle loads.
   const replay = ["sudoku", "starbattle", "watersort", "nonogram", "shikaku"].filter((g) => {

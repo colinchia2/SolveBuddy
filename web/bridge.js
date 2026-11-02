@@ -175,9 +175,14 @@ export function saveFinal(game, pack, p, data) {
     localStorage.setItem(FINALS_KEY, JSON.stringify({ ...all, [`${game}/${pack}/${p}`]: data }));
   } catch {}
 }
-export function solves() {
+// Start fresh (Colin 11/2, done once; how-to in docs/START_FRESH.md): solves from before FRESH_AT stay stored and
+// synced but are hidden everywhere (solved ticks, finished boards, Stats) except the weekly streak, which reads
+// allSolves(). Half-done games from before it are dropped. Block Drop, settings and imports are untouched.
+export const FRESH_AT = globalThis.SB_FRESH_AT ?? 1793655720685; // 2026-11-02 (the checks set SB_FRESH_AT)
+export function allSolves() {
   try { return JSON.parse(localStorage.getItem(LOG_KEY) || "[]"); } catch { return []; }
 }
+export const solves = () => allSolves().filter((e) => (e?.at ?? 0) >= FRESH_AT);
 // Hint detail for Stats (Colin 11/1): s.hd = { steps: [asked, reached Explain, reached Show me], tricks: { name: times } }.
 // It rides along in the saved game and the solve log; s.hints (the thirds count) stays the one the screens show.
 // Hint history (Colin 11/1): d.log = each hint in order, { t: ms into the puzzle, k: its trick, n: how far it went
@@ -242,7 +247,7 @@ export function hopToStats(left) {
 }
 export function logSolve(entry) {
   if (REPLAY) return;
-  try { localStorage.setItem(LOG_KEY, JSON.stringify([...solves(), { ...entry, at: Date.now() }])); } catch {}
+  try { localStorage.setItem(LOG_KEY, JSON.stringify([...allSolves(), { ...entry, at: Date.now() }])); } catch {}
 }
 // Every game left half-done, each puzzle its own (Colin, 10/21: starting another must never lose the first).
 // "sudoku/easy/3" → { p, ms, hints, ...the game's own marks }. Older saves were one per pack ("sudoku/easy"); they
@@ -252,6 +257,7 @@ function allSaved() {
   let all = {};
   try { all = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}"); } catch {}
   for (const [k, v] of Object.entries(all)) if (k.split("/").length === 2 && v?.p) { all[`${k}/${v.p}`] ??= v; delete all[k]; }
+  for (const [k, v] of Object.entries(all)) if ((v?.at ?? 0) < FRESH_AT) delete all[k]; // started before Start fresh
   return all;
 }
 export const savedGame = (game, pack, p) => allSaved()[`${game}/${pack}/${p}`] ?? null;

@@ -7,6 +7,8 @@ Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
   structure (Packs vs Library vs Get more)**, before more building. Then: clean up old hosting code, a daily puzzle for
   streaks, the Stats tab's older glass cards, making Shikaku puzzles by hand in Import. Everything else is under
   "Backlog" (FactPack items live there too).
+- **11/2:** hint fixes, finished-puzzle hints, Sudoku grey-out, iPad tabs and Start fresh all pushed and done (status
+  11/2). Solve log gotcha: `solves()` hides solves before `FRESH_AT`; the streak uses `allSolves()` (`docs/START_FRESH.md`).
 - **Done:** the freeze fix (10/29 OTA, app `f9bce34`), all hint items, the Water Sort items, round 10/27.
 - **Rules:** run `node checks/run_all.ts` before every push (GitHub won't publish on a FAIL); never `eas build`/
   `eas update` without Colin's go; one app folder (`C:\dev\SolveBuddyApp`).

@@ -1,7 +1,7 @@
 // Stats detail screens (Colin 11/1, mockup https://claude.ai/artifact/34Nyu3RKJkLN5ZdvCsLJ76): tap a card on Stats
 // and its own page opens, one level deeper; "‹ Stats" goes back. The filter (All or one puzzle) carries over, except
 // the streak, which always counts every puzzle. All from the solve log on this device, plain rules, no AI.
-import { GAMES, frames, hintAmount, hintShort, loadPack, openPack } from "./bridge.js";
+import { GAMES, allSolves, frames, hintAmount, hintShort, loadPack, openPack } from "./bridge.js";
 import { LOOK, WEEK_GOAL, dayKey, esc, fmt, streaks, weekCounts, weekKey, weekStart } from "./screens.js";
 import { DAY, LEVELS, NOT_TRICKS, STAR, card, clockCard, emptyNote, groups, head, hintFree, packInfo, plural, thirds, tips } from "./stats.js";
 
@@ -256,7 +256,7 @@ function solve(log, at, backTo) {
 export const DETAILS = { week, play, heat, clock, podium, speed, good, hints, tips: tipsAll };
 export function detail(kind, { log, F, one, now, pick, day, at, backTo }) {
   if (kind === "solve") return solve(log, at, backTo);
-  if (kind === "week") return week(log, now);
+  if (kind === "week") return week(allSolves(), now); // counts solves from before Start fresh, like the streak
   if (kind === "speed") return speed(F, one, pick);
   if (kind === "clock") return clock(F, one, day);
   return DETAILS[kind]?.(F, one, now) ?? "";

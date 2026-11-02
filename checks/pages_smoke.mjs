@@ -5,7 +5,12 @@ import { chromium } from "playwright";
 
 const BASE = "http://localhost:4321/web/";
 const browser = await chromium.launch({ channel: "chrome" }); // the installed Chrome, run hidden (no tabs)
+// Start fresh (11/2) hides solves from before a fixed day; the checks seed made-up dates, so every page here starts
+// with no cutoff (SB_FRESH_AT = 0). The "Start fresh" check below sets its own.
+const noCutoff = () => { window.SB_FRESH_AT = 0; };
+{ const nc = browser.newContext.bind(browser); browser.newContext = async (o) => { const c = await nc(o); await c.addInitScript(noCutoff); return c; }; }
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await page.addInitScript(noCutoff);
 const errors = [];
 page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
 let failed = 0;
@@ -1983,6 +1988,39 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const offState = await keyState();
   check(`Sudoku grey-out: ${nine} 5s on the board → key greyed and disabled (${after.done && after.off}), a 10th can't go in (${blocked}); erase one → back (${!back.done}); switch in Game settings, off → never greyed (${!offState.done})`,
     !before.done && nine === 9 && after.done && after.off && blocked === 9 && !back.done && !offState.done && sw === "true");
+  await ctx.close();
+}
+
+// Start fresh (Colin 11/2): solves from before the cutoff are hidden everywhere except the weekly streak; half-done
+// games from before it are dropped; Block Drop is untouched; a new solve counts as usual and keeps the old ones stored.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const cut = Date.now() - 60e3;
+  await ctx.addInitScript((c) => { window.SB_FRESH_AT = c; }, cut);
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}home.html`); await p.waitForTimeout(300);
+  await p.evaluate((cut) => {
+    const DAY = 864e5, d = new Date(); d.setHours(12, 0, 0, 0); const mon = d.getTime() - ((d.getDay() + 6) % 7) * DAY;
+    const log = [];
+    for (let w = 1; w <= 2; w++) for (let i = 0; i < 3; i++) log.push({ g: "sudoku", pack: "easy", p: i + 1, ms: 100000, hints: 0, at: Math.min(mon - w * 7 * DAY + i * DAY, cut - 1000) });
+    localStorage.clear();
+    localStorage.setItem("solvebuddy.solves", JSON.stringify(log));
+    localStorage.setItem("solvebuddy.finals", JSON.stringify({ "sudoku/easy/1": { entries: {} } }));
+    localStorage.setItem("solvebuddy.saved", JSON.stringify({ "sudoku/easy/4": { p: 4, ms: 5000, at: cut - 5000 } }));
+    localStorage.setItem("solvebuddy.blocks", JSON.stringify({ best: 9999, bestLines: 40, played: 7 }));
+  }, cut);
+  await p.goto(`${BASE}home.html`); await p.waitForTimeout(800);
+  const home = await p.evaluate(async () => {
+    const b = await import("./bridge.js");
+    return { streak: document.getElementById("streak").innerText.trim(), shown: b.solves().length, kept: b.allSolves().length,
+      saved: !!b.savedGame("sudoku", "easy", 4), solved: b.solvedIn("sudoku", "easy").size, blocks: b.blockScores().best };
+  });
+  await p.goto(`${BASE}stats.html`); await p.waitForTimeout(800);
+  const streak = await p.evaluate(() => document.getElementById("streakTxt")?.innerText.replace(/\s+/g, " ").trim());
+  const after = await p.evaluate(async () => { const b = await import("./bridge.js"); b.logSolve({ g: "sudoku", pack: "easy", p: 1, ms: 90000, hints: 0 }); return { shown: b.solves().length, kept: b.allSolves().length }; });
+  check(`Start fresh: old solves hidden (${home.shown} shown, ${home.kept} kept, ${home.solved} ticked), streak still "${home.streak}" / "${streak}", old half-done game gone (${!home.saved}), Block Drop best ${home.blocks}; a new solve → ${after.shown} shown, ${after.kept} kept`,
+    home.shown === 0 && home.kept === 6 && home.solved === 0 && /^2 weeks$/.test(home.streak) && /^2-week streak/.test(streak) && !home.saved && home.blocks === 9999 && after.shown === 1 && after.kept === 7);
   await ctx.close();
 }
 

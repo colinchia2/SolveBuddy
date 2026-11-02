@@ -1,7 +1,7 @@
 // Stats tab (Colin 11/1, the "mix" mockup): this week + weekly streak on top, then a filter (All or one puzzle) that
 // changes everything below: how much you play, how fast you are, what you're good at, hints, and tips.
 // Everything comes from the solve log on this phone (bridge.js). The tips are plain rules run here, no AI.
-import { GAMES, OPEN_SOLVE_KEY, inApp, openGame, post, solves } from "./bridge.js";
+import { GAMES, OPEN_SOLVE_KEY, inApp, openGame, post, allSolves, solves } from "./bridge.js";
 import { syncStatus } from "./sync.js";
 import { detail, loadSizes, openTip } from "./statsdetail.js";
 import { $, LOOK, WEEK_GOAL, dayKey, esc, fmt, headerLogo, streaks, tabs, weekCounts, weekKey, weekStart } from "./screens.js";
@@ -275,7 +275,8 @@ function render() {
   const log = solves(), now = Date.now();
   const F = filter === "all" ? log : log.filter((e) => e.g === filter), one = filter === "all" ? null : filter;
   if (view) { $("stats").innerHTML = `<div class="sd" data-view="${view}">${detail(view, { log, F, one, now, pick: speedPick, day: openDay, at: solveAt, backTo: solveFrom === "hints" ? "Hints" : "Stats" })}</div>`; return; }
-  $("stats").innerHTML = hero(log, now) + chips() + (one ? `<p class="st-fine" style="margin:-6px 4px 0">Your streak counts every puzzle.</p>` : "")
+  $("stats").innerHTML = hero(allSolves(), now) + // the week and streak count solves from before Start fresh too
+    chips() + (one ? `<p class="st-fine" style="margin:-6px 4px 0">Your streak counts every puzzle.</p>` : "")
     + `<p class="st-sec">How much you play</p>` + playCard(F, now) + heatCard(F, now) + clockCard(F, "clock") + podiumCard(F, one)
     + `<p class="st-sec">How fast you are</p>` + speedCard(F, one)
     + `<p class="st-sec">What you're good at</p>` + goodCard(F, one) + hintsCard(F, one)

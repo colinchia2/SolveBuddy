@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-11-02 — Start fresh: solved puzzles cleared, streak kept (pages only)
+- Colin: clear every solved puzzle so he can solve again with hints and get real stats, but keep his 2-week streak and Block Drop scores. Done once; how-to in `docs/START_FRESH.md`.
+- Not a delete and not a script: there's no server, and iCloud merges the solve log as a union, so a deleted solve comes back from the other device. Instead a cutoff, `FRESH_AT` (bridge.js, 11/2): `solves()` hides older solves everywhere; `allSolves()` keeps them for the streak, the week box and logSolve; half-done games from before it are dropped. Block Drop, settings, imports untouched.
+- Checks: `SB_FRESH_AT` overrides the cutoff (pages_smoke sets 0 everywhere, since its data uses made-up old dates). New checks: run_all "Start fresh" (56 PASS), pages_smoke "Start fresh" (old solves hidden, streak still 2 weeks, Block Drop kept, a new solve counts).
+
 ## 2026-11-02 — iPad: Library, Packs and Import use the whole width (pages only)
 - Mockup: https://claude.ai/artifact/BLituBXhDCeNySmrSmMSmy. Colin: "this mockup looks great, lets do it".
 - home/packs/import.html: `.phone data-tablet="wide"` (like Stats). screens.css "iPad Library, Packs and Import": game tiles 3 across; a game's packs 2 across; a pack's numbers 10 across (sideways the levels sit 2×2, 5 across); Packs + Import cards 4 across (3 upright); New import 340px wide; pop-up sheets max 560px; Import's steps max 640px; the header strip spans the screen (Stats too). Every iPhone rule untouched (all under html.tablet).

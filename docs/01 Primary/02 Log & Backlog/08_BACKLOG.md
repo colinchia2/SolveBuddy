@@ -21,7 +21,7 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
    - Roads cards for SF, LA and Tokyo; redo NYC.
 2. **iPad check and layouts** · M
    - Go through it with Colin on the iPad, both ways up (he only looked quickly 10/27); fix what he finds, one at a
-     time. Own layout still missing for Block Drop (Water Sort's was built 11/1).
+     time. Every screen has its own iPad layout now (11/2).
 3. **FactPack: housekeeping** · S
    - Give it its own git repo.
    - Ski cards false alarm.
