@@ -1642,19 +1642,21 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const side = async (u) => { await p.goto(`${BASE}${u}`); await p.waitForTimeout(2200);
     return p.evaluate(() => { const B = document.getElementById("board").getBoundingClientRect(), D = document.querySelector(".dock").getBoundingClientRect();
       return { bw: Math.round(B.width), boardRight: B.right, dockLeft: D.left, land: document.documentElement.classList.contains("land") }; }); };
-  const su = await side("sudoku.html?pack=easy&p=1"), sb = await side("starbattle.html?pack=double&p=1"), sh = await side("shikaku.html?pack=hard&p=1");
-  check(`F1 iPad sideways: Sudoku board ${su.bw}px left of the bar (${su.boardRight < su.dockLeft}), Star Battle ${sb.bw}px (${sb.boardRight < sb.dockLeft}), Shikaku ${sh.bw}px (${sh.boardRight < sh.dockLeft}; 11/1)`,
-    su.land && su.bw > 600 && su.boardRight < su.dockLeft && sb.bw > 600 && sb.boardRight < sb.dockLeft && sh.bw > 600 && sh.boardRight < sh.dockLeft);
+  const su = await side("sudoku.html?pack=easy&p=1"), sb = await side("starbattle.html?pack=double&p=1"), sh = await side("shikaku.html?pack=hard&p=1"), nn = await side("nonogram.html?pack=medium&p=1");
+  check(`F1 iPad sideways: Sudoku board ${su.bw}px left of the bar (${su.boardRight < su.dockLeft}), Star Battle ${sb.bw}px (${sb.boardRight < sb.dockLeft}), Shikaku ${sh.bw}px (${sh.boardRight < sh.dockLeft}; 11/1), Nonogram ${nn.bw}px (${nn.boardRight < nn.dockLeft}; 11/1)`,
+    su.land && su.bw > 600 && su.boardRight < su.dockLeft && sb.bw > 600 && sb.boardRight < sb.dockLeft && sh.bw > 600 && sh.boardRight < sh.dockLeft && nn.bw > 600 && nn.boardRight < nn.dockLeft);
   await p.setViewportSize({ width: 834, height: 1194 });
   await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(2200);
   const up = await p.evaluate(() => ({ bw: Math.round(document.getElementById("board").getBoundingClientRect().width),
     keysInRow: new Set([...document.querySelectorAll("#pad .key")].map((k) => k.offsetTop)).size, port: document.documentElement.classList.contains("port") }));
   await p.goto(`${BASE}shikaku.html?pack=hard&p=1`); await p.waitForTimeout(1500);
   const shUp = await p.evaluate(() => Math.round(document.getElementById("board").getBoundingClientRect().width));
+  await p.goto(`${BASE}nonogram.html?pack=medium&p=1`); await p.waitForTimeout(1500);
+  const nnUp = await p.evaluate(() => Math.round(document.getElementById("board").getBoundingClientRect().width));
   await p.goto(`${BASE}watersort.html?pack=easy&p=1`); await p.waitForTimeout(1500);
   const pz = await p.evaluate(() => Number(getComputedStyle(document.querySelector(".phone")).zoom));
-  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Water Sort shows the phone layout ×${pz.toFixed(2)}`,
-    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && pz > 1.2);
+  check(`F1 iPad upright: Sudoku board ${up.bw}px, keys in ${up.keysInRow} row; Shikaku board ${shUp}px; Nonogram ${nnUp}px; Water Sort shows the phone layout ×${pz.toFixed(2)}`,
+    up.port && up.bw > 650 && up.keysInRow === 1 && shUp > 650 && nnUp > 650 && pz > 1.2);
   await ctx.close();
 }
 

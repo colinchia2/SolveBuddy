@@ -13,7 +13,7 @@
 // in its colour and the Solved card says its name ("A heart!"); a puzzle with no name gets the normal card.
 import { hint as findHint, BLANK, FILL, CROSS, isSolved } from "../engine/nonogram/hint.ts";
 import { runs, sameClue } from "../engine/nonogram/line.ts";
-import { clearSaved, finalBoard, goHome, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
+import { clearSaved, finalBoard, goHome, isTablet, haptic, hapticLevel, loadPack, hintStep, logSolve, moreMenu, saveFinal, saveGame, savedGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { celebrate, openWipe, solveFacts, solvedBar } from "./celebrate.js";
 import { makeZoom, second } from "./zoom.js";
 
@@ -72,12 +72,14 @@ const rowsDone = () => P.rows.filter((_, r) => lineDone("row", r)).length;
 const VIEW_W = 358;
 let G; // { fs1, cs1, W, H, cwOf(fs), chOf(fs) }
 function geometry() {
-  const fs1 = N <= 5 ? 17 : N <= 10 ? 12.5 : 10.5;
+  // iPad: the board is drawn bigger (not CSS-zoomed, which would break its own pinch-zoom); bz from bridge.js sizeTablet.
+  const bz = isTablet ? parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--bz")) || 1 : 1;
+  const fs1 = (N <= 5 ? 17 : N <= 10 ? 12.5 : 10.5) * bz;
   const widthOf = (clue) => clue.reduce((t, n) => t + String(n).length * 0.62 + 0.45, 0); // in em, numbers + gaps
   const wMax = Math.max(...P.rows.map(widthOf)), hMax = Math.max(...P.cols.map((c) => c.length));
   const cwOf = (fs) => Math.ceil(wMax * fs + 12), chOf = (fs) => Math.ceil(hMax * fs * 1.25 + 8);
-  const room = Math.max(300, Math.min(480, $("stage").clientHeight - 70));
-  const cs1 = Math.min(56, (VIEW_W - cwOf(fs1) - 2) / N, (room - chOf(fs1) - 2) / N);
+  const room = isTablet ? VIEW_W * bz : Math.max(300, Math.min(480, $("stage").clientHeight - 70));
+  const cs1 = Math.min(56 * bz, (VIEW_W * bz - cwOf(fs1) - 2) / N, (room - chOf(fs1) - 2) / N);
   G = { fs1, cs1, cwOf, chOf, W: Math.round(cwOf(fs1) + N * cs1 + 2), H: Math.round(chOf(fs1) + N * cs1 + 2) };
 }
 const fsAt = (z) => Math.min(G.fs1 * z, Math.max(G.fs1, 13.5)); // clue text grows a little, not as much as the squares

@@ -1,6 +1,6 @@
 # SolveBuddy — project status
 
-**2026-11-01:** iPad: Shikaku has the big-board layout like Star Battle and Sudoku (pages only, pushed); Nonogram, Water Sort, Block Drop still to do. Build log 11/1.
+**2026-11-01:** iPad: Shikaku and Nonogram have the big-board layout like Star Battle and Sudoku (pages only, pushed); Water Sort, Block Drop still to do. Build log 11/1.
 
 **2026-11-01:** New Stats page (weekly streak of 3 a week, filter by puzzle, podium, speed, hints, tips) + games save hint detail (pages only, pushed). Build log 11/1.
 

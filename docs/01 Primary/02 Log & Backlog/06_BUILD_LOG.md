@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 2026-11-01 — iPad: Nonogram gets the big-board layout (pages only; a contained build)
+- Before/after: https://claude.ai/artifact/3swUYrhS4QkdVy7uzsuhow. Colin: "go".
+- Nonogram's board is drawn bigger on iPad (clue text and squares scaled by the tablet board size), not CSS-zoomed, so its own pinch-zoom and taps keep working.
+- Check: pages_smoke "F1 iPad" now includes Nonogram (677px sideways, 735px upright; was ~345). Still to do: Water Sort, Block Drop.
+
 ## 2026-11-01 — iPad: Shikaku gets the big-board layout (pages only; a contained build)
 - Colin's iPad screenshot: Shikaku was the phone layout, small in the middle. Before/after: https://claude.ai/artifact/ED8gWN5dMh6sToi1z7Fqw5
 - `shikaku.html` `.phone data-tablet="split" --base:356` (Star Battle's layout); `common.css` zooms `.sview` by `--bz` like `.zview`; `shikaku.js` draws the board at 356 on iPad (the stage is short sideways). iPhone unchanged.
