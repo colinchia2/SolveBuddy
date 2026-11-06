@@ -176,7 +176,7 @@ export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cel
       these.forEach((q) => seen.add(q.join()));
       continue;
     }
-    cant.push({ row: { label: name(p), why: `It can't be ${an(d)}` }, cells: [p], block: [] });
+    cant.push({ row: { label: name(p), why: "Your pencil marks rule it out" }, cells: [p], block: [] });
     seen.add(p.join());
   }
   const blockedRows = [...plain.values()];
@@ -202,3 +202,50 @@ export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cel
   return steps;
 }
 const cage2 = (cg: Cage, grid: Grid) => cg.cells.filter(([r, c]) => grid[r][c]);
+
+// Last cell in a cage: the cage is full but for one square.
+export function lastCageWalk(grid: Grid, cage: Cage, cell: Cell, v: number): WalkStep[] {
+  const placed = cage.cells.filter(([r, c]) => grid[r][c]);
+  return [
+    { title: "Look at this cage. One square is left.", body: `The cage totals ${cage.sum} and already has ${and(placed.map(([r, c]) => grid[r][c]))}.`, zone: [cell], block: placed },
+    { title: `It's ${an(v)}`, body: `That leaves ${v} for this square.`, spot: cell },
+  ];
+}
+
+// Last cell in a row, column or box.
+export function lastCellWalk(label: string, cell: Cell, v: number): WalkStep[] {
+  return [
+    { title: `Look at ${label}. One square is left.`, body: `It has every number except the ${v}.`, zone: [cell] },
+    { title: `It's ${an(v)}`, body: "That's the only number missing.", spot: cell },
+  ];
+}
+
+// Only number for a square: its row, column and box use up the other eight.
+export function onlyNumberWalk(grid: Grid, cell: Cell, v: number, opts: Opts): WalkStep[] {
+  const groups = new Map<string, { nums: number[]; block: Cell[] }>();
+  for (let n = 1; n <= 9; n++) {
+    if (n === v) continue;
+    const b = fits(grid, cell[0], cell[1], n) ? null : blockersFor(grid, [cell], n)[0];
+    const line = b ? lineOf(b.cell, cell) : "marks";
+    const g = groups.get(line) ?? { nums: [], block: [] };
+    g.nums.push(n);
+    if (b) g.block.push(b.cell);
+    groups.set(line, g);
+  }
+  const rows = [...groups].map(([line, g]) => (line === "marks" ? { label: "Your marks", why: `Rule out ${and(g.nums)}` } : { label: cap(line), why: `Has ${and(g.nums)}` }));
+  return [
+    { title: "Look at this square. What can it be?", body: "Check its row, column and box.", zone: [cell] },
+    { title: "Eight numbers are out", zone: [cell], block: uniq([...groups.values()].flatMap((g) => g.block)), rows },
+    { title: `It's ${an(v)}`, body: "That's the only number left.", spot: cell },
+  ];
+}
+
+// The 45 rule, in words: what the whole area adds up to, what the cages use, and what that leaves for one square.
+export function rule45Walk(label: string, k: number, cells: Cell[], cell: Cell, v: number, line: string, inside: boolean, placed: Cell[]): WalkStep[] {
+  const total = 45 * k;
+  return [
+    { title: `Look at ${label}. It adds up to ${total}.`, body: k === 1 ? "Every row, column and box holds 1 to 9, which adds up to 45." : `That's ${WORD[k]} rows or columns of 1 to 9, at 45 each.`, zone: cells },
+    { title: inside ? "One square is left over" : "One square sticks out", body: line, zone: [cell], block: placed },
+    { title: `It's ${an(v)}`, body: inside ? `That leaves ${v} for this square.` : `That extra is the ${v} in this square.`, spot: cell },
+  ];
+}

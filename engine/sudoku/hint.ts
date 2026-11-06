@@ -12,7 +12,7 @@ import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
 import { type CageWay, type Rules, variantPlace, variantRuleOut } from "./variants.ts";
 
-import type { WalkStep } from "./walk.ts";
+import { type WalkStep, lastCellWalk, onlyNumberWalk, squeezeWalk } from "./walk.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -227,6 +227,17 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   return proved.size ? read(board, solution, marks, corners, rules, proved) : h;
 }
 
+// The classic hints that place a number, step by step (Colin 11/6).
+function placeWalk(board: Grid, out: RuledOut, p: Step): WalkStep[] {
+  const cell: Cell = [p.row, p.col];
+  const kind = p.technique.split(" ").pop();
+  const label = kind === "row" ? `row ${p.row + 1}` : kind === "column" ? `column ${p.col + 1}` : "this box";
+  const opts = ([r, c]: Cell) => NUMS.filter((n) => fits(board, r, c, n) && !out.has(`${r},${c},${n}`));
+  if (p.technique.startsWith("Last cell")) return lastCellWalk(label, cell, p.value);
+  if (p.technique.startsWith("Only spot")) return squeezeWalk(board, [], label, p.focus, p.value, cell, opts, () => { throw new Error("no cages here"); });
+  return onlyNumberWalk(board, cell, p.value, opts);
+}
+
 function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?: Rules, proved = new Set<string>()): Hint {
   const none = { remove: null, value: 0 };
   for (let r = 0; r < 9; r++) {
@@ -268,6 +279,7 @@ function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?:
   if (place) {
     return {
       kind: "step", technique: place.technique, focus: place.focus, target: [place.row, place.col], value: place.value,
+      walk: placeWalk(board, out, place),
       remove: null, blockers: blockersWith(place, from), inferred: inferredOf(place), nudge: place.nudge, explain: withNotes(place, from), showMe: `It's ${place.value === 8 ? "an" : "a"} ${place.value}!`,
     };
   }

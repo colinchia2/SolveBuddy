@@ -5,7 +5,7 @@ Newest first.
 ## 2026-11-06 — Killer hints go step by step (pages only, pushed)
 - Colin approved the mockup: https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa. His rules: every hint stands alone, starts by pointing somewhere ("Look at this cage"), says what we know before using it, gives every ruled-out way or square its reason; no cell codes, no plus-sign sums; blue box = answer, red box = blocker, red × = ruled out.
 - `engine/sudoku/walk.ts` (new): `cageWalk`, `squeezeWalk` build `hint.walk` steps from the real board. `web/sudoku.js` `advanceWalk`: Next moves through, the last step places the number, the whole hint counts as 1. History: first step = Nudge, last = Show me, between = Explain.
-- Done: Cage sum and Cage squeeze. Not yet: other Killer hints, Thermo, classic Sudoku (they keep Nudge, Explain, Show me).
+- Done: every hint that places a number in Killer and classic Sudoku (Cage sum, Cage squeeze, Last cell in cage, 45 rule, Last cell, Only spot, Only number). Not yet: hints that only rule things out (Pointing, Pairs, X-wing, Y-wing, Cage digits and so on) and Thermo; they keep Nudge, Explain, Show me.
 - Checks: `checks/sudoku_walk.ts` plays every Killer pack against his rules; pages_smoke walkthrough check replaces the old S15 chip check. `sudoku_variants_snapshot.ts` now ignores `walk`, and its hash didn't change, so the hints themselves are the same.
 - Next (Colin's order): remaining Sudoku hints, then Star Battle (head for the next star, 5-step limit, "Just show me the star"; test numbers in the mockup's section 9), Nonogram on iPad, new games.
 

@@ -474,10 +474,10 @@ if (existsSync(sbExpertFile)) {
     /\.zview \{ zoom: 1; transform: scale\(var\(--bz, 1\)\)/.test(page) && /html\.tablet \.cell \.ctr, html\.tablet \.cell \.cn \{ font-size: 8px; \}/.test(page));
 }
 
-// Hint walkthroughs (Colin 11/5): every Killer pack, played by hints, against his rules (details: sudoku_walk.ts).
+// Hint walkthroughs (Colin 11/5): every Sudoku pack, played by hints, against his rules (details: sudoku_walk.ts).
 {
   const { spawnSync } = await import("node:child_process");
-  check("Killer hint walkthroughs: right number, true rule-outs, each stands alone, plain words",
+  check("Sudoku hint walkthroughs: right number, true rule-outs, each stands alone, plain words",
     spawnSync(process.execPath, ["checks/sudoku_walk.ts"], { encoding: "utf8" }).status === 0);
 }
 

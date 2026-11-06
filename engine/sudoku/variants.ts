@@ -4,7 +4,7 @@
 // priority"), then the classic ones. Classic tricks stay sound here: the extra rules only ever remove options.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, blockersFor, cellName, list } from "./techniques.ts";
-import { type WalkStep, cageWalk, squeezeWalk } from "./walk.ts";
+import { type WalkStep, cageWalk, lastCageWalk, rule45Walk, squeezeWalk } from "./walk.ts";
 
 type Cell = [number, number];
 export type Cage = { cells: Cell[]; sum: number };
@@ -157,7 +157,7 @@ function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace
     if (wantPlace && nums.length === 1 && own.length > 1) {
       const v = nums[0], at = cellName(...cell);
       if (a.empty.length === 1) {
-        return { technique: "Last cell in cage", focus: cage.cells, place: { cell, value: v },
+        return { technique: "Last cell in cage", focus: cage.cells, place: { cell, value: v }, walk: lastCageWalk(grid, cage, cell, v),
           nudge: `Look at the cage at ${head}.`,
           why: `The cage adds up to ${cage.sum}. Its other cells already make ${cage.sum - v}, so ${at} is ${v}.` };
       }
@@ -291,6 +291,7 @@ function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: b
       const [cell] = restEmpty, own = opts(cell);
       if (innie >= 1 && innie <= 9 && own.includes(innie) && own.length > 1) {
         return { technique: "45 rule", focus: h.cells, place: { cell, value: innie },
+          walk: rule45Walk(h.label, h.k, h.cells, cell, innie, `The cages fully inside it add up to ${sIn}${restPlaced.length ? `, and the other numbers already here add ${known}` : ""}.`, true, restPlaced),
           nudge: `Look at ${h.label}. What does it add up to?`,
           why: `${addsUp(h)}. ${inText}, so the one cell left, ${cellName(...cell)}, is ${inSum} = ${innie}.` };
       }
@@ -319,6 +320,7 @@ function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: b
       const [cell] = outEmpty, own = opts(cell);
       if (outie >= 1 && outie <= 9 && own.includes(outie) && own.length > 1) {
         return { technique: "45 rule", focus: [...h.cells, ...outCells], place: { cell, value: outie },
+          walk: rule45Walk(`${h.label} and the cages poking out of it`, h.k, h.cells, cell, outie, `The cages touching it add up to ${sTouch}, which is ${sTouch - total} more${outPlaced.length ? `, and ${oKnown} of that is already on the board outside` : ""}.`, false, outPlaced),
           nudge: `Look at ${h.label} and the cages poking out of it.`,
           why: `${addsUp(h)}. ${outText}.${plus}${plus ? "." : ""} So ${cellName(...cell)} is ${outSum} = ${outie}.` };
       }
