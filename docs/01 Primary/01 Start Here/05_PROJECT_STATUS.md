@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-05:** Sudoku hints no longer flag or clear pencil marks (pages only, pushed). Build log 11/5.
+
 **2026-11-05:** Sudoku numbers bigger on iPad, pencil marks slightly bigger (pages only, pushed; waiting on Colin's iPad check). Build log 11/5.
 
 **2026-11-02 (end of day):** all pages, all pushed, nothing in progress. Colin confirmed the hint work ("looks perfect") and the iPad tabs ("they look good").

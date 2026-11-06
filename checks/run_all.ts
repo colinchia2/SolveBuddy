@@ -134,14 +134,25 @@ if (existsSync("packs/sudoku9-expert.json")) {
     countSolutions(ex.givens) === 1 && grade(ex.givens).level === "Expert" && play.solved && (seen.has("X-wing") || seen.has("Y-wing")));
 }
 
-// A hint never leans on hidden memory: wrong pencil marks are pointed out first.
+// Wrong pencil marks are fine (Colin 11/5): a hint never flags or clears them, or it gives the answer away. Wrong marks
+// and lone marks change nothing; a hint with them is the same as a hint without them.
 {
   const m = JSON.parse(readFileSync("packs/sudoku9-hard.json", "utf8")).puzzles[0];
-  const r = m.givens.findIndex((row: number[]) => row.includes(0));
-  const c = m.givens[r].indexOf(0);
-  const wrong = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((n) => n !== m.solution[r][c]).slice(0, 2);
-  const h = hint(m.givens, m.solution, { [`${r},${c}`]: wrong });
-  check("a pencil mark that leaves out the answer is flagged first", h.kind === "mistake" && h.target![0] === r && h.target![1] === c);
+  const empty: [number, number][] = [];
+  m.givens.forEach((row: number[], r: number) => row.forEach((v, c) => { if (!v) empty.push([r, c]); }));
+  const plain = JSON.stringify(hint(m.givens, m.solution));
+  const wrongOf = (r: number, c: number, n: number) => [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => d !== m.solution[r][c]).slice(0, n);
+  const [r, c] = empty[0];
+  const wrong = Object.fromEntries(empty.slice(0, 12).map(([a, b]) => [`${a},${b}`, wrongOf(a, b, 2)]));
+  const lone = Object.fromEntries(empty.slice(0, 12).map(([a, b], i) => [`${a},${b}`, [i % 2 ? m.solution[a][b] : wrongOf(a, b, 1)[0]]]));
+  const hw = hint(m.givens, m.solution, wrong), hl = hint(m.givens, m.solution, lone);
+  check("wrong pencil marks aren't flagged: the hint is the same as with none", hw.kind !== "mistake" && JSON.stringify(hw) === plain);
+  check("a lone pencil mark, right or wrong, isn't read as the cell's number", JSON.stringify(hl) === plain);
+  const right = hint(m.givens, m.solution, { [`${r},${c}`]: [m.solution[r][c], wrongOf(r, c, 1)[0]] });
+  check("two marks that keep the answer are still used, never flagged", right.kind !== "mistake");
+  const board = m.givens.map((row: number[]) => [...row]);
+  board[r][c] = wrongOf(r, c, 1)[0];
+  check("a wrong number (not a mark) is still flagged first", hint(board, m.solution).kind === "mistake");
 }
 
 // Harder tricks rule a number out of cells instead: none of those cells may hold it in the answer.

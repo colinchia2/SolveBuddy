@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-05 — Sudoku hints leave pencil marks alone (pages only, pushed)
+- Colin: a hint saying a pencil mark is wrong gives the answer away ("having wrong pencil marks is fine"). He often marks "1" in two cells to mean "the 1 is in one of these"; the hint read that as "this cell is a 1".
+- `engine/sudoku/hint.ts`: pencil marks are never flagged or cleared; marks that leave out the answer are silently not read. A wrong number is still flagged first.
+- A lone mark isn't read unless a real trick proves it (`hint` wraps `read`). Hints still write lone marks and place the number on the next hint, so a trick and its number stay two hints.
+- `sudoku_snapshot.sha256` updated: 2 of ~7,800 classic hints now reach the same cell and number by a different route (box vs column).
+- Checks: run_all 4 new pencil mark checks replace the old "flagged first" one.
+
 ## 2026-11-05 — Sudoku numbers on iPad (pages only, pushed)
 - Colin: on iPad the numbers looked like pencil marks. His screenshots: numbers about 2/3 of their intended size; the squares and cage sums were right. Mockup: https://claude.ai/artifact/R1xcmvcHVh3TovdYj2qK7s (approved, "looks good").
 - Not reproduced: Chrome and desktop WebKit draw it correctly, and this Mac has no iPad simulator, so the exact cause is unproven. Likely CSS zoom on `.zview` not reaching text in the cells on a real iPad.

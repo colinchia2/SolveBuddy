@@ -1,7 +1,7 @@
 // The Hint button. Looks only at what's on the board right now (Colin, 10/20: a hint must never lean on
 // something you can't see): your numbers, your center pencil marks ("this cell is one of these"), and your corner
 // marks read the usual way ("this box's N is in one of these cells"), used only when they're right.
-// 1. Mistakes first: a wrong number, or pencil marks that leave out the right number.
+// 1. Mistakes first: a wrong number. Pencil marks are never flagged; wrong ones are just not read.
 // 2. A number you can place right now.
 // 3. Otherwise one rule-out (a trick), and Show me writes it into your pencil marks: just the cells the trick is
 //    about (Colin, 10/21: a 5 in the two cells where 5 can go, not every number in the other cells). The next
@@ -217,6 +217,14 @@ function findChain(grid: Grid, out: RuledOut) {
 // rules: a Killer or Thermo puzzle's extra rules. Their tricks go first (Colin, 10/22): a number from a cage or
 // thermo, then a classic number, then a cage or thermo narrowing (written as pencil marks), then classic rule-outs.
 export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Marks = {}, rules?: Rules): Hint {
+  const h = read(board, solution, marks, corners, rules);
+  // A trick that leaves one number writes it as a lone mark, and the next hint places it (a trick and its number stay two
+  // hints). So a lone mark does count once a real trick proves it: only then is it read, never on its own.
+  const proved = new Set((h.pencil ?? []).filter((p) => p.marks.length === 1 && marks[p.cell.join()]?.join() === p.marks.join()).map((p) => p.cell.join()));
+  return proved.size ? read(board, solution, marks, corners, rules, proved) : h;
+}
+
+function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?: Rules, proved = new Set<string>()): Hint {
   const none = { remove: null, value: 0 };
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
@@ -232,19 +240,16 @@ export function hint(board: Grid, solution: Grid, marks: Marks = {}, corners: Ma
   }
   const out: RuledOut = new Set();
   const from: Sources = new Map();
+  // Wrong pencil marks are fine (Colin 11/5): a hint never flags or clears them, because that gives the answer away. It
+  // reads only marks that keep the right number, and skips a lone mark: "1" can mean "the 1 might be here", not "this is a 1".
+  const trusted: Marks = {};
   for (const [k, list] of Object.entries(marks)) {
     const [r, c] = k.split(",").map(Number);
-    if (board[r][c] !== 0 || !list.length) continue;
-    if (!list.includes(solution[r][c])) {
-      return {
-        kind: "mistake", technique: "Check this", focus: board[r].map((_, i) => [r, i] as Cell), target: [r, c], ...none,
-        nudge: `Check your pencil marks in row ${r + 1}.`,
-        explain: `Your pencil marks at ${cellName(r, c)} leave out the number that goes there.`,
-        showMe: "Cleared those pencil marks.",
-      };
-    }
+    if (board[r][c] !== 0 || (list.length < 2 && !proved.has(k)) || !list.includes(solution[r][c])) continue;
+    trusted[k] = list;
     for (const n of NUMS) if (!list.includes(n)) out.add(`${r},${c},${n}`), from.set(`${r},${c},${n}`, [r, c]);
   }
+  marks = trusted;
   fromGroups(board, solution, marks, corners, out, from);
 
   if (rules) {
