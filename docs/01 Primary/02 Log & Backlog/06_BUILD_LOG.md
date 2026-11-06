@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-06 — Star Battle hints head for the next star (pages only, pushed)
+- Colin: "always going to the next star", and worried hints pile up. Mockup section 9: https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa
+- `engine/starbattle/route.ts` (new): `starHint` wraps `hint`, finds the shortest route to a star (easy moves, or one What if then easy moves; 500 ms budget) and walks it. Over 5 steps it asks first: "Walk me through it" or "Just show me the star". With no short route it asks once, then gives normal rule-out hints until the next star. Mistake hints are unchanged.
+- Results over all 40 puzzles: Expert 8×8 1.64 hints a star (91% in one hint, worst 21); Double 1.90 (93%, worst 41); Triple 1.09 (99%, worst 15). The worst stretches barely moved: real Expert logic with no short route.
+- Hint count stays in thirds in both games: first step = Nudge, last = Show me, between = Explain, so any walkthrough adds up to 1. Corrects the 1/n count pushed earlier today.
+- Checks: `checks/starbattle_route.ts`; pages_smoke route check replaces the old What if check.
+
 ## 2026-11-06 — Killer hints go step by step (pages only, pushed)
 - Colin approved the mockup: https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa. His rules: every hint stands alone, starts by pointing somewhere ("Look at this cage"), says what we know before using it, gives every ruled-out way or square its reason; no cell codes, no plus-sign sums; blue box = answer, red box = blocker, red × = ruled out.
 - `engine/sudoku/walk.ts` (new): `cageWalk`, `squeezeWalk` build `hint.walk` steps from the real board. `web/sudoku.js` `advanceWalk`: Next moves through, the last step places the number, the whole hint counts as 1. History: first step = Nudge, last = Show me, between = Explain.

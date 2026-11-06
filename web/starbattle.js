@@ -2,7 +2,8 @@
 // Double packs (Colin, 10/22) play on a 10×10 board with 2 stars per row, column and region.
 // Imported puzzles (?import=<id>, Colin 10/22) can be 5×5 to 12×12 with 1–3 stars; they save and log under pack
 // "import" with p = the import's id.
-import { hint as findHint, EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
+import { EMPTY, CROSS, STAR } from "../engine/starbattle/hint.ts";
+import { starHint as findHint } from "../engine/starbattle/route.ts";
 import { isAnswer, withStars } from "../engine/starbattle/layout.ts";
 import { clearSaved, finalBoard, goHome, haptic, hapticLevel, hintStep, isTablet, logSolve, moreMenu, REPLAY, replaySource, savedGame, saveFinal, saveGame, showHintsUsed, smoothClose, solves } from "./bridge.js";
 import { startReplay } from "./replay.js";
@@ -232,7 +233,6 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   s.hinted.clear();
   // An automatic × sitting on an answer cell comes from a wrong star; leave it out so the hint
   // points at that star (which the player can fix) rather than the × (which they can't).
@@ -240,17 +240,54 @@ function openHint() {
   // A hard imported board can take a second to think: the Hint button pulses meanwhile (Colin, 10/22).
   $("hintBtn").classList.add("thinking");
   setTimeout(() => {
-    s.hint = { data: findHint(b, s.regions, s.solution), level: 1 };
-    hintStep(s, 1, s.hint.data.technique);
+    const data = findHint(b, s.regions, s.solution);
+    s.hints = (s.hints ?? 0) + 1 / 3; // each hint level (Nudge, Explain, Show me) counts a third (Colin, 10/22)
+    // A long route asks first. With no short route at all it asks once, then stays out of the way until the next star.
+    const ask = !!data.long && !(data.long.steps === 0 && s.walkFor === stars().length);
+    s.hint = { data, level: 1, i: 0, ask };
+    hintStep(s, 1, data.technique);
     $("hintBtn").classList.remove("thinking");
     render();
   }, 30);
 }
 // What if hints (Colin, 10/20): "Show me" first plays the chain out on the board with faint pretend marks:
 // play 0 = the pretend star, 1..k = each forced move, k+1 = the line that ran dry. Then the real × goes in.
+// A walkthrough (Colin 11/6): Next moves through its steps and the last one does the move.
+function advanceWalk(h) {
+  const n = h.data.walk.length;
+  if (h.ask) {
+    h.ask = false;
+    if (!h.data.long.steps) s.walkFor = stars().length;
+    return render();
+  }
+  if (h.i === n - 1) {
+    s.hint = null;
+    checkSolved();
+    return render();
+  }
+  h.i++;
+  const level = h.i === n - 1 ? 3 : 2; // first step = Nudge, last = Show me, between = Explain: a whole hint is three thirds
+  s.hints = (s.hints ?? 0) + (level - h.level) / 3;
+  if (level !== h.level) hintStep(s, level);
+  h.level = level;
+  if (level === 3) applyHint(h.data);
+  render();
+}
+// Just show me the star: it goes on the board, and the hint counts as a whole one.
+function giveStar() {
+  const h = s.hint;
+  if (!h?.data.give) return;
+  s.hints = (s.hints ?? 0) + (3 - h.level) / 3;
+  hintStep(s, 3);
+  applyHint({ star: h.data.give, cross: [] });
+  s.hint = null;
+  checkSolved();
+  render();
+}
 function advanceHint() {
   const h = s.hint;
   if (!h) return; // a second tap on Done while the card slides away
+  if (h.data.walk) return advanceWalk(h);
   const chain = h.data.chain;
   // A What if is stepped through from Explain on (Colin 10/27, S15): each Next shows one forced move, numbered on
   // the board; after the line that runs dry, Next goes to Show me, which puts the real × in.
@@ -317,12 +354,16 @@ function render() {
   showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint;
   const frame = h && h.play != null ? playFrame(h) : null;
+  const walk = h?.data.walk && !h.ask ? h.data.walk[h.i ?? 0] : null; // a walkthrough step paints only its own cells
+  const keys = (cells) => new Set((cells ?? []).map(([r, c]) => key(r, c)));
+  const noCells = keys(walk?.no), deadCells = keys(walk?.dead), ghostStars = keys(walk?.pretend), ghostX = keys(walk?.ghost);
   // What if (Colin, 10/20): the Nudge rings the cell to imagine a star in, and doesn't light up the
   // line where the chain ends (that gave the ending away and didn't point at the cell).
   const pretend = h?.data.chain && h.data.kind === "step" && !frame && h.level < 3 ? h.data.cross[0] : null;
-  const focus = new Set((frame ? frame.focus : pretend && h.level === 1 ? [] : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
-  const striped = new Set(h && h.level === 2 && !frame ? h.data.cross.map(([r, c]) => key(r, c)) : []);
-  const ringed = pretend || (h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null);
+  const walking = !!h?.data.walk;
+  const focus = walk ? keys(walk.zone) : walking ? new Set() : new Set((frame ? frame.focus : pretend && h.level === 1 ? [] : h ? h.data.focus : []).map(([r, c]) => key(r, c)));
+  const striped = new Set(h && h.level === 2 && !frame && !walking ? h.data.cross.map(([r, c]) => key(r, c)) : []);
+  const ringed = walk ? walk.spot : walking ? null : pretend || (h && h.level >= 2 && !frame ? (h.data.star || h.data.clear) : null);
   const ringKey = ringed ? key(...ringed) : null;
   const bad = conflicts();
   const auto = autoCrossed();
@@ -341,10 +382,10 @@ function render() {
       // Lightened region colors; the hint's focus area shows in full color.
       let bg = focus.has(k) ? COLORS[reg] : `color-mix(in srgb, ${COLORS[reg]} 48%, #FFFDF9)`;
       if (bad.has(k) || (wrong && m === STAR)) bg = "#F4A6A0";
-      if (frame?.dead && focus.has(k)) bg = "#F4A6A0";
+      if ((frame?.dead && focus.has(k)) || deadCells.has(k)) bg = "#F4A6A0";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
       const ring = k === ringKey || frame?.latest.has(k) ? "inset 0 0 0 3px var(--accent)" : "none";
-      const g = frame?.ghost.get(k);
+      const g = frame?.ghost.get(k) ?? (ghostStars.has(k) ? STAR : ghostX.has(k) ? CROSS : undefined);
       const br = c === N - 1 || s.regions[r][c + 1] !== reg ? "br" : "";
       const bb = r === N - 1 || s.regions[r + 1][c] !== reg ? "bb" : "";
       let inner = "";
@@ -358,6 +399,8 @@ function render() {
         inner = `<svg class="pretend" width="${starPx}" height="${starPx}" viewBox="0 0 24 24"><path d="${STAR_PATH}" fill="var(--accent)"/></svg>`;
       } else if (g === CROSS) {
         inner = `<span class="xm pretend">×</span>`;
+      } else if (noCells.has(k)) {
+        inner = `<span class="xm hinted">×</span>`;
       } else if (auto.has(k)) {
         inner = `<span class="xm auto">×</span>`;
       }
@@ -409,6 +452,16 @@ function render() {
     $("hintBody").innerHTML = paint(text[1]);
     $("hintBody").hidden = !text[1];
     $("hintNextLabel").textContent = next;
+    $("hintGive").hidden = !h.ask;
+    if (d.walk) {
+      const w = h.ask ? null : d.walk[h.i ?? 0], n = d.walk.length;
+      $("hintStep").textContent = h.ask ? "Hint" : `Step ${h.i + 1} of ${n}`;
+      $("hintChip").hidden = true;
+      $("hintTitle").textContent = h.ask ? "This star is a long way off" : w.title;
+      $("hintBody").textContent = h.ask ? (d.long.steps ? `The next star takes ${d.long.steps} steps to reach from here.` : "There's no short way to the next star from here.") : w.body ?? "";
+      $("hintBody").hidden = !(h.ask || w.body);
+      $("hintNextLabel").textContent = h.ask ? "Walk me through it" : h.i === n - 1 ? "Done" : h.i === n - 2 ? "Show me" : "Next";
+    }
   }
 
   $("rules").hidden = !s.rules;
@@ -523,6 +576,7 @@ $("restartBtn").onclick = () => openMore("confirm"); // asks "Start over?" first
 $("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
+$("hintGive").onclick = () => { haptic("pick"); giveStar(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
@@ -566,7 +620,7 @@ openWipe();
 replaySource(() => ({ board: { marks: s.marks }, hint: s.hint }));
 if (!importId) {
   load(idx, packName, true);
-  if (REPLAY) startReplay((f, level) => { s.marks = { ...f.board.marks }; s.hinted?.clear(); s.hint = { ...f.hint, level, play: null }; render(); });
+  if (REPLAY) startReplay((f, level) => { s.marks = { ...f.board.marks }; s.hinted?.clear(); s.hint = { ...f.hint, level, play: null, ask: false, i: f.hint?.data?.walk ? [0, Math.floor(f.hint.data.walk.length / 2), f.hint.data.walk.length - 1][level - 1] : 0 }; render(); });
 }
 else {
   $("count").textContent = "Loading…";

@@ -481,4 +481,11 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/sudoku_walk.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Star Battle route hints (Colin 11/6): every pack solved by hints that head for the next star (details: starbattle_route.ts).
+{
+  const { spawnSync } = await import("node:child_process");
+  check("Star Battle route hints: right stars, nothing true crossed out, plain words, long routes ask first",
+    spawnSync(process.execPath, ["checks/starbattle_route.ts"], { encoding: "utf8" }).status === 0);
+}
+
 if (failed) process.exit(1);

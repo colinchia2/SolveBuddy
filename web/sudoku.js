@@ -242,8 +242,7 @@ function openHint() {
     return render();
   }
   const data = findHint(board(), s.solution, s.center, s.corner, s.extra);
-  // Each hint step counts its share of a whole hint (Colin, 10/22): a third, or 1/n of an n-step walkthrough.
-  s.hints = (s.hints ?? 0) + 1 / (data.walk?.length ?? 3);
+  s.hints = (s.hints ?? 0) + 1 / 3; // each hint level (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   // A cage's chips start on the first wrong way that has something on the board to show (S15).
   const ways = data.ways ?? [];
   const first = ways.findIndex((w) => !w.ok && w.blockers.length);
@@ -261,8 +260,8 @@ function advanceWalk(h) {
     return render();
   }
   h.i++;
-  s.hints = (s.hints ?? 0) + 1 / n;
-  const level = h.i === n - 1 ? 3 : 2;
+  const level = h.i === n - 1 ? 3 : 2; // a whole hint is three thirds, however many steps it has
+  s.hints = (s.hints ?? 0) + (level - h.level) / 3;
   if (level !== h.level) hintStep(s, level);
   h.level = level;
   if (level === 3) {

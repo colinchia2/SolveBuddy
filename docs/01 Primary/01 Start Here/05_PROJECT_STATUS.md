@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-06:** Star Battle hints head for the next star, with a 5-step limit and "Just show me the star" (pages only, pushed). Build log 11/6.
+
 **2026-11-06:** All Sudoku hints now go step by step (pages only, pushed; Star Battle hints next). Build log 11/6.
 
 **2026-11-05:** Sudoku hints no longer flag or clear pencil marks (pages only, pushed). Build log 11/5.

@@ -141,8 +141,9 @@ const solved = await page.evaluate(async () => {
   const $ = (id) => document.getElementById(id);
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   for (let i = 0; i < 200 && !$("won"); i++) {
-    if ($("hint").hidden) { $("hintBtn").click(); await wait(60); }
+    if ($("hint").hidden) { $("hintBtn").click(); for (let w = 0; w < 80 && $("hint").hidden; w++) await wait(25); } // a route hint can take a moment
     for (let g = 0; g < 60 && !$("hint").hidden; g++) $("hintNext").click();
+    for (let w = 0; w < 40 && !$("hint").hidden; w++) await wait(25); // the card slides away
   }
   await wait(2000);
   return { won: !!$("won"), count: $("count").textContent, sub: $("sub").textContent };
@@ -360,7 +361,7 @@ async function hintLine(url) {
     // S13 (10/27): a number tag on the Hint button's top-right corner ("⅔"), not a line above it.
     // Phone test 10/27: it sits on the corner, mostly above the button (covers under a tenth of it), hidden under the card.
     const cover = (Math.max(0, L.bottom - H.top) * Math.max(0, Math.min(L.right, H.right) - L.left)) / (H.width * H.height);
-    out.over = L.bottom > H.top && L.top < H.top && Math.abs(L.right - H.right) < 10 && cover < 0.1 && $("hintsUsed").textContent === "⅔";
+    out.over = L.bottom > H.top && L.top < H.top && Math.abs(L.right - H.right) < 10 && cover < 0.1 && /^(⅔|1)$/.test($("hintsUsed").textContent); // a two-step walkthrough goes straight to 1
     out.sameDock = Math.abs(document.querySelector(".dock").getBoundingClientRect().top - dockTop) < 0.5;
     // Nothing on the page above the bar is under the line (the board, the number pad, a tip).
     const hit = [...document.querySelectorAll(".screen *")].filter((e) => !e.closest(".dock") && !e.closest(".hint") && e.children.length === 0)
@@ -378,7 +379,7 @@ for (const url of ["sudoku.html?pack=easy&p=2", "sudoku.html?pack=killer&p=1", "
   "starbattle.html?pack=triple&p=2", "nonogram.html?pack=easy&p=2", "nonogram.html?pack=hard&p=1", "watersort.html?pack=easy&p=2", "shikaku.html?pack=easy&p=2"]) {
   const r = await hintLine(url);
   check(`${url}: hints line "${r.fresh || "(hidden)"}" → "${r.one}" → "${r.two}", after Undo "${r.undo}", after Restart "${r.reset || "(hidden)"}"; over Hint ${r.over}, no height ${r.sameDock}, covers nothing ${r.clear}`,
-    r.fresh === "" && r.one === "You've used ⅓ of a hint" && r.two === "You've used ⅔ of a hint" && r.undo === r.two && r.reset === "" && r.over && r.sameDock && r.clear);
+    r.fresh === "" && r.one === "You've used ⅓ of a hint" && ["You've used ⅔ of a hint", "You've used 1 hint"].includes(r.two) && r.undo === r.two && r.reset === "" && r.over && r.sameDock && r.clear);
 }
 
 const same2 = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -1609,35 +1610,34 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     !!r && /^Step \d of \d$/.test(r.at) && r.rows.length >= 3 && r.blocks > 0 && /^It's an? \d$/.test(r.last.title) && r.last.blue === 1 && r.closed);
 }
 
-// S15 Star Battle (10/27): a What if steps through from Explain, one numbered forced move per Next, cell names in blue;
-// then Show me puts the × in.
+// Star Battle route hints (Colin 11/6): a hint walks to the next star and shows pretend marks when it tries one. A long
+// route asks first, and "Just show me the star" puts a right star on the board and closes the hint.
 {
   await page.goto(`${BASE}starbattle.html?pack=expert&p=1`);
   await page.waitForTimeout(1000);
   await page.evaluate(() => localStorage.removeItem("solvebuddy.saved"));
   await page.reload();
   await page.waitForTimeout(2200);
+  // The first star is a long route with a What if: walk it to see the pretend marks, close, then take the star.
   const r = await page.evaluate(async () => {
     const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
-    for (let i = 0; i < 120; i++) {
-      $("hintBtn").click(); await wait(120); $("hintNext").click(); await wait(40);
-      if ($("hintChip").textContent.startsWith("What if")) break;
-      $("hintNext").click(); await wait(40); $("hintNext").click(); await wait(260);
+    const open = async () => { $("hintBtn").click(); for (let w = 0; w < 80 && $("hint").hidden; w++) await wait(25); };
+    await open();
+    let tried = null;
+    for (let g = 0; g < 30 && !tried; g++) {
+      if ($("hintTitle").textContent === "Try a star here") tried = { step: $("hintStep").textContent, ghosts: document.querySelectorAll(".pretend").length };
+      else { $("hintNext").click(); await wait(40); }
     }
-    const frames = [];
-    for (let k = 0; k < 12; k++) {
-      frames.push({ chip: $("hintChip").textContent, step: $("hintStep").textContent, blue: document.querySelectorAll("#hintTitle .rc, #hintBody .rc").length,
-        nums: [...document.querySelectorAll(".cell .stepn")].map((e) => e.textContent).join(""), next: $("hintNextLabel").textContent });
-      if (frames.at(-1).next === "Done") break;
-      $("hintNext").click(); await wait(60);
-    }
-    return frames;
+    $("hintClose").click(); await wait(400);
+    await open();
+    const before = $("count").textContent, card = $("hintTitle").textContent, label = $("hintNextLabel").textContent;
+    $("hintGive").click(); await wait(500);
+    return { tried, asked: { card, label, before, after: $("count").textContent, closed: $("hint").hidden } };
   });
-  const mid = r.filter((f) => /of/.test(f.chip));
-  check(`S15 What if: ${r.map((f) => `${f.chip}[${f.nums}]`).join(" → ")}; blue label at start ${r[0]?.blue}`,
-    r[0]?.chip === "What if · start" && r[0].step === "Explain" && r[0].blue > 0 && mid.length >= 1 && mid.every((f, i) => f.nums.length === i + 1)
-    && r.some((f) => f.next === "Cross it out") && r.at(-1).next === "Done");
+  check(`Star Battle route hint: pretend marks at ${r.tried?.step} (${r.tried?.ghosts}); long route "${r.asked?.card}" / "${r.asked?.label}", stars ${r.asked?.before} → ${r.asked?.after}, closed (${r.asked?.closed})`,
+    /^Step \d+ of \d+$/.test(r.tried?.step ?? "") && r.tried.ghosts > 0 && r.asked?.card === "This star is a long way off" && r.asked.label === "Walk me through it" && r.asked.before !== r.asked.after && r.asked.closed);
 }
+
 // S15 Water Sort (10/27): Explain shows the pour as a numbered chain; tapping a step outlines its tubes; the card stays
 // clear of the tubes.
 {
@@ -1782,10 +1782,11 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const r = await page.evaluate(async () => {
     const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
     for (let i = 0; i < 30; i++) {
-      $("hintBtn").click(); await wait(120); $("hintNext").click(); await wait(40); $("hintNext").click(); await wait(80);
-      const during = document.querySelectorAll(".xm.hinted").length;
-      if (during) { $("hintNext").click(); await wait(300); return { during, after: document.querySelectorAll(".xm.hinted").length }; }
-      $("hintNext").click(); await wait(300);
+      $("hintBtn").click(); for (let w = 0; w < 40 && $("hint").hidden; w++) await wait(25);
+      let during = 0;
+      for (let g = 0; g < 12 && !$("hint").hidden; g++) { $("hintNext").click(); await wait(40); during = Math.max(during, document.querySelectorAll(".xm.hinted").length); }
+      await wait(350);
+      if (during) return { during, after: document.querySelectorAll(".xm.hinted").length };
     }
     return null;
   });
