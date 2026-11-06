@@ -481,6 +481,9 @@ if (existsSync(sbExpertFile)) {
     spawnSync(process.execPath, ["checks/sudoku_walk.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Nonogram on iPad (Colin 11/6): the clue bar sits off the board. iPhone keeps its own rules (all of this is under html.tablet).
+check("Nonogram's iPad clue bar sits in the empty space, with bigger numbers", /html\.tablet \.cbar \{ left: calc\(32px \+ var\(--bw/.test(readFileSync("web/nonogram.html", "utf8")));
+
 // Star Battle route hints (Colin 11/6): every pack solved by hints that head for the next star (details: starbattle_route.ts).
 {
   const { spawnSync } = await import("node:child_process");

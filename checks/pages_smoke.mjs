@@ -1713,9 +1713,20 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   const sz = await sudokuSizes();
   check(`Sudoku iPad sideways: square ${Math.round(sz.cw)}px, numbers fill ${Math.round(sz.share * 100)}% of it, no CSS zoom (${sz.zoom}), far corner tappable (${sz.hit}), on screen (${sz.onScreen})`,
     sz.cw > 65 && sz.share > 0.55 && sz.zoom === "1" && sz.hit && sz.onScreen);
+  // Nonogram clue bar on iPad (Colin 11/6): in the empty space, never over the board, bigger numbers; sideways and upright.
+  const nonoBar = async () => { await p.goto(`${BASE}nonogram.html?pack=hard&p=2`); await p.waitForTimeout(2200);
+    const c = await p.locator('.cc[data-c="4"]').first().boundingBox(); await p.mouse.click(c.x + c.width / 2, c.y + c.height - 6); await p.waitForTimeout(600);
+    return p.evaluate(() => { const B = document.getElementById("board").getBoundingClientRect(), C = document.getElementById("cbar").getBoundingClientRect(), D = document.querySelector(".dock").getBoundingClientRect(), N = document.querySelector("#cbarNums .nb").getBoundingClientRect();
+      const clear = C.left >= B.right - 1 || C.top >= B.bottom - 1;
+      return { clear, dock: C.bottom <= D.top + 1, on: C.right <= innerWidth && C.left >= 0, h: Math.round(N.height), fig: getComputedStyle(document.getElementById("cbar")).opacity }; }); };
+  const nb = await nonoBar();
+  check(`Nonogram clue bar on iPad sideways: clear of the board (${nb.clear}) and the bar (${nb.dock}), numbers ${nb.h}px tall`, nb.clear && nb.dock && nb.on && nb.h >= 76 && nb.fig === "1");
   await p.setViewportSize({ width: 834, height: 1194 });
   await p.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`); await p.waitForTimeout(2200);
   const szUp = await sudokuSizes();
+  const nbUp = await nonoBar();
+  check(`Nonogram clue bar on iPad upright: clear of the board (${nbUp.clear}) and the bar (${nbUp.dock}), numbers ${nbUp.h}px tall`, nbUp.clear && nbUp.dock && nbUp.on && nbUp.h >= 76 && nbUp.fig === "1");
+  await p.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`); await p.waitForTimeout(800);
   check(`Sudoku iPad upright: square ${Math.round(szUp.cw)}px, numbers fill ${Math.round(szUp.share * 100)}%, far corner tappable (${szUp.hit}), centred (${szUp.B.map(Math.round).join(" / ")}), on screen (${szUp.onScreen})`,
     szUp.cw > 65 && szUp.share > 0.55 && szUp.hit && szUp.onScreen && Math.abs(szUp.B[0] - szUp.B[1]) < 4);
   await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(2200);

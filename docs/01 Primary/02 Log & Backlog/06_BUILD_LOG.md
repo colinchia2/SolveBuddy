@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-06 — Nonogram clue bar on iPad (pages only, pushed)
+- Colin: the bar slid up over the bottom rows while the right side sat empty. Mockup approved: https://claude.ai/artifact/2cBQtSbB2MeLzEXr5znJNo
+- `web/nonogram.html`, iPad only: sideways the bar sits in the right column above the buttons, with bigger numbers; upright it's a slim row between the board and the buttons. It fades in rather than sliding up. iPhone unchanged.
+- Gotcha: GitHub's Pages step failed on 707af2f ("Deployment failed, try again later"), and "re-run failed jobs" then fails on two `github-pages` artifacts. A fresh push is the fix.
+- Checks: run_all 1 new, pages_smoke 2 new (sideways, upright).
+
 ## 2026-11-06 — Star Battle hints head for the next star (pages only, pushed)
 - Colin: "always going to the next star", and worried hints pile up. Mockup section 9: https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa
 - `engine/starbattle/route.ts` (new): `starHint` wraps `hint`, finds the shortest route to a star (easy moves, or one What if then easy moves; 500 ms budget) and walks it. Over 5 steps it asks first: "Walk me through it" or "Just show me the star". With no short route it asks once, then gives normal rule-out hints until the next star. Mistake hints are unchanged.
