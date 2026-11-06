@@ -73,8 +73,9 @@ function clash(nums: number[], a: Allows, opts: Opts) {
 }
 
 // Cage sum: point at the cage, rule out what can't work, say what's left, then place the number.
-export function cageWalk(grid: Grid, cage: Cage, a: Allows, opts: Opts, cages: Cage[], cell: Cell, v: number): WalkStep[] {
-  const n = a.empty.length, placedCells = cage.cells.filter(([r, c]) => grid[r][c]), rest = a.empty.filter((p) => p.join() !== cell.join());
+// With no cell, it stops once the ways are clear: a rule-out hint then writes pencil marks instead.
+export function cageWalk(grid: Grid, cage: Cage, a: Allows, opts: Opts, cages: Cage[], cell: Cell | null = null, v = 0): WalkStep[] {
+  const n = a.empty.length, placedCells = cage.cells.filter(([r, c]) => grid[r][c]), rest = a.empty.filter((p) => p.join() !== cell?.join());
   const all: number[][] = [];
   const pick = (from: number, chosen: number[], left: number) => {
     if (chosen.length === n) { if (left === 0) all.push(chosen); return; }
@@ -113,13 +114,14 @@ export function cageWalk(grid: Grid, cage: Cage, a: Allows, opts: Opts, cages: C
       block: uniq([...placedCells, ...[...groups.values()].flatMap((g) => g.block)]),
       rows: [...groups].map(([why, g]) => ({ label: `No ${and(g.nums, "or")}`, why })) });
   }
-  const has = a.fitWays.every((w) => w.includes(v));
+  const has = !!v && a.fitWays.every((w) => w.includes(v));
   if (a.fitWays.length === 1) {
     if (n > 1) steps.push({ title: `So it's ${and(a.fitWays[0])}`, body: `That's the only way left, so ${n === 2 ? "these two squares hold" : "these squares hold"} those numbers.`, zone: a.empty });
   } else {
     steps.push({ title: has ? `Every way left has ${an(v)}` : "That leaves these ways", zone: a.empty,
       rows: a.fitWays.map((w) => ({ label: way(w), why: has ? `Has ${an(v)}` : "Still possible", ok: true })) });
   }
+  if (!cell) return steps;
   // Which square: the other numbers are blocked here, or this number is blocked everywhere else.
   const others = [...new Set(a.fitWays.flat())].filter((d) => d !== v);
   const wb = others.map((d) => ({ d, b: blockersFor(grid, [cell], d) })).filter((x) => x.b.length && !fits(grid, cell[0], cell[1], x.d));
@@ -135,7 +137,7 @@ export function cageWalk(grid: Grid, cage: Cage, a: Allows, opts: Opts, cages: C
 }
 
 // Squeeze: a number has one square left in a row, column or box. Reasons are grouped so a step never gets too busy.
-export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cell[], d: number, cell: Cell, opts: Opts, allows: (cg: Cage) => Allows): WalkStep[] {
+export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cell[], d: number, cell: Cell, opts: Opts, allows: (cg: Cage) => Allows, other = "Your pencil marks rule it out"): WalkStep[] {
   const empty = cells.filter(([r, c]) => !grid[r][c]), others = empty.filter((p) => p.join() !== cell.join());
   const name = ([r, c]: Cell) => (label.startsWith("row") ? `Column ${c + 1}` : label.startsWith("column") ? `Row ${r + 1}` : `Square ${(r % 3) * 3 + (c % 3) + 1}`);
   const plain = new Map<string, { label: string; why: string; cells: Cell[]; block: Cell[] }>();
@@ -176,7 +178,7 @@ export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cel
       these.forEach((q) => seen.add(q.join()));
       continue;
     }
-    cant.push({ row: { label: name(p), why: "Your pencil marks rule it out" }, cells: [p], block: [] });
+    cant.push({ row: { label: name(p), why: other }, cells: [p], block: [] });
     seen.add(p.join());
   }
   const blockedRows = [...plain.values()];
@@ -184,7 +186,7 @@ export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cel
   const steps: WalkStep[] = [{ title: `Look at ${label}. Where can the ${d} go?`, body: `${cap(WORD[empty.length])} squares are still empty.`, zone: empty }];
   const groups = [
     { title: "Their cage partner is blocked", body: `${an(d) === `an ${d}` ? "An" : "A"} ${d} here needs a certain number next to it, and that number can't go there.`, items: partner },
-    { title: `Their cage can't hold ${an(d)}`, body: "These cages only work with other numbers.", items: cant },
+    cages.length ? { title: `Their cage can't hold ${an(d)}`, body: "These cages only work with other numbers.", items: cant } : { title: `These can't be ${an(d)}`, body: "", items: cant },
     { title: `Already has ${an(d)}`, body: "", items: blockedRows.map((g) => ({ row: { label: g.label, why: g.why }, cells: g.cells, block: g.block })) },
   ].filter((g) => g.items.length);
   const rowsTotal = groups.reduce((t, g) => t + g.items.length, 0);
@@ -202,6 +204,91 @@ export function squeezeWalk(grid: Grid, cages: Cage[], label: string, cells: Cel
   return steps;
 }
 const cage2 = (cg: Cage, grid: Grid) => cg.cells.filter(([r, c]) => grid[r][c]);
+
+const WRITE = "I'll write these in your pencil marks.";
+
+// Cage digits: the ways leave fewer numbers than the squares' rows, columns and boxes do.
+export function cageMarksWalk(steps: WalkStep[], cells: Cell[], nums: number[]): WalkStep[] {
+  return [...steps, { title: `So these squares can only be ${and(nums, "or")}`, body: WRITE, zone: cells }];
+}
+
+// 45 rule with two squares left: what they add up to narrows them down.
+export function rule45MarksWalk(label: string, k: number, cells: Cell[], pair: Cell[], need: number, line: string, placed: Cell[]): WalkStep[] {
+  const total = 45 * k;
+  return [
+    { title: `Look at ${label}. It adds up to ${total}.`, body: k === 1 ? "Every row, column and box holds 1 to 9, which adds up to 45." : `That's ${WORD[k]} rows or columns of 1 to 9, at 45 each.`, zone: cells },
+    { title: `Two squares add up to ${need}`, body: line, zone: pair, block: placed },
+    { title: "That narrows them down", body: WRITE, zone: pair },
+  ];
+}
+
+// Cage claims a number: every way uses d, and inside the cage d stays in one line, so the rest of that line loses it.
+export function cageClaimWalk(cage: Cage, fitWays: number[][], d: number, where: Cell[], label: string, line: Cell[], no: Cell[]): WalkStep[] {
+  return [
+    { title: `Look at this cage. Every way uses ${an(d)}.`, zone: cage.cells, rows: fitWays.map((w) => ({ label: way(w), why: `Has ${an(d)}`, ok: true })) },
+    { title: `Inside the cage, the ${d} stays in ${label}`, body: "These are the only squares it can use.", zone: where },
+    { title: `So the rest of ${label} can't be ${an(d)}`, body: WRITE, zone: where, no },
+  ];
+}
+
+// Thermo: the numbers before and after a square set its range.
+export function thermoWalk(line: Cell[], grid: Grid, cell: Cell, lo: number, hi: number, v: number): WalkStep[] {
+  const range = line[0].join() === cell.join() ? `The bulb is the smallest, so it's at most ${hi}` : lo === hi ? `It has to be ${lo}` : `It must be from ${lo} to ${hi}`;
+  return [
+    { title: "Look at this thermometer. Numbers climb from the bulb.", zone: line },
+    { title: range, body: "The squares before and after it set those limits.", zone: [cell], block: line.filter(([r, c]) => grid[r][c]) },
+    { title: `It's ${an(v)}`, body: `Its row, column and box leave only the ${v} in that range.`, spot: cell },
+  ];
+}
+export function thermoMarksWalk(line: Cell[], grid: Grid, cells: Cell[]): WalkStep[] {
+  return [
+    { title: "Look at this thermometer. Numbers climb from the bulb.", zone: line },
+    { title: "That narrows these squares down", body: `The squares around them set the limits. ${WRITE}`, zone: cells, block: line.filter(([r, c]) => grid[r][c]) },
+  ];
+}
+
+// Classic rule-outs. Each ends by writing its pencil marks, not by placing a number.
+export function pairsWalk(unit: string, spots: Cell[], nums: number[], no: Cell[]): WalkStep[] {
+  return [
+    { title: `Look at ${unit}. Two squares share two numbers.`, body: "Their rows, columns and boxes rule out everything else.", zone: spots },
+    { title: `They can only be ${and(nums)}`, body: "So these two squares take both numbers between them.", zone: spots },
+    { title: `So nothing else in ${unit} can be ${and(nums, "or")}`, body: WRITE, zone: spots, no },
+  ];
+}
+export function hiddenPairsWalk(unit: string, spots: Cell[], nums: number[]): WalkStep[] {
+  return [
+    { title: `Look at ${unit}. Two numbers only fit in two squares.`, body: `The ${and(nums)} can't go anywhere else in ${unit}.`, zone: spots },
+    { title: `So these squares are the ${and(nums)}`, body: `Nothing else can go in them. ${WRITE}`, zone: spots },
+  ];
+}
+export function pointingWalk(from: string, into: string, spots: Cell[], v: number, no: Cell[]): WalkStep[] {
+  return [
+    { title: `Look at ${from}. Where can the ${v} go?`, body: "Check the squares that are still open.", zone: spots },
+    { title: `Only in ${into}`, body: `So the ${v} for ${from} has to be in ${into}.`, zone: spots },
+    { title: `So the rest of ${into} can't be ${an(v)}`, body: "I'll mark where it can go.", zone: spots, no },
+  ];
+}
+export function xWingWalk(lines: string, cross: string, spots: Cell[], v: number, no: Cell[]): WalkStep[] {
+  return [
+    { title: `Look at ${lines}. Where can the ${v} go?`, body: `In each one, it has just two spots, and they line up in ${cross}.`, zone: spots },
+    { title: `Both ${v}s are in these ${WORD[spots.length]} squares`, body: `So ${cross} get their ${v}s here.`, zone: spots },
+    { title: `So the rest of ${cross} can't be ${an(v)}`, body: "I'll mark where it can go.", zone: spots, no },
+  ];
+}
+export function yWingMarksWalk(rows: WalkRow[], spots: Cell[]): WalkStep[] {
+  return [
+    { title: "Look at these three squares", body: "Each one can only hold two numbers.", zone: spots, rows },
+    { title: "That's all three", body: WRITE, zone: spots },
+  ];
+}
+export function yWingWalk(nums: number[], spots: Cell[], v: number, no: Cell[]): WalkStep[] {
+  const [pivot, a, b] = spots;
+  return [
+    { title: `Look at this square. It's ${and(nums, "or")}.`, body: "Try each one.", zone: [pivot] },
+    { title: `Either way, one of these two is the ${v}`, zone: [a, b], block: [pivot], rows: nums.map((n, i) => ({ label: `If it's ${an(n)}`, why: `${i ? "The other one" : "One of them"} becomes the ${v}` })) },
+    { title: `So these squares can't be ${an(v)}`, body: `Each one shares a row, column or box with both. ${WRITE}`, zone: [a, b], no },
+  ];
+}
 
 // Last cell in a cage: the cage is full but for one square.
 export function lastCageWalk(grid: Grid, cage: Cage, cell: Cell, v: number): WalkStep[] {

@@ -4,7 +4,7 @@
 // priority"), then the classic ones. Classic tricks stay sound here: the extra rules only ever remove options.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, blockersFor, cellName, list } from "./techniques.ts";
-import { type WalkStep, cageWalk, lastCageWalk, rule45Walk, squeezeWalk } from "./walk.ts";
+import { type WalkStep, cageClaimWalk, cageMarksWalk, cageWalk, lastCageWalk, rule45MarksWalk, rule45Walk, squeezeWalk, thermoMarksWalk, thermoWalk } from "./walk.ts";
 
 type Cell = [number, number];
 export type Cage = { cells: Cell[]; sum: number };
@@ -191,7 +191,7 @@ function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace
   if (!pencil.length) return null;
   const digits = [...new Set(a.fitWays.flat())].sort((x, y) => x - y);
   const has = a.placed.length ? ` It already has ${list(a.placed)}, so the rest must make ${a.need}.` : "";
-  return { technique: "Cage digits", focus: cage.cells, pencil,
+  return { technique: "Cage digits", focus: cage.cells, pencil, walk: cageMarksWalk(cageWalk(grid, cage, a, opts, cages), pencil.map((p) => p.cell), digits),
     nudge: `Look at the cage at ${head}. Which numbers can make ${cage.sum}?`,
     why: `The cage adds up to ${cage.sum} using ${cage.cells.length} different numbers.${has} The only way${a.fitWays.length > 1 ? "s are" : " is"} ${wayText(a.fitWays)}, so its cells can only be ${list(digits, "or")}.` };
 }
@@ -222,7 +222,8 @@ function thermoStep(grid: Grid, line: Cell[], opts: (p: Cell) => number[], wantP
   for (const { cell, nums } of t.allow) {
     const own = opts(cell);
     if (wantPlace && nums.length === 1 && own.length > 1) {
-      return { technique: "Thermo order", focus: line, place: { cell, value: nums[0] },
+      const at = line.findIndex((q) => same(cell, q));
+      return { technique: "Thermo order", focus: line, place: { cell, value: nums[0] }, walk: thermoWalk(line, grid, cell, t.lo[at], t.hi[at], nums[0]),
         nudge: `Look at the thermometer starting at ${bulb}. Numbers climb from the bulb.`,
         why: `Numbers climb from the bulb at ${bulb}. ${range(cell)}. Its row, column and box allow ${list(own, "or")}, and only ${nums[0]} fits that.` };
     }
@@ -231,7 +232,7 @@ function thermoStep(grid: Grid, line: Cell[], opts: (p: Cell) => number[], wantP
   const pencil = t.allow.filter(({ cell, nums }) => nums.length && nums.length < opts(cell).length).map(({ cell, nums }) => ({ cell, marks: nums }));
   if (!pencil.length) return null;
   const first = pencil[0];
-  return { technique: "Thermo order", focus: line, pencil,
+  return { technique: "Thermo order", focus: line, pencil, walk: thermoMarksWalk(line, grid, pencil.map((p) => p.cell)),
     nudge: `Look at the thermometer starting at ${bulb}. Numbers climb from the bulb.`,
     why: `Numbers climb from the bulb at ${bulb}. ${range(first.cell)}. Its row, column and box allow ${list(opts(first.cell), "or")}, so it can only be ${list(first.marks, "or")}.${pencil.length > 1 ? " The same climb narrows the other cells on it too." : ""}` };
 }
@@ -302,6 +303,7 @@ function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: b
       const pencil = [{ cell: a, marks: ca }, { cell: b, marks: cb }].filter((x) => x.marks.length && x.marks.length < opts(x.cell).length);
       if (pencil.length) {
         return { technique: "45 rule", focus: h.cells, pencil,
+          walk: rule45MarksWalk(h.label, h.k, h.cells, [a, b], innie, `The cages fully inside it add up to ${sIn}${restPlaced.length ? `, and the other numbers already here add ${known}` : ""}. That leaves ${innie} for these two.`, restPlaced),
           nudge: `Look at ${h.label}. What does it add up to?`,
           why: `${addsUp(h)}. ${inText}, so the two cells left, ${cellName(...a)} and ${cellName(...b)}, add up to ${inSum} = ${innie}. So ${cellName(...a)} can only be ${list(ca, "or")} and ${cellName(...b)} ${list(cb, "or")}.` };
       }
@@ -331,6 +333,7 @@ function rule45(grid: Grid, cages: Cage[], opts: (p: Cell) => number[], place: b
       const pencil = [{ cell: a, marks: ca }, { cell: b, marks: cb }].filter((x) => x.marks.length && x.marks.length < opts(x.cell).length);
       if (pencil.length) {
         return { technique: "45 rule", focus: [...h.cells, ...outCells], pencil,
+          walk: rule45MarksWalk(`${h.label} and the cages poking out of it`, h.k, h.cells, [a, b], outie, `The cages touching it add up to ${sTouch}, which is ${sTouch - total} more${outPlaced.length ? `, and ${oKnown} of that is already on the board outside` : ""}.`, outPlaced),
           nudge: `Look at ${h.label} and the cages poking out of it.`,
           why: `${addsUp(h)}. ${outText}.${plus}${plus ? "." : ""} So ${cellName(...a)} and ${cellName(...b)} add up to ${outSum} = ${outie}: ${cellName(...a)} can only be ${list(ca, "or")} and ${cellName(...b)} ${list(cb, "or")}.` };
       }
@@ -364,7 +367,7 @@ function squeeze(grid: Grid, rules: Rules, opts: (p: Cell) => number[]): Variant
       // Short (Colin 10/27: "a wall of text"): the other spots are striped on the board; one line says why.
       const one = others.length === 1 ? ` (${cellName(...others[0])} can only be ${list(vopts(others[0]), "or")})` : "";
       return { technique: thermo ? "Thermo squeeze" : "Cage squeeze", focus: h.cells, place: { cell, value: d }, struck: others,
-        walk: thermo ? undefined : squeezeWalk(grid, rules.cages ?? [], h.label, h.cells, d, cell, vopts, (cg) => cageAllows(grid, cg, opts)),
+        walk: squeezeWalk(grid, rules.cages ?? [], h.label, h.cells, d, cell, vopts, (cg) => cageAllows(grid, cg, opts), "The thermometer rules it out"),
         nudge: `Where can ${d} go in ${h.label}?`,
         why: `${cap(h.label)} has ${classic.length} spots for ${d}, but the ${what} rule out the striped ${others.length > 1 ? "ones" : "one"}${one}. So ${d} goes at ${cellName(...cell)}.` };
     }
@@ -387,7 +390,7 @@ function cageClaims(grid: Grid, cages: Cage[], opts: (p: Cell) => number[]): Var
         const pencil = h.cells.filter((p) => !grid[p[0]][p[1]] && !cage.cells.some((q) => same(p, q)) && opts(p).includes(d))
           .map((cell) => ({ cell, marks: opts(cell).filter((n) => n !== d) }));
         if (!pencil.length) continue;
-        return { technique: "Cage claims a number", focus: [...h.cells, ...cage.cells], pencil,
+        return { technique: "Cage claims a number", focus: [...h.cells, ...cage.cells], pencil, walk: cageClaimWalk(cage, a.fitWays, d, where, h.label, h.cells, pencil.map((p) => p.cell)),
           nudge: `Look at the cage at ${cellName(...cage.cells[0])}. Which number must it use?`,
           why: `The cage at ${cellName(...cage.cells[0])} adds up to ${cage.sum}, and every way to make it uses ${d} (${wayText(a.fitWays)}). In the cage, ${d} can only go in ${list(where.map((p) => cellName(...p)), "or")}, all in ${h.label}. So ${d} can't go anywhere else in ${h.label}.` };
       }

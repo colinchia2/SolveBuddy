@@ -5,9 +5,9 @@ Newest first.
 ## 2026-11-06 — Killer hints go step by step (pages only, pushed)
 - Colin approved the mockup: https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa. His rules: every hint stands alone, starts by pointing somewhere ("Look at this cage"), says what we know before using it, gives every ruled-out way or square its reason; no cell codes, no plus-sign sums; blue box = answer, red box = blocker, red × = ruled out.
 - `engine/sudoku/walk.ts` (new): `cageWalk`, `squeezeWalk` build `hint.walk` steps from the real board. `web/sudoku.js` `advanceWalk`: Next moves through, the last step places the number, the whole hint counts as 1. History: first step = Nudge, last = Show me, between = Explain.
-- Done: every hint that places a number in Killer and classic Sudoku (Cage sum, Cage squeeze, Last cell in cage, 45 rule, Last cell, Only spot, Only number). Not yet: hints that only rule things out (Pointing, Pairs, X-wing, Y-wing, Cage digits and so on) and Thermo; they keep Nudge, Explain, Show me.
+- Done: every Sudoku hint type in every pack (3,551 walkthroughs when played by hints). Rule-out hints end by writing pencil marks instead of placing a number (`writeHint`). Y-wing stays two hints. Nudge, Explain, Show me only remain in code for hints with no walkthrough; none do today.
 - Checks: `checks/sudoku_walk.ts` plays every Killer pack against his rules; pages_smoke walkthrough check replaces the old S15 chip check. `sudoku_variants_snapshot.ts` now ignores `walk`, and its hash didn't change, so the hints themselves are the same.
-- Next (Colin's order): remaining Sudoku hints, then Star Battle (head for the next star, 5-step limit, "Just show me the star"; test numbers in the mockup's section 9), Nonogram on iPad, new games.
+- Next (Colin's order): Star Battle (head for the next star, 5-step limit, "Just show me the star"; test numbers in the mockup's section 9), Nonogram on iPad, new games.
 
 ## 2026-11-05 — Sudoku hints leave pencil marks alone (pages only, pushed)
 - Colin: a hint saying a pencil mark is wrong gives the answer away ("having wrong pencil marks is fine"). He often marks "1" in two cells to mean "the 1 is in one of these"; the hint read that as "this cell is a 1".

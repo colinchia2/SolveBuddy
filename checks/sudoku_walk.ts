@@ -19,8 +19,10 @@ for (const f of ["easy-starter", "medium", "hard", "expert", "tricks", "killer-e
       walks++;
       const last = h.walk[h.walk.length - 1];
       longest = Math.max(longest, h.walk.length);
-      if (last.spot?.join() !== h.target?.join() || !last.title.includes(String(h.value))) fail(p.id, "doesn't end on the answer", last);
-      if (p.solution[h.target![0]][h.target![1]] !== h.value) fail(p.id, "wrong number", last);
+      if (h.target) {
+        if (last.spot?.join() !== h.target.join() || !last.title.includes(String(h.value))) fail(p.id, "doesn't end on the answer", last);
+        if (p.solution[h.target[0]][h.target[1]] !== h.value) fail(p.id, "wrong number", last);
+      }
       if (!/^Look at /.test(h.walk[0].title)) fail(p.id, "doesn't start by pointing somewhere", h.walk[0]);
       for (const s of h.walk) {
         const text = [s.title, s.body ?? "", ...(s.rows ?? []).flatMap((r) => [r.label, r.why])].join(" | ");
@@ -29,7 +31,8 @@ for (const f of ["easy-starter", "medium", "hard", "expert", "tricks", "killer-e
         maxRows = Math.max(maxRows, s.rows?.length ?? 0);
         for (const [r, c] of s.no ?? []) {
           cells++;
-          if (/squeeze|Only spot/.test(h.technique) && p.solution[r][c] === h.value) fail(p.id, "ruled out the answer's square", s);
+          const gone = h.values ?? (h.value ? [h.value] : []);
+          if (gone.includes(p.solution[r][c]) && !(h.target && r === h.target[0] && c === h.target[1]) && !/^Cage sum|Last cell/.test(h.technique)) fail(p.id, "ruled out the answer's square", s);
         }
       }
     }

@@ -267,9 +267,18 @@ function advanceWalk(h) {
   h.level = level;
   if (level === 3) {
     saveUndo();
-    placeHint(h.data);
+    h.data.target ? placeHint(h.data) : writeHint(h.data);
   }
   render();
+}
+// Show me on a rule-out: write it into pencil marks so it's on the board for the next hint.
+function writeHint(d) {
+  writeMarks(d, s.center, s.corner);
+  for (const { cell, marks } of d.pencil ?? []) {
+    const k = key(...cell); // corner marks that the new center marks rule out go away
+    if (s.corner[k]) s.corner[k] = s.corner[k].filter((n) => marks.includes(n));
+    if (!s.corner[k]?.length) delete s.corner[k];
+  }
 }
 function advanceHint() {
   const h = s.hint;
@@ -286,14 +295,8 @@ function advanceHint() {
   if (h.level === 3) {
     saveUndo();
     const d = h.data;
-    // Show me, a rule-out: write it into pencil marks so it's on the board for the next hint.
     if (!d.target) {
-      writeMarks(d, s.center, s.corner);
-      for (const { cell, marks } of d.pencil ?? []) {
-        const k = key(...cell); // corner marks that the new center marks rule out go away
-        if (s.corner[k]) s.corner[k] = s.corner[k].filter((n) => marks.includes(n));
-        if (!s.corner[k]?.length) delete s.corner[k];
-      }
+      writeHint(d);
       return render();
     }
     placeHint(d);

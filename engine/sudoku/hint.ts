@@ -12,7 +12,7 @@ import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
 import { type CageWay, type Rules, variantPlace, variantRuleOut } from "./variants.ts";
 
-import { type WalkStep, lastCellWalk, onlyNumberWalk, squeezeWalk } from "./walk.ts";
+import { type WalkStep, hiddenPairsWalk, lastCellWalk, onlyNumberWalk, pairsWalk, pointingWalk, squeezeWalk, xWingWalk, yWingMarksWalk, yWingWalk } from "./walk.ts";
 
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
@@ -289,7 +289,7 @@ function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?:
     if (v) {
       const pencil = v.pencil!;
       return { kind: "step", technique: v.technique, focus: v.focus, target: null, value: 0, remove: [], spots: pencil.map((p) => p.cell),
-        pencil, nudge: v.nudge, explain: v.why,
+        pencil, walk: v.walk, nudge: v.nudge, explain: v.why,
         showMe: pencil.length === 1 ? `Wrote ${pencil[0].marks.join(" ")} in ${cellName(...pencil[0].cell)}.` : `Wrote what's left in ${pencil.length} cells.` };
     }
   }
@@ -310,6 +310,7 @@ function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?:
     if (!written) {
       const [p0, p1, p2] = pencil.map((p) => `${cellName(...p.cell)} can only be ${p.marks.join(" or ")}`);
       return { kind: "step", technique: step.technique, focus: step.focus, target: null, value: 0, remove: [], spots: step.spots,
+        walk: yWingMarksWalk(pencil.map((p, i) => ({ label: `Square ${i + 1}`, why: `${p.marks.join(" or ")}` })), step.spots!),
         blockers: blockersWith(step, from), inferred: [], pencil, nudge: step.nudge,
         explain: `${p0}, ${p1}, and ${p2}. Each one's row, column and box already have every other number.`,
         showMe: `Wrote ${pencil.map((p) => p.marks.join(" ")).join(", ")} in them.` };
@@ -321,17 +322,23 @@ function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?:
   // marks go in its four corners, not the cells it clears).
   if (step.technique === "Pointing" || step.technique === "Claiming" || step.technique === "X-wing") {
     const a = step.value === 8 ? "an" : "a";
-    return { ...base, corner: { cells: step.spots!, n: step.value }, showMe: `Marked ${a} ${step.value} in the cells where it can go.` };
+    const said = step.why.match(/In (.+?), \d can only go (?:in|inside) (.+?)\./);
+    const [from, into] = [said?.[1] ?? "this area", said?.[2] ?? "these squares"];
+    const walk = step.technique === "X-wing" ? xWingWalk(from, into, step.spots!, step.value, step.remove) : pointingWalk(from, into, step.spots!, step.value, step.remove);
+    return { ...base, walk, corner: { cells: step.spots!, n: step.value }, showMe: `Marked ${a} ${step.value} in the cells where it can go.` };
   }
   // Pairs and Hidden pairs: write the two numbers in the pair's two cells.
   if (step.technique === "Pairs" || step.technique === "Hidden pairs") {
     const pencil = step.spots!.map((cell) => ({ cell, marks: left(cell) }));
-    return { ...base, pencil, showMe: `Wrote ${pencil[0].marks.join(" ")} in the pair.` };
+    const unit = step.nudge.match(/(box|row|column) \d/)?.[0] ?? "this area";
+    const walk = step.technique === "Pairs" ? pairsWalk(unit, step.spots!, pencil[0].marks, step.remove) : hiddenPairsWalk(unit, step.spots!, pencil[0].marks);
+    return { ...base, walk, pencil, showMe: `Wrote ${pencil[0].marks.join(" ")} in the pair.` };
   }
   // Y-wing: write what's left in the cells it clears.
   const k = step.remove.length;
   const pencil = step.remove.map((cell) => ({ cell, marks: left(cell) }));
-  return { ...base, pencil, nudge: `${cellName(...step.spots![0])} is ${left(step.spots![0]).join(" or ")}. Try each one.`,
+  const walk = yWingWalk(left(step.spots![0]), step.spots!, step.value, step.remove);
+  return { ...base, walk, pencil, nudge: `${cellName(...step.spots![0])} is ${left(step.spots![0]).join(" or ")}. Try each one.`,
     showMe: k === 1 ? `${cellName(...step.remove[0])} can't be ${step.value}. Wrote ${pencil[0].marks.join(" ")} there.`
       : `${values.join(" and ")} ${values.length > 1 ? "are" : "is"} ruled out of ${k} cells. Pencil marks added.` };
 }

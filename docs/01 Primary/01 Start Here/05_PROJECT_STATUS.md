@@ -1,6 +1,6 @@
 # SolveBuddy — project status
 
-**2026-11-06:** Sudoku hints that place a number now go step by step (pages only, pushed; rule-out hints and Thermo next). Build log 11/6.
+**2026-11-06:** All Sudoku hints now go step by step (pages only, pushed; Star Battle hints next). Build log 11/6.
 
 **2026-11-05:** Sudoku hints no longer flag or clear pencil marks (pages only, pushed). Build log 11/5.
 
