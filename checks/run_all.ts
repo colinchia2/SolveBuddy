@@ -456,4 +456,11 @@ if (existsSync(sbExpertFile)) {
     && /noteWatch = setInterval/.test(st) && /!solves\(\)\.some\(\(e\) => e\.at === n\.at\)\) return false/.test(st));
 }
 
+{
+  // Sudoku numbers on iPad (Colin 11/5): CSS zoom left the numbers small on his iPad, so the board scales by transform.
+  const page = readFileSync("web/sudoku.html", "utf8");
+  check("Sudoku's iPad board scales by transform, not CSS zoom, with pencil marks at 8px",
+    /\.zview \{ zoom: 1; transform: scale\(var\(--bz, 1\)\)/.test(page) && /html\.tablet \.cell \.ctr, html\.tablet \.cell \.cn \{ font-size: 8px; \}/.test(page));
+}
+
 if (failed) process.exit(1);

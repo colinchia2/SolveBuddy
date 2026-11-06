@@ -1697,7 +1697,23 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     bd.w > 350 && bd.headRight && bd.sideRight && bd.onScreen);
   check(`F1 iPad sideways: Sudoku board ${su.bw}px left of the bar (${su.boardRight < su.dockLeft}), Star Battle ${sb.bw}px (${sb.boardRight < sb.dockLeft}), Shikaku ${sh.bw}px (${sh.boardRight < sh.dockLeft}; 11/1), Nonogram ${nn.bw}px (${nn.boardRight < nn.dockLeft}; 11/1)`,
     su.land && su.bw > 600 && su.boardRight < su.dockLeft && sb.bw > 600 && sb.boardRight < sb.dockLeft && sh.bw > 600 && sh.boardRight < sh.dockLeft && nn.bw > 600 && nn.boardRight < nn.dockLeft);
+  // Sudoku numbers on iPad (Colin 11/5): the whole board scales together, so numbers keep their share of the square
+  // and pencil marks stay well under them. Tapping the far corner still lands on that cell. Checked sideways and upright.
+  const sudokuSizes = () => p.evaluate(() => {
+    const cell = document.querySelector('.cell[data-r="8"][data-c="8"]').getBoundingClientRect(), v = document.querySelector(".cell .v").getBoundingClientRect();
+    const hit = document.elementFromPoint(cell.left + cell.width / 2, cell.top + cell.height / 2)?.closest(".cell");
+    const B = document.getElementById("board").getBoundingClientRect();
+    return { cw: cell.width, share: v.height / cell.height, zoom: getComputedStyle(document.getElementById("zview")).zoom,
+      hit: hit?.dataset.r === "8" && hit?.dataset.c === "8", onScreen: B.right <= innerWidth && B.bottom <= innerHeight, B: [B.left, innerWidth - B.right] }; });
+  await p.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`); await p.waitForTimeout(2200);
+  const sz = await sudokuSizes();
+  check(`Sudoku iPad sideways: square ${Math.round(sz.cw)}px, numbers fill ${Math.round(sz.share * 100)}% of it, no CSS zoom (${sz.zoom}), far corner tappable (${sz.hit}), on screen (${sz.onScreen})`,
+    sz.cw > 65 && sz.share > 0.55 && sz.zoom === "1" && sz.hit && sz.onScreen);
   await p.setViewportSize({ width: 834, height: 1194 });
+  await p.goto(`${BASE}sudoku.html?pack=killer-expert&p=1`); await p.waitForTimeout(2200);
+  const szUp = await sudokuSizes();
+  check(`Sudoku iPad upright: square ${Math.round(szUp.cw)}px, numbers fill ${Math.round(szUp.share * 100)}%, far corner tappable (${szUp.hit}), centred (${szUp.B.map(Math.round).join(" / ")}), on screen (${szUp.onScreen})`,
+    szUp.cw > 65 && szUp.share > 0.55 && szUp.hit && szUp.onScreen && Math.abs(szUp.B[0] - szUp.B[1]) < 4);
   await p.goto(`${BASE}sudoku.html?pack=easy&p=1`); await p.waitForTimeout(2200);
   const up = await p.evaluate(() => ({ bw: Math.round(document.getElementById("board").getBoundingClientRect().width),
     keysInRow: new Set([...document.querySelectorAll("#pad .key")].map((k) => k.offsetTop)).size, port: document.documentElement.classList.contains("port") }));

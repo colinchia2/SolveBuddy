@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 2026-11-05 — Sudoku numbers on iPad (pages only, pushed)
+- Colin: on iPad the numbers looked like pencil marks. His screenshots: numbers about 2/3 of their intended size; the squares and cage sums were right. Mockup: https://claude.ai/artifact/R1xcmvcHVh3TovdYj2qK7s (approved, "looks good").
+- Not reproduced: Chrome and desktop WebKit draw it correctly, and this Mac has no iPad simulator, so the exact cause is unproven. Likely CSS zoom on `.zview` not reaching text in the cells on a real iPad.
+- `web/sudoku.html`, iPad only: the board scales by `transform: scale(var(--bz))` instead of zoom (margins keep its layout size); Center and Corner marks 8px. iPhone unchanged. Star Battle and Shikaku still use zoom.
+- Checks: run_all 1 new, pages_smoke 2 new (sideways, upright: numbers' share of the square, far corner tappable). Colin still has to confirm on his iPad.
+
 ## 2026-11-02 — Start fresh: solved puzzles cleared, streak kept (pages only)
 - Colin: clear every solved puzzle so he can solve again with hints and get real stats, but keep his 2-week streak and Block Drop scores. Done once; how-to in `docs/START_FRESH.md`.
 - Not a delete and not a script: there's no server, and iCloud merges the solve log as a union, so a deleted solve comes back from the other device. Instead a cutoff, `FRESH_AT` (bridge.js, 11/2): `solves()` hides older solves everywhere; `allSolves()` keeps them for the streak, the week box and logSolve; half-done games from before it are dropped. Block Drop, settings, imports untouched.

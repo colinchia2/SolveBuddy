@@ -18,6 +18,13 @@
   html.tablet.port .pad { grid-template-columns: repeat(9, minmax(0, 1fr)); }
   html.tablet.port .pad .key { min-height: 72px; font-size: 32px; }
   #hint { max-height: none; }
+  /* iPad (Colin 11/5): common.css grows the board with CSS zoom, but on his iPad the numbers in the cells stayed about
+     two-thirds the size they should be. A transform scales everything the same in any browser. The margins keep the
+     board's full size in the layout. Pencil marks are a touch bigger than he saw them, well under the numbers. */
+  html.tablet .phone[data-tablet] .zview { zoom: 1; transform: scale(var(--bz, 1)); transform-origin: 0 0; }
+  html.tablet.land .phone[data-tablet] .screen > .zview, html.tablet.port .phone[data-tablet] .screen > .zview {
+    margin-right: calc(354px * (var(--bz, 1) - 1)); margin-bottom: calc(354px * (var(--bz, 1) - 1)); }
+  html.tablet .cell .ctr, html.tablet .cell .cn { font-size: 8px; }
   /* Sudoku-only: board, pencil marks, mode bar, keypad. */
   .board .missing { grid-column: 1 / -1; width: 351px; min-height: 220px; box-sizing: border-box; padding: 24px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 6px; text-align: center; color: var(--body); }
