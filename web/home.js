@@ -18,10 +18,12 @@ const TILES = [
   { id: "blocks", rules: "Blocks fall one at a time. Move and turn them so they fill whole rows: a full row clears and scores. It gets faster as you go. The game ends when the blocks reach the top." },
   { id: "nonogram", rules: "The numbers beside each row and above each column say how many squares are filled, in order, with a gap between each group. Tap to fill, tap again for ×. Fill them all and a picture appears. 15×15 zooms with two fingers." },
   { id: "shikaku", rules: "Cut the square into rectangles. Each one holds exactly one number and covers that many squares. Drag to draw a patch, drag from a patch to make it bigger, tap one to take it away." },
+  { id: "fiveletters", rules: "Guess the five-letter word in six tries. Green is the right letter in the right spot, orange is in the word but elsewhere, grey isn't in it." },
+  { id: "groups", rules: "Make your own groups of words. A game mixes 16 words from 4 of your groups, and you sort them back. A word in two groups is a trap." },
 ];
 // Games on the list but not built yet: one quiet line under the tiles (calmer screens, Colin 10/23). Never a game
 // that's playable (the page test checks).
-const SOON = ["Binairo", "Shikaku", "Five Letters", "Groups"].filter((n) => !Object.values(GAMES).some((g) => g.name === n));
+const SOON = ["Binairo", "Shikaku"].filter((n) => !Object.values(GAMES).some((g) => g.name === n));
 const LEVEL_BARS = { easy: 1, medium: 2, hard: 3, expert: 4, killer: 1, thermo: 1, "killer-expert": 4, "thermo-expert": 4, patches: 2 };
 // Every pack row's picture (Colin 10/27, mockup "Pack pictures" option C): the pack's first puzzle as it starts (its
 // regions, numbers, clues or tubes; never the answer, never your progress, which stays in the ring) with a size
@@ -95,6 +97,10 @@ function render() {
   $("streak").innerHTML = `${FLAME}${current} week${current === 1 ? "" : "s"}`;
   $("tiles").innerHTML = TILES.map((t) => t.id === "nonogram"
     ? `<button class="tile" data-game="nonogram" aria-label="Open Nonogram">${gameIcon(LOOK.nonogram, 38, 21)}<span><span class="name">Nonogram</span><span class="count">${total("nonogram")} puzzles</span></span></button>`
+    : t.id === "groups"
+    ? `<button class="tile" data-game="groups" aria-label="Open Groups">${gameIcon(LOOK.groups, 38, 21)}<span><span class="name">Groups</span><span class="count">Make your own</span></span></button>`
+    : t.id === "fiveletters"
+    ? `<button class="tile" data-game="fiveletters" aria-label="Play Five Letters">${gameIcon(LOOK.fiveletters, 38, 21)}<span><span class="name">Five Letters</span><span class="count">New word each time</span></span></button>`
     : t.id === "blocks"
     ? `<button class="tile" data-game="blocks" aria-label="Play Block Drop">${gameIcon(LOOK.blocks, 38, 21)}<span><span class="name">Block Drop</span><span class="count">${blockScores().best ? `Best ${blockScores().best.toLocaleString()}` : "Endless"}</span></span></button>`
     : `<button class="tile" data-game="${t.id}" aria-label="Open ${GAMES[t.id].name}">${gameIcon(LOOK[t.id], 38, 21)}<span><span class="name">${GAMES[t.id].name}</span><span class="count">${total(t.id)} ${t.id === "watersort" ? "levels" : "puzzles"}</span></span></button>`).join("");
@@ -102,7 +108,7 @@ function render() {
   $("soon").innerHTML = `<b>Coming soon</b>${SOON.map(esc).join(" · ")}`;
   document.querySelectorAll("[data-game]").forEach((b) => (b.onclick = () => {
     const g = b.dataset.game;
-    if (g === "blocks") { haptic("thud"); return openGame("blocks", ""); } // endless: straight into the game
+    if (g === "blocks" || g === "fiveletters" || g === "groups") { haptic("thud"); return openGame(g, ""); } // endless: straight into the game
     go(GAMES[g].sets.length === 1 ? { g, set: 0 } : { g });
   }));
   renderView(false);

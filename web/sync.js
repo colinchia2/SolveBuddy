@@ -9,7 +9,7 @@
 // - the solve log (stats, streaks): every solve from both, once each;
 // - finished boards ("View solved puzzle"): every puzzle from both;
 // - Block Drop: the higher best score, best lines and games played (a game left half-done stays on its device);
-// - settings, Water Sort's look per import and your own imports: whichever device changed them last.
+// - settings, Water Sort's look per import, your own imports and your word groups: whichever device changed them last.
 // Games left half-done are not synced: each device keeps its own.
 export const SYNCED = {
   "solvebuddy.solves": "solves",
@@ -18,6 +18,7 @@ export const SYNCED = {
   "solvebuddy.settings": "last",
   "solvebuddy.waterLook": "last",
   "solvebuddy.imports": "last",
+  "solvebuddy.groups": "last", // Colin's own word groups
 };
 const AT_KEY = "solvebuddy.syncAt"; // when this device last changed each "last" key
 // What sync has done on this device, for the line at the bottom of Stats (Colin 11/1: "the stats don't match"):

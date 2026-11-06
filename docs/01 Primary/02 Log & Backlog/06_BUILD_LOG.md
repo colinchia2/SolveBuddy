@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-06 — Five Letters and Groups (pages only, pushed)
+- **Five Letters**, mockup https://claude.ai/artifact/815yFdPy1tvKmMJmkE8zb2. Colin chose green and wanted fun letters: pop as you type, flip one at a time, bounce wave on a win, row shakes on a bad word. A random word on open (a half-played game resumes). `engine/fiveletters/game.ts`, `web/fiveletters.*`, `packs/fiveletters-words.json`: 884 answers (common words from google-10000-english, no swears) and 8,636 guesses (ENABLE, public domain); not Wordle's own list, on purpose. Own stats in `solvebuddy.fiveletters`, not on the Stats tab yet. Hint reveals one letter.
+- **Groups**, working mockup https://claude.ai/artifact/VXRHLipgS4hsHdEqGSAUqM. He makes his own groups in the app, seen in the real world. `engine/groups/game.ts`, `web/groups.*`. Bottom bar: Groups, Words, Create game; search and filter top right on each; tap a word to see every group it's in. Yellow, green, blue, purple = easy to tricky. 4 to 8 words a group; a game deals 4 from each of 4 groups. A word in two groups is a trap; `deal` retries until the board has exactly one answer (`answers`). Saved games point at live groups. Five starter groups to edit or delete. Saved in `solvebuddy.groups`, synced by iCloud (last change wins, so editing on both devices at once loses one side). Not on the Stats tab yet.
+- Both ride inside the starbattle page (bridge HOSTED, build_site HOSTS), so no app update.
+- pages_smoke now blocks web fonts: a slow font download kept hanging page loads.
+- Next: the snake game (own name and look).
+
 ## 2026-11-06 — Nonogram clue bar on iPad (pages only, pushed)
 - Colin: the bar slid up over the bottom rows while the right side sat empty. Mockup approved: https://claude.ai/artifact/2cBQtSbB2MeLzEXr5znJNo
 - `web/nonogram.html`, iPad only: sideways the bar sits in the right column above the buttons, with bigger numbers; upright it's a slim row between the board and the buttons. It fades in rather than sliding up. iPhone unchanged.

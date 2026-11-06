@@ -47,7 +47,7 @@ export const post = (msg) => globalThis.ReactNativeWebView?.postMessage(JSON.str
 // it, App.js GAMES). The app's offline starbattle page carries Nonogram too and switches on ?game=nonogram
 // (scripts/build_site.ts); Shikaku rides in it the same way (?game=shikaku, Colin 10/24). Once the app lists them
 // itself, drop them from here.
-export const HOSTED = { nonogram: "starbattle", shikaku: "starbattle" };
+export const HOSTED = { nonogram: "starbattle", shikaku: "starbattle", fiveletters: "starbattle", groups: "starbattle" };
 export function openGame(game, query) {
   if (inApp && HOSTED[game]) post({ type: "open", page: HOSTED[game], query: `?game=${game}${query ? `&${query.replace(/^\?/, "")}` : ""}` });
   else if (inApp) post({ type: "open", page: game, query });

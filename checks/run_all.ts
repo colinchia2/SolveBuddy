@@ -491,4 +491,24 @@ check("Nonogram's iPad clue bar sits in the empty space, with bigger numbers", /
     spawnSync(process.execPath, ["checks/starbattle_route.ts"], { encoding: "utf8" }).status === 0);
 }
 
+// Five Letters (Colin 11/6): repeated letters score as often as they're in the word; the lists are clean.
+{
+  const { score, hintSpot } = await import("../engine/fiveletters/game.ts");
+  const w = JSON.parse(readFileSync("packs/fiveletters-words.json", "utf8"));
+  check("Five Letters scoring: repeated letters and right spots first", score("speed", "abide").join("") === "mmnmn" && score("erase", "speed").join("") === "nmmnn"
+    && score("plant", "plant").join("") === "rrrrr" && score("llama", "hello").join("") === "nnmmm" && hintSpot(["plant"], "plumb", []) === 2);
+  check(`Five Letters words: ${w.answers.length} answers, all guessable and five letters`, w.answers.length > 500 && w.answers.every((x: string) => x.length === 5 && w.guesses.includes(x)));
+}
+
+// Groups (Colin 11/6): traps are real, and every board has exactly one answer, even with lots of shared words.
+{
+  const { STARTERS, answers, bestFour, cleanWords, deal, traps } = await import("../engine/groups/game.ts");
+  const four = bestFour(STARTERS)!;
+  let dealt = 0, unique = true;
+  for (let i = 0; i < 40; i++) { const d = deal(four); if (d) { dealt++; unique &&= answers(d) === 1 && new Set(d.flatMap((x) => x.words.map((w) => w.toLowerCase()))).size === 16; } }
+  check(`Groups: best 4 has ${traps(four)} trap(s), 40 boards with one answer each`, traps(four) >= 1 && dealt === 40 && unique);
+  const twins = [1, 2, 3, 4].map((id) => ({ id, name: "", d: 0, words: ["a", "b", "c", "d"] }));
+  check("Groups: four identical groups never make a board, and word lists stay clean", deal(twins) === null && cleanWords(["Key", " key ", "", "Saw"]).join() === "Key,Saw");
+}
+
 if (failed) process.exit(1);

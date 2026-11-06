@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-06:** New games: Five Letters and Groups (pages only, pushed). Build log 11/6.
+
 **2026-11-06:** Nonogram clue bar moved off the board on iPad (pages only, pushed). Build log 11/6.
 
 **2026-11-06:** Star Battle hints head for the next star, with a 5-step limit and "Just show me the star" (pages only, pushed). Build log 11/6.

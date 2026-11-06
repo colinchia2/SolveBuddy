@@ -55,6 +55,10 @@ export const LOOK = {
   blocks: { bg: "#F8EBC9", ink: "#8C5F00", path: "M4 13h5v5H4z M9 13h5v5H9z M14 13h5v5h-5z M9 8h5v5H9z", size: "Endless" },
   // Nonogram (Colin 10/23): a grid with a filled corner block and a clue tick, in its own slate blue.
   nonogram: { bg: "#E2E6F4", ink: "#3D4C8F", path: "M4 4h16v16H4z M4 12h16 M12 4v16 M6.5 6.5h3v3h-3z M14.5 14.5h3v3h-3z", size: "5–15" },
+  // Groups (Colin 11/6): four tiles, one lit.
+  groups: { bg: "#EEE3FB", ink: "#6B4AA3", path: "M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z", size: "Yours" },
+  // Five Letters (Colin 11/6): a row of letter tiles.
+  fiveletters: { bg: "#DDF1E4", ink: "#2E9E5B", path: "M3 9h5v6H3z M9.5 9h5v6h-5z M16 9h5v6h-5z", size: "Endless" },
   // Shikaku (Colin 10/24): a square cut into rectangles, in its own green.
   shikaku: { bg: "#DDF1E4", ink: "#2E7D4F", path: "M4 4h16v16H4z M4 11h9 M13 4v16 M13 15h7", size: "8–12" },
 };

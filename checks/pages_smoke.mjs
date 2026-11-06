@@ -9,7 +9,11 @@ const browser = await chromium.launch({ channel: "chrome" }); // the installed C
 // with no cutoff (SB_FRESH_AT = 0). The "Start fresh" check below sets its own.
 const noCutoff = () => { window.SB_FRESH_AT = 0; };
 { const nc = browser.newContext.bind(browser); browser.newContext = async (o) => { const c = await nc(o); await c.addInitScript(noCutoff); return c; }; }
+// Web fonts stay out of the test: a slow font download could hang a page load (11/6). Layout checks don't need them.
+const noFonts = (c) => c.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+{ const nc = browser.newContext.bind(browser); browser.newContext = async (o) => { const c = await nc(o); await noFonts(c); return c; }; }
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+await noFonts(page);
 await page.addInitScript(noCutoff);
 const errors = [];
 page.on("pageerror", (e) => errors.push(`${page.url()}: ${e.message}`));
@@ -1610,6 +1614,58 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     !!r && /^Step \d of \d$/.test(r.at) && r.rows.length >= 3 && r.blocks > 0 && /^It's an? \d$/.test(r.last.title) && r.last.blue === 1 && r.closed);
 }
 
+// Groups (Colin 11/6): make a group, it's saved; a word shows its groups; search filters; a game can be played to the end.
+{
+  await page.goto(`${BASE}groups.html`);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => localStorage.removeItem("solvebuddy.groups"));
+  await page.reload();
+  await page.waitForTimeout(800);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), c = (s) => document.querySelector(s).click(), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const set = (el, v) => { el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); };
+    const out = {};
+    c("[data-new]");
+    set($("gname"), "Kitchen drawer");
+    ["Whisk", "Peeler", "Tongs", "Key"].forEach((w, i) => set(document.querySelector(`[data-w="${i}"]`), w));
+    c("[data-save]");
+    out.saved = JSON.parse(localStorage.getItem("solvebuddy.groups")).groups.length;
+    c('[data-tab="words"]');
+    out.trapTop = document.querySelector("#list .grow b").textContent;
+    c('[data-word="Key"]');
+    out.inGroups = document.querySelectorAll(".gmark").length;
+    c('[data-tab="groups"]');
+    c('[data-tog="s"]');
+    set($("q"), "kitchen");
+    out.found = document.querySelectorAll("#list .grow").length;
+    c('[data-tab="create"]');
+    c("[data-random]");
+    out.tiles = document.querySelectorAll(".gt").length;
+    return out;
+  });
+  check(`Groups: new group saved (${r.saved}), trap word first (${r.trapTop}) in ${r.inGroups} groups, search finds ${r.found}, a game deals ${r.tiles} words`,
+    r.saved === 6 && r.trapTop === "Key" && r.inGroups === 3 && r.found === 1 && r.tiles === 16);
+}
+
+// Five Letters (Colin 11/6): a wrong word shakes and isn't used, a guess colours its row, the right word wins.
+{
+  await page.goto(`${BASE}fiveletters.html`);
+  await page.waitForTimeout(1200);
+  const r = await page.evaluate(async () => {
+    const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
+    const type = async (w) => { for (const l of w) document.querySelector(`[data-k="${l}"]`).click(); document.querySelector('[data-k="enter"]').click(); };
+    await type("zzzzz");
+    const bad = $("say").textContent;
+    for (let i = 0; i < 5; i++) document.querySelector('[data-k="del"]').click();
+    await type("crane"); await wait(1200);
+    const colored = document.querySelectorAll(".ft.r, .ft.n, .ft.m").length, key = document.querySelector('[data-k="c"]').className;
+    const answer = JSON.parse(localStorage.getItem("solvebuddy.fiveletters")).saved.answer;
+    await type(answer); await wait(2600);
+    return { bad, colored, key, won: !!$("won") };
+  });
+  check(`Five Letters: "${r.bad}", a guess colours 5 tiles (${r.colored}) and its keys (${r.key}), the word wins (${r.won})`, /not in the word list/.test(r.bad) && r.colored === 5 && /\b[rnm]\b/.test(r.key) && r.won);
+}
+
 // Star Battle route hints (Colin 11/6): a hint walks to the next star and shows pretend marks when it tries one. A long
 // route asks first, and "Just show me the star" puts a right star on the board and closes the hint.
 {
@@ -1701,6 +1757,10 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
     bd.w > 350 && bd.headRight && bd.sideRight && bd.onScreen);
   check(`F1 iPad sideways: Sudoku board ${su.bw}px left of the bar (${su.boardRight < su.dockLeft}), Star Battle ${sb.bw}px (${sb.boardRight < sb.dockLeft}), Shikaku ${sh.bw}px (${sh.boardRight < sh.dockLeft}; 11/1), Nonogram ${nn.bw}px (${nn.boardRight < nn.dockLeft}; 11/1)`,
     su.land && su.bw > 600 && su.boardRight < su.dockLeft && sb.bw > 600 && sb.boardRight < sb.dockLeft && sh.bw > 600 && sh.boardRight < sh.dockLeft && nn.bw > 600 && nn.boardRight < nn.dockLeft);
+  // Five Letters on iPad (Colin 11/6): the whole grid fits on screen, beside the keyboard.
+  await p.goto(`${BASE}fiveletters.html`); await p.waitForTimeout(1500);
+  const fl = await p.evaluate(() => { const G = document.getElementById("grid").getBoundingClientRect(), K = document.getElementById("pad").getBoundingClientRect(); return { fits: G.bottom <= innerHeight && G.top >= 0, beside: G.right <= K.left, tall: Math.round(G.height) }; });
+  check(`Five Letters on iPad sideways: grid ${fl.tall}px tall, on screen (${fl.fits}), beside the keyboard (${fl.beside})`, fl.fits && fl.beside && fl.tall > 500);
   // Sudoku numbers on iPad (Colin 11/5): the whole board scales together, so numbers keep their share of the square
   // and pencil marks stay well under them. Tapping the far corner still lands on that cell. Checked sideways and upright.
   const sudokuSizes = () => p.evaluate(() => {

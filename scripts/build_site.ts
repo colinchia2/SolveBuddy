@@ -38,7 +38,7 @@ const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f,
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
 const built: Record<string, { html: string; code: string }> = {};
-for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram", "shikaku"]) {
+for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram", "shikaku", "fiveletters", "groups"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")
@@ -53,7 +53,7 @@ for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort
 // A game the phone app doesn't know as a page yet rides inside one it does (bridge.js HOSTED): the app opens only the
 // game pages built into it (App.js GAMES), so the app's starbattle page also carries Nonogram and Shikaku and becomes
 // one of them when opened with ?game=nonogram or ?game=shikaku. No app change; once the app lists them, this can go.
-const HOSTS: Record<string, string[]> = { starbattle: ["nonogram", "shikaku"] };
+const HOSTS: Record<string, string[]> = { starbattle: ["nonogram", "shikaku", "fiveletters", "groups"] };
 for (const [host, guests] of Object.entries(HOSTS)) {
   const h = built[host].html;
   const tail = h.indexOf("<script type=\"module\">");
