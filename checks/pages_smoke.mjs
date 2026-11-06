@@ -1577,8 +1577,8 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await page.click("#hintClose"); await page.waitForTimeout(300);
 }
 
-// S15 Sudoku (10/27): a Killer cage hint shows its ways as chips; the picked wrong way lights its blocker on the board;
-// tapping another chip switches; Show me says which cell gets the number and why.
+// Hint walkthroughs (Colin 11/5): a Killer cage hint goes step by step. Each step shows its own reasons and red boxes, the
+// last step places the number, and the whole hint counts as one.
 {
   await page.goto(`${BASE}sudoku.html?pack=killer-expert&p=2`);
   await page.waitForTimeout(1000);
@@ -1587,22 +1587,26 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await page.waitForTimeout(2200);
   const r = await page.evaluate(async () => {
     const $ = (id) => document.getElementById(id), wait = (ms) => new Promise((res) => setTimeout(res, ms));
-    const red = () => [...document.querySelectorAll(".cell")].filter((c) => c.style.boxShadow.includes("accent-dark")).map((c) => `${c.dataset.r},${c.dataset.c}`).join(" ");
-    for (let i = 0; i < 150; i++) { // play hints until a cage hint with 3+ ways comes up
-      $("hintBtn").click(); await wait(20); $("hintNext").click(); await wait(20);
-      if (!$("hintWays").hidden && document.querySelectorAll("#hintWays .way").length >= 3) break;
-      $("hintNext").click(); await wait(20); $("hintNext").click(); await wait(260);
+    const red = () => [...document.querySelectorAll(".cell")].filter((c) => c.style.boxShadow.includes("accent-dark")).length;
+    const label = () => $("hintStep").textContent;
+    for (let i = 0; i < 150; i++) { // play hints until a walkthrough has 3+ reasons in one step
+      $("hintBtn").click(); await wait(30);
+      for (let g = 0; g < 8 && !$("hint").hidden; g++) {
+        if (document.querySelectorAll("#hintWays .wrow").length >= 3) {
+          const rows = [...document.querySelectorAll("#hintWays .wrow")].map((e) => e.textContent), at = label(), blocks = red();
+          for (let k = 0; k < 8 && $("hintNextLabel").textContent !== "Done"; k++) { $("hintNext").click(); await wait(40); }
+          const last = { title: $("hintTitle").textContent, at: label(), blue: document.querySelectorAll(".cell .v.shown").length };
+          $("hintNext").click(); await wait(500); // the card slides away first
+          return { rows, at, blocks, last, closed: $("hint").hidden };
+        }
+        $("hintNext").click(); await wait(30);
+      }
+      await wait(260);
     }
-    const chips = [...document.querySelectorAll("#hintWays .way")].map((b) => b.textContent + (b.classList.contains("on") ? "*" : ""));
-    const first = { body: $("hintBody").textContent, red: red() };
-    document.querySelectorAll("#hintWays .way")[2].click(); await wait(80);
-    const third = { body: $("hintBody").textContent, red: red() };
-    $("hintNext").click(); await wait(80);
-    return { chips, first, third, show: $("hintBody").textContent, title: $("hintTitle").textContent };
+    return null;
   });
-  check(`S15 Killer chips ${r.chips.join(" | ")}: "${r.first.body}" (red ${r.first.red}); 3rd: "${r.third.body}" (red ${r.third.red}); Show me "${r.title} ${r.show}"`,
-    r.chips.length >= 3 && r.chips.some((c) => c.endsWith("✓")) && r.chips[0].endsWith("*") && r.first.red && r.third.body !== r.first.body
-    && r.third.red !== r.first.red && /can't/.test(r.show));
+  check(`Killer walkthrough: ${r?.at}, ${r?.rows.length} reasons, ${r?.blocks} red boxes; ends "${r?.last.title}" (${r?.last.at}), number shown (${r?.last.blue}), Done closes it (${r?.closed})`,
+    !!r && /^Step \d of \d$/.test(r.at) && r.rows.length >= 3 && r.blocks > 0 && /^It's an? \d$/.test(r.last.title) && r.last.blue === 1 && r.closed);
 }
 
 // S15 Star Battle (10/27): a What if steps through from Explain, one numbered forced move per Next, cell names in blue;

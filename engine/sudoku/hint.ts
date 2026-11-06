@@ -12,6 +12,8 @@ import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, PLACING, allRuleOuts, applyStep, cellName, list, nextStep } from "./techniques.ts";
 import { type CageWay, type Rules, variantPlace, variantRuleOut } from "./variants.ts";
 
+import type { WalkStep } from "./walk.ts";
+
 type Cell = [number, number];
 export type Marks = Record<string, number[]>; // "row,col" → center (or corner) pencil marks
 export const MAX_CHAIN = 3;
@@ -31,6 +33,7 @@ export type Hint = {
   corner?: { cells: Cell[]; n: number }; // a rule-out: Show me adds `n` as a corner mark in these cells
   ways?: CageWay[]; // a cage: every way to make it (chips), the wrong ones crossed out with their blockers
   where?: { why: string; blockers: NonNullable<Step["blockers"]> }; // Show me: why the number goes in this cell
+  walk?: WalkStep[]; // step by step (Colin 11/5): replaces Nudge, Explain, Show me on this hint
   nudge: string;
   explain: string;
   showMe: string;
@@ -257,7 +260,7 @@ function read(board: Grid, solution: Grid, marks: Marks, corners: Marks, rules?:
     if (v) {
       const [r, c] = v.place!.cell;
       return { kind: "step", technique: v.technique, focus: v.focus, target: [r, c], value: v.place!.value, remove: null,
-        inferred: v.struck, ways: v.ways, where: v.where,
+        inferred: v.struck, ways: v.ways, where: v.where, walk: v.walk,
         nudge: v.nudge, explain: v.why, showMe: `It's ${v.place!.value === 8 ? "an" : "a"} ${v.place!.value}!` };
     }
   }

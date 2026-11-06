@@ -56,6 +56,13 @@
     background: #E6E1DA; color: var(--muted); text-decoration: line-through; transition: transform .2s cubic-bezier(.3,1.4,.5,1), background .2s ease; }
   .way.ok { background: var(--brand-soft); color: var(--brand-dark); text-decoration: none; }
   .way.on { background: var(--accent-soft); color: var(--accent-dark); box-shadow: inset 0 0 0 2px var(--accent-dark); transform: scale(1.06); }
+  /* Walkthrough steps (Colin 11/5): reasons in rows; a red × on each ruled-out square. */
+  .hint .ways.rows { flex-direction: column; flex-wrap: nowrap; gap: 5px; }
+  .wrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: baseline; font-size: 13px; line-height: 1.35; color: var(--body); }
+  .wrow b { padding: 1px 7px; border-radius: 6px; font-weight: 700; white-space: nowrap; background: var(--accent-soft); color: var(--accent-dark); }
+  .wrow.ok b { background: var(--brand-soft); color: var(--brand-dark); }
+  html.tablet .wrow { font-size: 15px; }
+  .cell .xno { position: absolute; right: 3px; bottom: 1px; z-index: 2; font: 700 11px/1 Inter, sans-serif; font-style: normal; color: var(--accent-dark); }
   .way.ok.on { background: var(--brand-soft); color: var(--brand-dark); box-shadow: inset 0 0 0 2px var(--sel-ring); }
   .cell .cn.bad, .ctr b { color: var(--conflict-star); font-weight: inherit; } /* a pencil mark that clashes (S8); .cell so it beats the corner marks' blue below */
   .cell .v.wrong { color: var(--conflict-star); }

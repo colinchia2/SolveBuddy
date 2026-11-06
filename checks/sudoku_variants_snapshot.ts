@@ -15,5 +15,5 @@ export function snapshot() {
   }
   return out;
 }
-export const snapshotHash = () => createHash("sha256").update(JSON.stringify(snapshot())).digest("hex");
+export const snapshotHash = () => createHash("sha256").update(JSON.stringify(snapshot(), (k, v) => (k === "walk" ? undefined : v))).digest("hex"); // walkthroughs have their own check
 if (process.argv[1]?.endsWith("sudoku_variants_snapshot.ts")) console.log(snapshotHash());

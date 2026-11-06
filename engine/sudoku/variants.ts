@@ -4,6 +4,7 @@
 // priority"), then the classic ones. Classic tricks stay sound here: the extra rules only ever remove options.
 import { type Grid, fits } from "./fullGrid.ts";
 import { type RuledOut, type Step, blockersFor, cellName, list } from "./techniques.ts";
+import { type WalkStep, cageWalk, squeezeWalk } from "./walk.ts";
 
 type Cell = [number, number];
 export type Cage = { cells: Cell[]; sum: number };
@@ -102,6 +103,7 @@ export type VariantStep = {
   ways?: CageWay[]; // a cage: every way to make it, the wrong ones crossed out
   where?: { why: string; blockers: Blockers }; // Show me: why the number goes in this cell of the cage
   struck?: Cell[]; // cells ruled out (striped), e.g. a squeeze's other spots
+  walk?: WalkStep[]; // the step-by-step hint (Colin 11/5); hints without one use Nudge, Explain, Show me
 };
 
 // What a cell can still be by its row, column and box (and what's ruled out). Worked out once per cell per hint:
@@ -146,7 +148,7 @@ function cageWays(grid: Grid, cage: Cage, a: ReturnType<typeof cageAllows>, opts
 }
 const either = (cells: Cell[]) => list(cells.map((p) => cellName(...p)), "or");
 
-function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace: boolean): VariantStep | null {
+function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace: boolean, cages: Cage[] = []): VariantStep | null {
   const a = cageAllows(grid, cage, opts);
   if (!a.empty.length) return null;
   const head = cellName(...cage.cells[0]);
@@ -178,7 +180,7 @@ function cageStep(grid: Grid, cage: Cage, opts: (p: Cell) => number[], wantPlace
           : vCovers
             ? { why: `The ${v} can't go in ${either(rest)}: the ${v}${vb.length > 1 ? "s" : ""} at ${list(vb.map((x) => cellName(...x.cell)))} block${vb.length > 1 ? "" : "s"} ${rest.length > 1 ? "them" : "it"}. So it goes at ${at}.`, blockers: vb }
             : { why: `Of ${list(a.fitWays[0].map(String))}, only ${v} can go at ${at}.`, blockers: blocked.flatMap((x) => x.b) };
-      return { technique: "Cage sum", focus: cage.cells, place: { cell, value: v }, ways, where,
+      return { technique: "Cage sum", focus: cage.cells, place: { cell, value: v }, ways, where, walk: cageWalk(grid, cage, a, opts, cages, cell, v),
         nudge: `Look at the cage at ${head}. What numbers can make ${cage.sum}?`,
         why: `${sumLine}${ways ? "" : which}` };
     }
@@ -360,6 +362,7 @@ function squeeze(grid: Grid, rules: Rules, opts: (p: Cell) => number[]): Variant
       // Short (Colin 10/27: "a wall of text"): the other spots are striped on the board; one line says why.
       const one = others.length === 1 ? ` (${cellName(...others[0])} can only be ${list(vopts(others[0]), "or")})` : "";
       return { technique: thermo ? "Thermo squeeze" : "Cage squeeze", focus: h.cells, place: { cell, value: d }, struck: others,
+        walk: thermo ? undefined : squeezeWalk(grid, rules.cages ?? [], h.label, h.cells, d, cell, vopts, (cg) => cageAllows(grid, cg, opts)),
         nudge: `Where can ${d} go in ${h.label}?`,
         why: `${cap(h.label)} has ${classic.length} spots for ${d}, but the ${what} rule out the striped ${others.length > 1 ? "ones" : "one"}${one}. So ${d} goes at ${cellName(...cell)}.` };
     }
@@ -395,7 +398,7 @@ function cageClaims(grid: Grid, cages: Cage[], opts: (p: Cell) => number[]): Var
 export function variantPlace(grid: Grid, out: RuledOut, rules: Rules): VariantStep | null {
   const opts = optsFor(grid, out);
   for (const u of unitsOf(rules)) {
-    const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, true) : thermoStep(grid, u.line!, opts, true);
+    const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, true, rules.cages ?? []) : thermoStep(grid, u.line!, opts, true);
     if (st) return st;
   }
   if (!rules.advanced) return null;
@@ -407,7 +410,7 @@ export function variantRuleOut(grid: Grid, out: RuledOut, rules: Rules, placesAf
   const opts = optsFor(grid, out);
   const all: VariantStep[] = [];
   for (const u of unitsOf(rules)) {
-    const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, false) : thermoStep(grid, u.line!, opts, false);
+    const st = u.kind === "cage" ? cageStep(grid, u.cage!, opts, false, rules.cages ?? []) : thermoStep(grid, u.line!, opts, false);
     if (st) all.push(st);
   }
   if (rules.advanced && rules.cages) {

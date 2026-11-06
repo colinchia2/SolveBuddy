@@ -241,18 +241,40 @@ function openHint() {
     s.hint = null;
     return render();
   }
-  s.hints = (s.hints ?? 0) + 1 / 3; // each hint step (Nudge, Explain, Show me) counts a third (Colin, 10/22)
   const data = findHint(board(), s.solution, s.center, s.corner, s.extra);
+  // Each hint step counts its share of a whole hint (Colin, 10/22): a third, or 1/n of an n-step walkthrough.
+  s.hints = (s.hints ?? 0) + 1 / (data.walk?.length ?? 3);
   // A cage's chips start on the first wrong way that has something on the board to show (S15).
   const ways = data.ways ?? [];
   const first = ways.findIndex((w) => !w.ok && w.blockers.length);
   hintStep(s, 1, data.technique);
-  s.hint = { data, level: 1, way: first >= 0 ? first : Math.max(0, ways.findIndex((w) => !w.ok)) };
+  s.hint = { data, level: 1, i: 0, way: first >= 0 ? first : Math.max(0, ways.findIndex((w) => !w.ok)) };
+  render();
+}
+// A walkthrough (Colin 11/5): Next moves through its steps and the last one places the number. For the hint history,
+// the first step is Nudge, the last is Show me, and the ones between are Explain.
+function advanceWalk(h) {
+  const n = h.data.walk.length;
+  if (h.i === n - 1) {
+    s.hint = null;
+    checkSolved();
+    return render();
+  }
+  h.i++;
+  s.hints = (s.hints ?? 0) + 1 / n;
+  const level = h.i === n - 1 ? 3 : 2;
+  if (level !== h.level) hintStep(s, level);
+  h.level = level;
+  if (level === 3) {
+    saveUndo();
+    placeHint(h.data);
+  }
   render();
 }
 function advanceHint() {
   const h = s.hint;
   if (!h) return; // a second tap on Done while the card slides away
+  if (h.data.walk) return advanceWalk(h);
   if (h.data.kind === "stuck" || h.level === 3) {
     s.hint = null;
     checkSolved();
@@ -333,9 +355,12 @@ function render() {
   showHintsUsed(s.solved ? 0 : s.hints); // the quiet "You've used ⅓ of a hint" line over Hint (Colin, 10/23)
   const h = s.hint;
   const step = h?.data;
-  const shown = h && h.level >= 2;
-  const focus = new Set(step ? step.focus.map(([r, c]) => key(r, c)) : []);
-  const target = shown && h.data.target ? key(...h.data.target) : null;
+  const walk = step?.walk?.[h.i ?? 0]; // a walkthrough step paints only its own cells
+  const keys = (cells) => new Set((cells ?? []).map(([r, c]) => key(r, c)));
+  const noCells = keys(walk?.no);
+  const shown = h && h.level >= 2 && !walk;
+  const focus = walk ? keys(walk.zone) : new Set(step ? step.focus.map(([r, c]) => key(r, c)) : []);
+  const target = walk ? (walk.spot ? key(...walk.spot) : null) : shown && h.data.target ? key(...h.data.target) : null;
   // Striped = ruled out by a trick or your marks; a plain red shade = there's already that number in the line.
   const striped = new Set(shown ? [...(step.remove ?? []), ...(step.inferred ?? [])].map(([r, c]) => key(r, c)) : []);
   const spots = new Set(shown && step.spots ? step.spots.map(([r, c]) => key(r, c)) : []);
@@ -344,7 +369,7 @@ function render() {
   // A cage hint (S15): at Explain, the picked way's blockers; at Show me, what decides which cell gets the number.
   const blockers = !shown ? [] : step.ways && h.level === 2 ? step.ways[h.way]?.blockers ?? []
     : step.where && h.level === 3 ? step.where.blockers : step.blockers ?? [];
-  const blockerCells = new Set(blockers.map((b) => key(...b.cell)));
+  const blockerCells = walk ? keys(walk.block) : new Set(blockers.map((b) => key(...b.cell)));
   const blockLines = new Set(blockers.flatMap((b) => b.line.map(([r, c]) => key(r, c))));
   const [sr, sc] = s.sel || [-1, -1];
   const selVal = s.sel ? valueAt(sr, sc) : 0;
@@ -392,7 +417,7 @@ function render() {
       // Colin, 10/21: blue = the hint's area and where the number can go (outlined) or goes; red = can't go
       // (the lines blocking numbers cast, striped cells).
       if (focus.has(k)) bg = "color-mix(in srgb, var(--same) 80%, var(--board))";
-      if (blockLines.has(k)) bg = "var(--accent-soft)";
+      if (blockLines.has(k) || noCells.has(k)) bg = "var(--accent-soft)";
       if (blockerCells.has(k)) bg = "color-mix(in srgb, var(--accent-mid) 70%, var(--board))";
       if (k === target) bg = "var(--sel)";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
@@ -408,6 +433,7 @@ function render() {
         const [x, y] = cornerSpot(i);
         return `<span class="cn${bad(r, c, d) ? " bad" : ""}" style="left:${x}px;top:${y}px">${d}</span>`;
       }).join("");
+      if (noCells.has(k)) inner += `<i class="xno" aria-hidden="true">×</i>`;
       const cls = ["cell", c % 3 === 2 ? "br" : "", r % 3 === 2 ? "bb" : "", intro ? "drop" : "", won ? "won wave" : ""].join(" ");
       const box = Math.floor(r / 3) * 3 + Math.floor(c / 3);
       const d = intro ? s.introWait + 0.15 + box * 0.09 + ((r % 3) * 3 + (c % 3)) * 0.025 : (r + c) * 0.03;
@@ -426,9 +452,10 @@ function render() {
   if (h) {
     const d = h.data;
     const stuck = d.kind === "stuck";
-    $("hintStep").textContent = stuck ? "Hint" : ["Nudge", "Explain", "Show me"][h.level - 1];
+    const w = d.walk?.[h.i ?? 0];
+    $("hintStep").textContent = w ? `Step ${h.i + 1} of ${d.walk.length}` : stuck ? "Hint" : ["Nudge", "Explain", "Show me"][h.level - 1];
     $("hintChip").textContent = d.technique;
-    $("hintChip").hidden = !d.technique || h.level === 1;
+    $("hintChip").hidden = !!w || !d.technique || h.level === 1;
     [1, 2, 3].forEach((n) => $("d" + n).classList.toggle("on", h.level >= n));
     const text = [
       [d.nudge, ""],
@@ -451,6 +478,15 @@ function render() {
     if (d.ways && h.level === 2) $("hintWays").innerHTML = d.ways.map((w, i) =>
       `<button class="way${w.ok ? " ok" : ""}${i === h.way ? " on" : ""}" data-way="${i}" aria-pressed="${i === h.way}">${w.nums.join(" + ")}${w.ok ? " ✓" : ""}</button>`).join("");
     $("hintNextLabel").textContent = next;
+    $("hintWays").classList.toggle("rows", !!w);
+    if (w) {
+      $("hintTitle").textContent = w.title;
+      $("hintBody").textContent = w.body ?? "";
+      $("hintBody").hidden = !w.body;
+      $("hintWays").hidden = !w.rows;
+      if (w.rows) $("hintWays").innerHTML = w.rows.map((r) => `<div class="wrow${r.ok ? " ok" : ""}"><b>${r.label}</b><span>${r.why}</span></div>`).join("");
+      $("hintNextLabel").textContent = h.i === d.walk.length - 1 ? "Done" : h.i === d.walk.length - 2 ? "Show me" : "Next";
+    }
   }
 
   $("rules").hidden = !s.rules;
@@ -616,7 +652,7 @@ openWipe();
 replaySource(() => ({ board: { entries: s.entries, corner: s.corner, center: s.center }, hint: s.hint }));
 if (!importId) {
   load(idx, packName, true);
-  if (REPLAY) startReplay((f, level) => { Object.assign(s, { entries: { ...f.board.entries }, corner: { ...f.board.corner }, center: { ...f.board.center } }); s.hint = { ...f.hint, level }; render(); });
+  if (REPLAY) startReplay((f, level) => { Object.assign(s, { entries: { ...f.board.entries }, corner: { ...f.board.corner }, center: { ...f.board.center } }); s.hint = { ...f.hint, i: f.hint?.data?.walk ? [0, Math.floor(f.hint.data.walk.length / 2), f.hint.data.walk.length - 1][level - 1] : 0, level }; render(); });
 }
 else {
   const item = await findImport(importId);
