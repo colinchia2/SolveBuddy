@@ -3,6 +3,9 @@
 Read this first in any new session ("pick up SolveBuddy"). Short on purpose.
 
 ## Right now (11/1: backlog triaged by Colin)
+- **11/5–11/9 (contained build, all shipped and checked by Colin on phone and iPad):** the 11/5 voice note is done
+  except the snake game, which is now `08_BACKLOG.md` "Next up" #1 (build log 11/6 entries). New rules for hints are in
+  the backlog's "Decided" (11/5–11/6). Test gotcha: run the page test with Node 24 (`fnm exec --using=24`).
 - **Next up = `../02 Log & Backlog/08_BACKLOG.md` "Next up"** (Colin's 11/1 triage). First: **talk through the app's
   structure (Packs vs Library vs Get more)**, before more building. Then: clean up old hosting code, a daily puzzle for
   streaks, the Stats tab's older glass cards, making Shikaku puzzles by hand in Import. Everything else is under

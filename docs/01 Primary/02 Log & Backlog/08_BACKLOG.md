@@ -3,15 +3,22 @@
 Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med / Low, blank = not set; size S / M / L).
 
 ## Next up
-1. **Talk through the app's structure (Packs vs Library vs Get more)** · High · M
+1. **The snake game** · High · L · Colin 11/9: "it's just the snake game now"
+   - From his 11/5 voice note (he showed the "Snake Puzzle" app icon). Our guess at how it plays, which he said yes to:
+     move a snake to eat fruit, it grows, gravity pulls it down, reach the exit. Make it our own game, with its own name
+     and look, not a copy of that app.
+   - Plan he agreed: a mockup and a few test levels he can play first, then about 30 levels. A code solver proves every
+     level can be solved and powers the hints, like the other games. It can ride in the starbattle page, so no app update.
+2. **Talk through the app's structure (Packs vs Library vs Get more)** · High · M
    - Colin said this comes first, before more building. He finds Packs confusing: tapping a pack on the Packs tab
      jumps to Library; "which ones do I have vs what am I downloading?". Talk first, no building until he decides.
-2. **Clean up old hosting code** · Low · S
-   - Drop `bridge.js` HOSTED + the hosting in `scripts/build_site.ts` (the app OTA that made it unneeded landed 10/25).
-3. **A daily puzzle for streaks (streaks already show)** · M
-4. **Stats tab still uses the older glass cards** · S
+3. **Clean up old hosting code** · Low · S
+   - Still needed for now: Five Letters and Groups (11/6) ride in the starbattle page. Only after an app update adds
+     "fiveletters" and "groups" to App.js GAMES can `bridge.js` HOSTED and the hosting in `scripts/build_site.ts` go.
+4. **A daily puzzle for streaks (streaks already show)** · M
+5. **Stats tab still uses the older glass cards** · S
    - Bring it in line with the 10/23 calmer screens.
-5. **Make Shikaku puzzles by hand in Import** · M
+6. **Make Shikaku puzzles by hand in Import** · M
    - Today only Claude adds them from a screenshot.
 
 ## Backlog
@@ -40,8 +47,10 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
    - Later: Arrow, rules from a photo.
 9. **After-puzzle review: "here's what you could have done"** · Low · L
 10. **New games** · Low · L
-    - Binairo, Five Letters or Groups (Colin picks).
-    - Brainstorm word groups for Groups.
+    - Binairo. (Five Letters and Groups shipped 11/6; the snake game is in Next up.)
+11. **Five Letters and Groups on the Stats tab** · Low · S · optional (Colin 11/9)
+    - Today each keeps its own numbers (`solvebuddy.fiveletters`: played, won, streak; Groups: none). Log their games
+      like the other puzzles so they show on Stats and count toward streaks.
 
 ## Done (marked by Colin 11/1)
 - Freeze fix (10/29 OTA, app `f9bce34`).
@@ -50,6 +59,9 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
 - The quick "Solved!" screen.
 - Everything from the 10/20 ideas and the 10/22 voice note: import, Water Sort, Two-star Star Battle, Block Drop,
   Expert Star Battle + Sudoku, the blue look, Killer + Thermo, Nonogram, Shikaku.
+- Everything from the 11/5 voice note except the snake game (Colin checked it all on phone and iPad, 11/9): bigger
+  Sudoku numbers on iPad, hints that leave pencil marks alone, step-by-step hints for every Sudoku hint type, Star Battle
+  hints that head for the next star, the Nonogram clue bar off the board on iPad, Five Letters, Groups.
 
 ## Decided
 - **SolveBuddy is blue (Colin, 10/21).** App icon = the blue light-bulb face. The app's terracotta accent changes to blue
@@ -105,6 +117,16 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
   - Shikaku: no line of text under the board, ever.
   - Water Sort and Block Drop need no pack picture (no pack list).
 - 10/20 (Colin): **said no to Flow Free.** His App Store version is already perfect and free.
+- 11/5 (Colin): **wrong pencil marks are fine.** A hint never flags or clears them, because that gives the answer away.
+  A lone mark ("1" in two squares = "the 1 is in one of these") is only read once a real trick proves it.
+- 11/5 (Colin): **hints go step by step**: each one stands alone (never mentions an earlier hint), starts by pointing
+  somewhere ("Look at this cage"), says what we know before using it, and gives every ruled-out way or square its
+  reason. No cell codes like R9C8, no sums with plus signs. Blue box = answer, red box = blocker, red × = ruled out.
+- 11/6 (Colin): **Star Battle hints head for the next star.** Over 5 steps the hint asks first ("Walk me through it" /
+  "Just show me the star"). "A really hard puzzle is just truly a really hard one for a reason."
+- 11/6 (Colin): **Five Letters is green**, not blue, with fun letter animations. Our own word lists, not Wordle's.
+- 11/6 (Colin): **Groups are his own**, made in the app from things he sees, not made for him. 4 to 8 words a group,
+  yellow / green / blue / purple for difficulty, a word in two groups is a trap, search and filter on every list.
 
 ## Open questions
 None. The handoff §9 ones are answered or now on the lists above.

@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-11-09 — Save point: the 11/5 voice note is done except the snake game
+- Colin checked everything on phone and iPad: "everything looks good". What shipped is in the 11/5 and 11/6 entries
+  below (iPad numbers, pencil marks, Sudoku walkthroughs, Star Battle routes, Nonogram clue bar, Five Letters, Groups).
+- Backlog: the snake game is Next up #1; Five Letters and Groups on the Stats tab added (optional); the hosting clean-up
+  item now waits on an app update that lists the two new games; the new hint rules are under "Decided".
+- Mockups from this chat: hints https://claude.ai/artifact/MQeXLRWBCVfXdC4fo1Jnpa, iPad numbers
+  https://claude.ai/artifact/R1xcmvcHVh3TovdYj2qK7s, Nonogram https://claude.ai/artifact/2cBQtSbB2MeLzEXr5znJNo, Five Letters
+  https://claude.ai/artifact/815yFdPy1tvKmMJmkE8zb2, Groups https://claude.ai/artifact/VXRHLipgS4hsHdEqGSAUqM.
+- Gotchas: this Mac's default Node is 20, so use `fnm exec --using=24`. GitHub's Pages step can fail on its own; a
+  "re-run failed jobs" then fails on two `github-pages` artifacts, and a fresh push fixes it.
+
 ## 2026-11-06 — Five Letters and Groups (pages only, pushed)
 - **Five Letters**, mockup https://claude.ai/artifact/815yFdPy1tvKmMJmkE8zb2. Colin chose green and wanted fun letters: pop as you type, flip one at a time, bounce wave on a win, row shakes on a bad word. A random word on open (a half-played game resumes). `engine/fiveletters/game.ts`, `web/fiveletters.*`, `packs/fiveletters-words.json`: 884 answers (common words from google-10000-english, no swears) and 8,636 guesses (ENABLE, public domain); not Wordle's own list, on purpose. Own stats in `solvebuddy.fiveletters`, not on the Stats tab yet. Hint reveals one letter.
 - **Groups**, working mockup https://claude.ai/artifact/VXRHLipgS4hsHdEqGSAUqM. He makes his own groups in the app, seen in the real world. `engine/groups/game.ts`, `web/groups.*`. Bottom bar: Groups, Words, Create game; search and filter top right on each; tap a word to see every group it's in. Yellow, green, blue, purple = easy to tricky. 4 to 8 words a group; a game deals 4 from each of 4 groups. A word in two groups is a trap; `deal` retries until the board has exactly one answer (`answers`). Saved games point at live groups. Five starter groups to edit or delete. Saved in `solvebuddy.groups`, synced by iCloud (last change wins, so editing on both devices at once loses one side). Not on the Stats tab yet.
