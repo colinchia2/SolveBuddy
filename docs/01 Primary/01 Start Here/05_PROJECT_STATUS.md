@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-09:** Colin checked everything from 11/5–11/6 on phone and iPad: "everything looks good". Only the snake game is left from his 11/5 voice note.
+
 **2026-11-06:** New games: Five Letters and Groups (pages only, pushed). Build log 11/6.
 
 **2026-11-06:** Nonogram clue bar moved off the board on iPad (pages only, pushed). Build log 11/6.
