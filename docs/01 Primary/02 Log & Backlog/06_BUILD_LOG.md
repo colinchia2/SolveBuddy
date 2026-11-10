@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 2026-11-10 — App opens on weak signal: fonts ride inside the pages
+- Colin: the app wouldn't load on low data / no service. Cause: every page linked Google Fonts in its head, and on weak
+  signal the web view held the page blank waiting for it (no signal at all fails fast, so it loaded then).
+- Fix (pages only): `fonts/` holds Google's own latin files (Bricolage, Inter; variable, one each). `build_site.ts`
+  swaps the Google link for an inline @font-face in every app page and refuses to build one that links out to http(s).
+  The website (`web/`) keeps the Google link. Pages grew ~170 KB each.
+- Check: run_all "app pages carry their own fonts and load nothing from the internet" (it runs the build). 68 PASS;
+  pages_smoke all PASS.
+- Not done (needs an app build, ask Colin): app.json `fallbackToCacheTimeout` 3000 makes launch wait up to 3 s for an
+  OTA check on weak signal; 0 would skip the wait.
+
 ## 2026-11-09 — Save point: the 11/5 voice note is done except the snake game
 - Colin checked everything on phone and iPad: "everything looks good". What shipped is in the 11/5 and 11/6 entries
   below (iPad numbers, pencil marks, Sudoku walkthroughs, Star Battle routes, Nonogram clue bar, Five Letters, Groups).

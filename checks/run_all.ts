@@ -5,7 +5,7 @@ import { erase } from "../engine/sudoku/erase.ts";
 import { grade } from "../engine/sudoku/grade.ts";
 import { makeEasy, spread, EASY_MIN_PER, EASY_MAX_PER } from "../engine/sudoku/makePuzzle.ts";
 import { type Hint, hint, playHints, tricksShown, writeMarks } from "../engine/sudoku/hint.ts";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { placeStars, regionSizes, growRegions, repair } from "../engine/starbattle/layout.ts";
 import { solveWith as sbSolveWith } from "../engine/starbattle/grade.ts";
 import { countSolutions as sbCount } from "../engine/starbattle/countSolutions.ts";
@@ -509,6 +509,15 @@ check("Nonogram's iPad clue bar sits in the empty space, with bigger numbers", /
   check(`Groups: best 4 has ${traps(four)} trap(s), 40 boards with one answer each`, traps(four) >= 1 && dealt === 40 && unique);
   const twins = [1, 2, 3, 4].map((id) => ({ id, name: "", d: 0, words: ["a", "b", "c", "d"] }));
   check("Groups: four identical groups never make a board, and word lists stay clean", deal(twins) === null && cleanWords(["Key", " key ", "", "Saw"]).join() === "Key,Saw");
+}
+
+// Weak signal (Colin 11/10): the app's pages open without asking the internet for anything, fonts included.
+{
+  const { spawnSync } = await import("node:child_process");
+  const ok = spawnSync(process.execPath, ["scripts/build_site.ts"], { encoding: "utf8" }).status === 0;
+  const pages = ok ? readdirSync("_site/app").map((f) => readFileSync(`_site/app/${f}`, "utf8")) : [];
+  check("app pages carry their own fonts and load nothing from the internet", ok && pages.length >= 12
+    && pages.every((h) => h.includes("font/woff2;base64") && !/(href|src)="https?:/.test(h) && !h.includes("fonts.googleapis")));
 }
 
 if (failed) process.exit(1);

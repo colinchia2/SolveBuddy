@@ -37,15 +37,20 @@ cpSync(join(ROOT, "packs"), join(OUT, "packs"), { recursive: true });
 const packs = Object.fromEntries(readdirSync(join(ROOT, "packs")).map((f) => [f, JSON.parse(readFileSync(join(ROOT, "packs", f), "utf8"))]));
 const noClose = (s: string) => s.replace(/<\/(script|style)/gi, "<\\/$1");
 mkdirSync(join(OUT, "app"));
+// The fonts ride inside each app page too (Colin 11/10): a link to Google Fonts held the whole page blank on weak
+// signal. fonts/ = Google's own latin files (Bricolage 700–800, Inter 400–700; both variable, one file each).
+const font = (family: string, file: string, weights: string) => `@font-face{font-family:'${family}';font-style:normal;font-weight:${weights};font-display:swap;src:url(data:font/woff2;base64,${readFileSync(join(ROOT, "fonts", file)).toString("base64")}) format('woff2')}`;
+const FONTS = `<style>${font("Bricolage Grotesque", "bricolage.woff2", "700 800")}${font("Inter", "inter.woff2", "400 700")}</style>`;
 const built: Record<string, { html: string; code: string }> = {};
 for (const page of ["home", "packs", "stats", "sudoku", "starbattle", "watersort", "blocks", "import", "nonogram", "shikaku", "fiveletters", "groups"]) {
   const code = (await build({ entryPoints: [join(ROOT, "web", `${page}.js`)], bundle: true, format: "esm", target: "es2022",
     minify: true, write: false })).outputFiles[0].text;
   const html = readFileSync(join(ROOT, "web", `${page}.html`), "utf8")
+    .replace(/<link href="https:\/\/fonts\.googleapis\.com\/[^"]+" rel="stylesheet">/, FONTS)
     .replace(/<link rel="stylesheet" href="(\w+\.css)">/g, (_, f) => `<style>${noClose(readFileSync(join(ROOT, "web", f), "utf8"))}</style>`)
     .replace(`<script type="module" src="${page}.js"></script>`,
       () => `<script>window.SB_PACKS=${noClose(JSON.stringify(packs))}</script><script type="module">${noClose(code)}</script>`);
-  if (html.includes(`src="${page}.js"`) || /href="\w+\.css"/.test(html)) throw new Error(`app/${page}.html: couldn't inline`);
+  if (html.includes(`src="${page}.js"`) || /href="\w+\.css"/.test(html) || /(href|src)="https?:/.test(html)) throw new Error(`app/${page}.html: couldn't inline`);
   writeFileSync(join(OUT, "app", `${page}.html`), html);
   built[page] = { html, code };
 }
