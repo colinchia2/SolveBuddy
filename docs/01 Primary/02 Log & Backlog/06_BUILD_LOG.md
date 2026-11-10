@@ -2,6 +2,19 @@
 
 Newest first.
 
+## 2026-11-10 — Star Battle: Try it
+- Colin: a button that saves the board so he can test a what-if, then jump back if it fails, with the first move
+  marked. Mockup https://claude.ai/artifact/GiHqp1CCAr8aoXbt31cupg (`docs/design/try_it_mockup.html`).
+- Decided (Colin): going back leaves the tried cell as it was (no auto × or star), with a red dashed ring and "That
+  didn't work", the same whether the first move was a star or an ×.
+- Built (pages only): Game settings "Try-it button" (off by default). "Try from here" sits between the timer and the
+  star count; trying shows a floating bar (Trying from m:ss · Go back · Keep) and a blue frame; the first move gets a
+  blue ring + "1st". Undo stops at the saved board. The ring clears when you tap that cell or start a new try. The
+  clock never stops. The try survives leaving the puzzle (saved with the game). The bar and note float, so the board
+  never moves.
+- Check: pages_smoke "Try it" (off by default, ring, Undo stop, Go back for a star and an ×, Keep, board never moves).
+  run_all 68 PASS, pages_smoke 175 PASS.
+
 ## 2026-11-10 — App opens on weak signal: fonts ride inside the pages
 - Colin: the app wouldn't load on low data / no service. Cause: every page linked Google Fonts in its head, and on weak
   signal the web view held the page blank waiting for it (no signal at all fails fast, so it loaded then).

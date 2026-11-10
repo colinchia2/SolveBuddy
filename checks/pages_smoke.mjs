@@ -2116,6 +2116,47 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await ctx.close();
 }
 
+// Try it (Colin 11/10): off by default; on, it saves the board, rings your first move, Go back restores the board and
+// rings that cell ("That didn't work") whether it was a star or an ×; Undo stops at the saved board; Keep keeps the moves.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}starbattle.html?pack=expert&p=5`); await p.waitForTimeout(1500);
+  const offHidden = await p.evaluate(() => document.getElementById("tryBtn").hidden);
+  await p.click("#settingsBtn"); await p.click('[data-set="tryIt"]'); await p.click("#settings .dark");
+  const tap = (r, c) => p.evaluate(([r, c]) => {
+    const el = document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`), b = el.getBoundingClientRect(), pt = { clientX: b.left + b.width / 2, clientY: b.top + b.height / 2, bubbles: true };
+    el.dispatchEvent(new PointerEvent("pointerdown", pt)); document.dispatchEvent(new PointerEvent("pointerup", pt));
+  }, [r, c]);
+  const marks = () => p.evaluate(() => [...document.querySelectorAll(".cell")].map((c) => c.querySelector("svg") ? "s" : c.querySelector(".xm:not(.auto)") ? "x" : ".").join(""));
+  const view = () => p.evaluate(() => ({ btn: !document.getElementById("tryBtn").hidden && !document.getElementById("tryBtn").style.visibility,
+    top: Math.round(document.getElementById("board").getBoundingClientRect().top), bar: !document.getElementById("trybar").hidden,
+    tip: !document.getElementById("tryTip").hidden, first: document.querySelector(".firstn")?.closest(".cell")?.dataset.r + "," + document.querySelector(".firstn")?.closest(".cell")?.dataset.c,
+    tried: [...document.querySelectorAll(".cell.tried")].map((c) => c.dataset.r + "," + c.dataset.c).join("|") }));
+  await tap(0, 7); // a × before trying, so the saved board isn't empty
+  const saved = await marks();
+  await p.click("#tryBtn");
+  const t0 = await view();
+  await tap(4, 2); await tap(4, 2); await tap(6, 0); // star at 5,3 (two taps), then an ×
+  const t1 = await view();
+  await p.click("#undoBtn"); await p.click("#undoBtn"); await p.click("#undoBtn"); await p.click("#undoBtn"); // Undo stops at the save point
+  const undone = await marks();
+  await tap(4, 2); await tap(4, 2); await tap(6, 0);
+  await p.click("#tryBack");
+  const back = await view(), afterBack = await marks();
+  // An × as the first move gets the same ring.
+  await p.click("#tryBtn"); await tap(2, 2); await tap(3, 5); await p.click("#tryBack");
+  const backX = await view(), afterX = await marks();
+  // Keep: the moves stay, the bar goes.
+  await p.click("#tryBtn"); await tap(1, 1); await p.click("#tryKeep");
+  const kept = await view(), keptMarks = await marks();
+  check(`Try it: hidden until turned on (${offHidden}); bar ${t0.bar}, 1st ring on ${t1.first}; Undo stops at the save (${undone === saved}); Go back restores the board (${afterBack === saved}), rings ${back.tried} with "That didn't work" (${back.tip}); an × first rings ${backX.tried} (${afterX === saved}); Keep keeps (${keptMarks !== saved && !kept.bar}); board never moves (${t0.top}/${t1.top}/${back.top})`,
+    offHidden && t0.bar && !t0.btn && t1.first === "4,2" && undone === saved && afterBack === saved && back.tried === "4,2" && back.tip && back.btn && !back.bar
+    && backX.tried === "2,2" && afterX === saved && keptMarks[9] === "x" && !kept.bar && kept.btn && t0.top === t1.top && t1.top === back.top);
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

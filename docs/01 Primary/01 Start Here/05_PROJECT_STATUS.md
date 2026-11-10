@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-10:** Star Battle "Try it": save the board, test a move, go back or keep (setting, off by default; pages only, pushed). Build log 11/10.
+
 **2026-11-10:** App pages carry their own fonts, so they open on weak signal (pages only, pushed). Build log 11/10.
 
 **2026-11-09:** Colin checked everything from 11/5–11/6 on phone and iPad: "everything looks good". Only the snake game is left from his 11/5 voice note.

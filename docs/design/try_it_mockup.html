@@ -1,0 +1,126 @@
+<title>Star Battle Try It</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: four phone screens in a row (wrapping), each with a plain caption underneath. App tokens from web/common.css. */
+:root {
+  --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52; --page: #E9E5DF;
+  --brand: #2F6FD6; --brand-dark: #1F57B5; --brand-soft: #DCEAFE;
+  --accent: #C24E2A; --conflict: #B3261E; --board: #FFFDF9;
+  --disp: 'Bricolage Grotesque', system-ui, sans-serif; --text: Inter, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+h1 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0 0 4px; text-align: center; text-wrap: balance; }
+.lede { margin: 0 auto 24px; max-width: 60ch; text-align: center; color: var(--body); font-size: 15px; }
+.row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+figure { margin: 0; width: 312px; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+figcaption { font-size: 14px; color: var(--body); line-height: 1.45; }
+figcaption b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 2px; }
+.frame { width: 312px; height: 675px; max-width: 100%; overflow: hidden; border-radius: 24px; box-shadow: 0 20px 50px rgba(30,30,30,.16); }
+.phone { width: 390px; height: 844px; transform: scale(.8); transform-origin: 0 0; position: relative; background: var(--bg);
+  padding: 16px 16px 24px; display: flex; flex-direction: column; gap: 14px; font-size: 15px; line-height: 1.4; }
+header { display: flex; align-items: center; gap: 6px; padding-top: 30px; }
+.sq { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(30,30,30,.07); }
+.title { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.title b { font-family: var(--disp); font-weight: 800; font-size: 21px; line-height: 1.1; }
+.title span { font-size: 12px; color: var(--muted); }
+.info { display: flex; justify-content: space-between; align-items: center; height: 36px; }
+.timer { display: flex; align-items: center; gap: 6px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.count { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--body); }
+/* New: the try button, and the bar it becomes. */
+.try { height: 34px; padding: 0 12px; border-radius: 17px; display: flex; align-items: center; gap: 6px; font: 600 13px var(--text);
+  color: var(--brand-dark); background: rgba(255,255,255,.7); border: 1px solid #D5E2F7; }
+.trybar { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 6px 0 12px; border-radius: 14px; background: var(--brand-soft); color: var(--brand-dark); font-size: 13px; font-weight: 600; }
+.trybar .lbl { flex: 1; display: flex; align-items: center; gap: 6px; }
+.trybar button { height: 32px; padding: 0 12px; border-radius: 10px; border: 0; font: 600 13px var(--text); }
+.back { background: #fff; color: var(--ink); }
+.keep { background: var(--brand); color: #fff; }
+.stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding-bottom: 30px; }
+.board { display: grid; grid-template-columns: repeat(8, 44px); border-top: 3px solid var(--ink); border-left: 3px solid var(--ink); border-radius: 10px; overflow: hidden; box-shadow: 0 12px 32px rgba(30,30,30,.14); }
+.board.trying { outline: 3px solid var(--brand); outline-offset: 4px; }
+.cell { width: 44px; height: 44px; display: grid; place-items: center; position: relative;
+  border-right: 1px solid rgba(42,33,27,.16); border-bottom: 1px solid rgba(42,33,27,.16); }
+.cell.br { border-right: 3px solid var(--ink); } .cell.bb { border-bottom: 3px solid var(--ink); }
+.xm { font-size: 22px; font-weight: 600; color: #7A6B5F; line-height: 1; }
+.first::after { content: ""; position: absolute; inset: 3px; border: 2.5px solid var(--brand); border-radius: 8px; }
+.firstn { position: absolute; top: 1px; right: 3px; font: 800 10px/1 var(--text); color: var(--brand-dark); }
+.failed::after { content: ""; position: absolute; inset: 3px; border: 2.5px dashed var(--conflict); border-radius: 8px; }
+.tip { margin: 0; text-align: center; font-size: 13px; color: var(--muted); min-height: 18px; }
+.tip.red { color: var(--conflict); font-weight: 600; }
+.dock { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tool { height: 46px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(30,30,30,.07); }
+.tool.hint { color: var(--brand-dark); }
+/* Settings sheet */
+.scrim { position: absolute; inset: 0; background: rgba(42,33,27,.28); display: flex; align-items: flex-end; }
+.sheet { width: 100%; background: var(--bg); border-radius: 22px 22px 0 0; padding: 20px 20px 28px; display: flex; flex-direction: column; gap: 14px; }
+.sheet h2 { margin: 0; font-family: var(--disp); font-weight: 800; font-size: 24px; }
+.group h3 { margin: 0 4px 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.card { border-radius: 14px; background: rgba(255,255,255,.6); }
+.opt { display: flex; align-items: center; gap: 12px; padding: 8px 14px; min-height: 46px; }
+.opt + .opt { border-top: 1px solid rgba(42,33,27,.08); }
+.opt span { flex: 1; } .opt small { display: block; color: var(--muted); font-size: 12px; }
+.opt.new { background: rgba(47,111,214,.08); border-radius: 0 0 14px 14px; }
+.sw { width: 50px; height: 30px; border-radius: 15px; background: #D9D2C9; position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: #fff; }
+.sw.on { background: var(--ink); } .sw.on::after { left: 23px; }
+.done { height: 50px; border-radius: 14px; background: var(--ink); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.q { max-width: 60ch; margin: 28px auto 0; padding: 16px 18px; background: var(--board); border-radius: 14px; color: var(--body); font-size: 15px; }
+.q b { color: var(--ink); }
+</style>
+
+<h1>Try it, for Star Battle</h1>
+<p class="lede">Save your board, test a star, and jump straight back if it breaks. Four screens, in order.</p>
+
+<div class="row" id="row"></div>
+
+<p class="q"><b>Decided (Colin):</b> the tried cell stays as it was on the saved board, with a red dashed ring and “That didn't work”. Same whether the first move was a star or an ×.</p>
+
+<script>
+const R = ["PPPTTTYY","OPTTTTYY","OPTKKTGG","OOOKTTTG","OCOKKKKK","OCOCBKBK","OCCCBBBK","OOOCCCBB"];
+const C = { P:"#E7DFF0", T:"#D7E8E4", Y:"#FBEACB", O:"#F9DCC8", K:"#F5E1E2", G:"#E6EFD6", C:"#F2EADC", B:"#E1E7F4" };
+const STAR = '<svg width="26" height="26" viewBox="0 0 24 24" fill="#2A211B"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg>';
+// Saved board: the ×s from Colin's Expert #5 screenshot.
+const base = { "3,4":"x","3,5":"x","3,6":"x","4,6":"x","4,7":"x","5,5":"x","5,6":"x","5,7":"x","6,3":"x","6,6":"x","6,7":"x","7,4":"x","7,6":"x","7,7":"x" };
+// The try: first move is a star at row 6, column 5, then what it forces.
+const tried = { ...base, "5,4":"s","4,3":"x","4,4":"x","4,5":"x","5,3":"x","6,4":"x","6,5":"x","2,3":"s","1,2":"x","1,3":"x","1,4":"x","2,4":"x","3,2":"x","3,3":"x" };
+function board(marks, opts = {}) {
+  let h = `<div class="board${opts.trying ? " trying" : ""}">`;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const cls = ["cell"]; if (c < 7 && R[r][c] !== R[r][c+1]) cls.push("br"); if (r < 7 && R[r][c] !== R[r+1][c]) cls.push("bb");
+    const k = `${r},${c}`; if (k === opts.first) cls.push("first"); if (k === opts.failed) cls.push("failed");
+    const m = marks[k]; const inner = m === "s" ? STAR : m === "x" ? '<span class="xm">×</span>' : "";
+    h += `<div class="${cls.join(" ")}" style="background:${C[R[r][c]]}">${inner}${k === opts.first ? '<span class="firstn">1st</span>' : ""}</div>`;
+  }
+  return h + "</div>";
+}
+const ICON = {
+  back: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5 M11 6l-6 6 6 6"/></svg>',
+  help: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17.5v.01"/></svg>',
+  clock: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  star: '<svg width="15" height="15" viewBox="0 0 24 24" fill="#C24E2A"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.5 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6-4.9-4.5 6.6-.8z"/></svg>',
+  flag: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4 M5 4h11l-2 4 2 4H5"/></svg>',
+};
+const dock = `<div class="dock"><div class="tool">Undo</div><div class="tool hint">Hint</div><div class="tool">Settings</div><div class="tool">Restart</div></div>`;
+const head = `<header><div class="sq">${ICON.back}</div><div class="title"><b>Star Battle</b><span>8×8 · Expert · #5</span></div><div class="sq">${ICON.help}</div></header>`;
+const info = (mid, stars) => `<div class="info"><span class="timer">${ICON.clock}2:14</span>${mid}<span class="count">${ICON.star}${stars} / 8 stars</span></div>`;
+const tryBtn = `<span class="try">${ICON.flag}Try from here</span>`;
+const screens = [
+  { t: "1. Turn it on", d: "A new switch in Game settings. Off by default, so nothing changes unless you want it.",
+    html: head + info(tryBtn, 0) + `<div class="stage">${board(base)}</div>` + dock +
+      `<div class="scrim"><div class="sheet"><h2>Game settings</h2><div class="group"><h3>Star Battle</h3><div class="card">
+       <div class="opt"><span>Auto-cross around stars</span><i class="sw on"></i></div>
+       <div class="opt new"><span>Try-it button<small>Save your board, test a star, go back</small></span><i class="sw on"></i></div></div></div><div class="done">Done</div></div></div>` },
+  { t: "2. Tap “Try from here”", d: "It sits between the timer and the star count. Tapping it saves the board exactly as it is.",
+    html: head + info(tryBtn, 0) + `<div class="stage">${board(base)}<p class="tip">Your board is saved when you tap it</p></div>` + dock },
+  { t: "3. Play your what-if", d: "A blue frame shows you're trying. Your first move is ringed and labeled “1st”. Then you can go back, or keep everything.",
+    html: head + info("", 2) + `<div class="trybar"><span class="lbl">${ICON.flag}Trying from 2:14</span><button class="back">Go back</button><button class="keep">Keep</button></div>` +
+      `<div class="stage">${board(tried, { trying: true, first: "5,4" })}<p class="tip">Doesn't fit? Tap Go back.</p></div>` + dock },
+  { t: "4. Go back", d: "Your saved board returns. The cell you tried stays as it was, with a red dashed ring, whether you tried a star or an ×. The clock keeps running.",
+    html: head + info(tryBtn, 0) + `<div class="stage">${board(base, { failed: "5,4" })}<p class="tip red">That didn't work</p></div>` + dock },
+];
+document.getElementById("row").innerHTML = screens.map((s) =>
+  `<figure><div class="frame"><div class="phone">${s.html}</div></div><figcaption><b>${s.t}</b>${s.d}</figcaption></figure>`).join("");
+</script>

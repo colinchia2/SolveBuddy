@@ -51,7 +51,7 @@ const STRIPES = "repeating-linear-gradient(135deg, rgba(194,78,42,0.38) 0 4px, r
 
 // Game settings: shared with the Sudoku page and the Settings screen.
 const SETTINGS_KEY = "solvebuddy.settings";
-const settings = { timer: true, mistakes: false, hl: true, same: true, autoCross: false }; // auto-cross off by default (Colin, 10/20)
+const settings = { timer: true, mistakes: false, hl: true, same: true, autoCross: false, tryIt: false }; // auto-cross off by default (Colin, 10/20); Try it off too (11/10)
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}"));
 } catch {}
@@ -103,6 +103,7 @@ function load(i, name = packName, first = false) {
     s.marks = saved.marks ?? {};
     s.started = Date.now() - (saved.ms ?? 0);
     s.hints = saved.hints ?? 0; s.hd = saved.hd;
+    s.trial = saved.trial ?? null; s.tried = saved.tried ?? null;
   } else if (name === "import") s.marks = { ...(p.marks ?? {}) };
   // Zoom: on for big boards, at fit for a new puzzle, or where you left it on this one.
   const big = N >= ZOOM_FROM;
@@ -187,6 +188,7 @@ function tap(r, c) {
   });
   // Strengths (Colin 10/24, bridge.js): × or clearing = L2, star = L3, a finished region = L4 (the win is L5).
   if (!s.solved) hapticLevel(finishesRegion(before) ? 4 : star ? 3 : 2);
+  firstMove(k);
 }
 
 function checkSolved() {
@@ -384,7 +386,7 @@ function render() {
       if (bad.has(k) || (wrong && m === STAR)) bg = "#F4A6A0";
       if ((frame?.dead && focus.has(k)) || deadCells.has(k)) bg = "#F4A6A0";
       if (striped.has(k)) bg = `${STRIPES}, ${bg}`;
-      const ring = k === ringKey || frame?.latest.has(k) ? "inset 0 0 0 3px var(--accent)" : "none";
+      const ring = k === ringKey || frame?.latest.has(k) ? "inset 0 0 0 3px var(--accent)" : s.trial?.first === k && !s.solved ? "inset 0 0 0 3px var(--brand)" : "none";
       const g = frame?.ghost.get(k) ?? (ghostStars.has(k) ? STAR : ghostX.has(k) ? CROSS : undefined);
       const br = c === N - 1 || s.regions[r][c + 1] !== reg ? "br" : "";
       const bb = r === N - 1 || s.regions[r + 1][c] !== reg ? "bb" : "";
@@ -405,9 +407,11 @@ function render() {
         inner = `<span class="xm auto">×</span>`;
       }
       if (frame?.nums.has(k)) inner += `<span class="stepn">${frame.nums.get(k)}</span>`;
+      const first = s.trial?.first === k && !s.solved;
+      if (first) inner += `<span class="firstn">1st</span>`;
       const label = `Row ${r + 1} column ${c + 1}${m === STAR ? ", star" : m === CROSS ? ", crossed" : ""}`;
       const fx = intro ? ` intro" style="--d:${(s.introWait + 0.15 + (r + c) * 0.035).toFixed(3)}s;` : won && m === STAR ? ` won" style="--d:${(r * 0.11).toFixed(2)}s;` : `" style="`;
-      cells.push(`<button class="cell ${br} ${bb}${fx}background:${bg};box-shadow:${ring}" data-r="${r}" data-c="${c}" aria-label="${label}">${inner}</button>`);
+      cells.push(`<button class="cell ${br} ${bb}${k === s.tried && !s.solved ? " tried" : ""}${fx}background:${bg};box-shadow:${ring}" data-r="${r}" data-c="${c}" aria-label="${label}">${inner}</button>`);
     }
   }
   $("board").innerHTML = cells.join("");
@@ -463,6 +467,14 @@ function render() {
       $("hintNextLabel").textContent = h.ask ? "Walk me through it" : h.i === n - 1 ? "Done" : h.i === n - 2 ? "Show me" : "Next";
     }
   }
+
+  const trying = !!s.trial && !s.solved;
+  $("tryBtn").hidden = !settings.tryIt || s.solved || !!REPLAY;
+  $("tryBtn").style.visibility = trying ? "hidden" : ""; // keeps its room, so nothing shifts
+  $("trybar").hidden = !trying;
+  if (trying) $("tryFrom").textContent = `Trying from ${fmt(s.trial.ms)}`;
+  $("zview").classList.toggle("trying", trying);
+  $("tryTip").hidden = !s.tried || trying || s.solved;
 
   $("rules").hidden = !s.rules;
   $("settings").hidden = !s.settingsOpen;
@@ -533,6 +545,7 @@ document.addEventListener("pointerup", (e) => {
   drag = null;
   if (zoom.busy) return;
   if (!d.moved) return tap(...d.start);
+  firstMove(key(...d.start));
   s.hint = null;
   s.hinted.clear();
   checkSolved();
@@ -559,15 +572,16 @@ function paint(r, c) {
 }
 $("backBtn").onclick = goHome;
 $("undoBtn").onclick = () => {
-  if (!undoStack.length || s.solved) return;
+  if (!undoStack.length || s.solved || (s.trial && undoStack.length <= s.trial.undo)) return; // Try it: Undo stops at the saved board
   haptic("tap");
   s.marks = JSON.parse(undoStack.pop());
+  if (s.trial && undoStack.length <= s.trial.undo) s.trial.first = null;
   s.hint = null;
   s.hinted.clear();
   render();
 };
 const openMore = moreMenu({
-  settingsNote: "Timer, show mistakes, auto-cross",
+  settingsNote: "Timer, show mistakes, auto-cross, try it",
   onSettings: () => { s.settingsOpen = true; render(); },
   onRestart: () => { clearSaved("starbattle", packName, pid()); load(idx); },
 });
@@ -577,6 +591,32 @@ $("hintBtn").onclick = () => { haptic("pick"); openHint(); };
 $("hintClose").onclick = () => { s.hint = null; render(); };
 $("hintNext").onclick = () => { haptic("pick"); advanceHint(); };
 $("hintGive").onclick = () => { haptic("pick"); giveStar(); };
+
+// Try it (Colin 11/10): save the board, play a what-if, then go back to the saved board or keep going. Going back rings
+// the first move you made ("That didn't work"), star or ×, and leaves that cell as it was. The clock never stops.
+// s.trial = { marks: the saved board, ms: the time it was saved at, undo: Undo's depth then, first: your first move }.
+function firstMove(k) {
+  if (s.tried === k) s.tried = null; // you've dealt with the ringed cell
+  if (s.trial && !s.trial.first && !s.solved && undoStack.length > s.trial.undo) s.trial.first = k;
+  render();
+}
+$("tryBtn").onclick = () => {
+  if (s.solved) return;
+  haptic("pick");
+  s.trial = { marks: JSON.stringify(s.marks), ms: Date.now() - s.started, undo: undoStack.length, first: null };
+  s.tried = null; s.hint = null;
+  render();
+};
+$("tryBack").onclick = () => {
+  if (!s.trial) return;
+  haptic("pick");
+  s.marks = JSON.parse(s.trial.marks);
+  undoStack.length = Math.min(undoStack.length, s.trial.undo);
+  s.tried = s.trial.first;
+  s.trial = null; s.hint = null; s.hinted.clear();
+  render();
+};
+$("tryKeep").onclick = () => { haptic("pick"); s.trial = null; render(); };
 $("rulesBtn").onclick = () => { s.rules = true; render(); };
 document.querySelectorAll("#rules [data-close]").forEach((b) => (b.onclick = () => { s.rules = false; render(); }));
 document.querySelectorAll("#settings [data-close]").forEach((b) => (b.onclick = () => { s.settingsOpen = false; render(); }));
@@ -603,8 +643,8 @@ document.addEventListener("visibilitychange", () => document.hidden && pause());
 
 // Keep the half-done game saved (twice a second, so backing out never loses more than a moment).
 function persist() {
-  if (!s || s.solved || !Object.keys(s.marks).length) return;
-  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd,
+  if (!s || s.solved || (!Object.keys(s.marks).length && !s.trial)) return;
+  saveGame("starbattle", packName, { p: pid(), marks: s.marks, ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd, trial: s.trial, tried: s.tried,
     zoom: zoom.isOn() ? zoom.state() : null });
 }
 setInterval(() => {
