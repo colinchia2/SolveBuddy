@@ -2157,6 +2157,34 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await ctx.close();
 }
 
+// Restart keeps the clock (Colin 11/10): "Keep my time" is on by default; on, the board clears and the time and hints
+// stay; off, both go back to zero. Every game with Restart.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const out = [];
+  for (const u of ["starbattle.html?pack=easy&p=3", "sudoku.html?pack=easy&p=3", "nonogram.html?pack=easy&p=3", "shikaku.html?pack=easy&p=3", "watersort.html?pack=easy&p=3"]) {
+    await p.goto(`${BASE}${u}`); await p.waitForTimeout(1200);
+    const restart = async () => { await p.click("#restartBtn"); await p.waitForTimeout(250);
+      const r = await p.evaluate(() => { const sh = [...document.querySelectorAll(".scrim")].find((x) => !x.hidden && x.querySelector('[data-act="yes"]'));
+        return { on: sh.querySelector('[data-act="keep"]')?.getAttribute("aria-checked"), from: sh.querySelector("[data-from]")?.textContent }; });
+      await p.evaluate(() => [...document.querySelectorAll('.scrim:not([hidden]) [data-act="yes"]')][0].click()); await p.waitForTimeout(1200);
+      return r; };
+    await p.waitForTimeout(3200); // a few seconds on the clock
+    const a = await restart(); const t1 = await p.textContent("#time");
+    await p.click("#restartBtn"); await p.waitForTimeout(250);
+    await p.evaluate(() => document.querySelector('.scrim:not([hidden]) [data-act="keep"]').click()); // switch off
+    await p.evaluate(() => document.querySelector('.scrim:not([hidden]) [data-act="yes"]').click()); await p.waitForTimeout(1200);
+    const t2 = await p.textContent("#time");
+    await p.evaluate(() => localStorage.removeItem("solvebuddy.keepTime"));
+    out.push({ g: u.split(".")[0], on: a.on, from: a.from, t1, t2 });
+  }
+  check(`Restart keeps the clock: ${out.map((o) => `${o.g} ${o.on} "${o.from}" → ${o.t1}, off → ${o.t2}`).join("; ")}`,
+    out.every((o) => o.on === "true" && /^The clock carries on from 0:0[3-9]$/.test(o.from) && o.t1 >= "0:04" && /^0:0[0-2]$/.test(o.t2)));
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

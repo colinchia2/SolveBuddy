@@ -564,7 +564,8 @@ $("undoBtn").onclick = undo;
 const openMore = moreMenu({
   settingsNote: "Timer",
   onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("watersort", packName, pid()); load(idx); },
+  now: () => ({ ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd }),
+  onRestart: (kept) => { clearSaved("watersort", packName, pid()); load(idx); if (kept) Object.assign(s, { started: Date.now() - kept.ms, hints: kept.hints, hd: kept.hd }); },
 });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm");

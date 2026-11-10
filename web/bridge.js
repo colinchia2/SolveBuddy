@@ -335,7 +335,13 @@ function hintsSheet(text) {
 // The More menu behind the bottom bar's ⋯ (Colin, 10/21): Game settings, and Restart, which asks before clearing.
 const GEAR = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3 M12 19v3 M4.9 4.9l2.1 2.1 M17 17l2.1 2.1 M2 12h3 M19 12h3 M4.9 19.1L7 17 M17 7l2.1-2.1"/></svg>`;
 const RESTART = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B3261E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>`;
-export function moreMenu({ settingsNote, onSettings, onRestart }) {
+// Restart can keep the clock (Colin 11/10, docs/design/restart_keep_time_mockup.html): a "Keep my time" switch in
+// "Start over?", on by default and remembered. Games pass now() = { ms, hints, hd } and get it back in onRestart(kept)
+// (null when the switch is off), so the cleared board keeps its time and the hints used so far.
+const KEEP_KEY = "solvebuddy.keepTime";
+const keepTime = () => { try { return localStorage.getItem(KEEP_KEY) !== "0"; } catch { return true; } };
+const clock = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+export function moreMenu({ settingsNote, onSettings, onRestart, now }) {
   const el = document.createElement("div");
   el.className = "scrim";
   el.hidden = true;
@@ -346,18 +352,28 @@ export function moreMenu({ settingsNote, onSettings, onRestart }) {
     </div>
     <button class="dark" data-view="list" data-act="close">Done</button>
     <h2 data-view="confirm">Start over?</h2>
-    <p data-view="confirm">Your marks and time on this puzzle will be cleared.</p>
+    <p data-view="confirm" data-gone></p>
+    ${now ? `<div class="card" data-view="confirm"><div class="opt"><span>Keep my time<small data-from></small></span><button class="switch" role="switch" data-act="keep" aria-label="Keep my time"></button></div></div>` : ""}
     <div class="two" data-view="confirm"><button class="ghost" data-act="close">Keep playing</button><button class="danger-btn" data-act="yes">Start over</button></div>
   </section>`;
   document.querySelector(".phone").appendChild(el);
-  const view = (v) => el.querySelectorAll("[data-view]").forEach((n) => (n.hidden = n.dataset.view !== v));
+  const view = (v) => {
+    el.querySelectorAll("[data-view]").forEach((n) => (n.hidden = n.dataset.view !== v));
+    if (v !== "confirm") return;
+    const keep = !!now && keepTime();
+    el.querySelector("[data-gone]").textContent = keep ? "Your marks on this puzzle will be cleared." : "Your marks and time on this puzzle will be cleared.";
+    el.querySelector("[data-act=keep]")?.setAttribute("aria-checked", String(keep));
+    const from = el.querySelector("[data-from]");
+    if (from) from.textContent = keep ? `The clock carries on from ${clock(now().ms)}` : "The clock starts again from 0:00";
+  };
   const close = () => (el.hidden = true);
   el.onclick = (e) => {
     const act = e.target.closest("[data-act]")?.dataset.act;
     if (e.target === el || act === "close") close();
     else if (act === "settings") { close(); onSettings(); }
     else if (act === "restart") view("confirm");
-    else if (act === "yes") { close(); onRestart(); }
+    else if (act === "keep") { try { localStorage.setItem(KEEP_KEY, keepTime() ? "0" : "1"); } catch {} view("confirm"); }
+    else if (act === "yes") { const kept = now && keepTime() ? now() : null; close(); onRestart(kept); }
   };
   return (v = "list") => { view(v); el.hidden = false; };
 }

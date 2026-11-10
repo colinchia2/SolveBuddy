@@ -1,0 +1,40 @@
+<title>Restart Keep Time</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: two phone screens side by side (before / after), captions under each. App tokens from web/common.css. */
+:root { --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52; --page: #E9E5DF; --danger: #B3261E; --board: #FFFDF9;
+  --disp: 'Bricolage Grotesque', system-ui, sans-serif; --text: Inter, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+h1 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0 0 4px; text-align: center; }
+.lede { margin: 0 auto 24px; max-width: 60ch; text-align: center; color: var(--body); }
+.row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+figure { margin: 0; width: 330px; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+figcaption { font-size: 14px; color: var(--body); line-height: 1.45; } figcaption b { display: block; color: var(--ink); font-size: 15px; }
+.phone { height: 420px; border-radius: 24px; overflow: hidden; position: relative; background: var(--bg); box-shadow: 0 20px 50px rgba(30,30,30,.16); }
+.scrim { position: absolute; inset: 0; background: rgba(42,33,27,.28); display: flex; align-items: flex-end; }
+.sheet { width: 100%; background: var(--bg); border-radius: 22px 22px 0 0; padding: 20px 20px 26px; display: flex; flex-direction: column; gap: 14px; }
+.sheet h2 { margin: 0; font-family: var(--disp); font-weight: 800; font-size: 24px; }
+.sheet p { margin: 0; color: var(--body); font-size: 15px; }
+.opt { display: flex; align-items: center; gap: 12px; padding: 8px 14px; min-height: 50px; border-radius: 14px; background: rgba(255,255,255,.6); }
+.opt span { flex: 1; font-size: 15px; } .opt small { display: block; font-size: 12px; color: var(--muted); }
+.new { box-shadow: 0 0 0 2px #2F6FD6; }
+.sw { width: 50px; height: 30px; border-radius: 15px; background: var(--ink); position: relative; flex: none; }
+.sw::after { content: ""; position: absolute; top: 3px; left: 23px; width: 24px; height: 24px; border-radius: 12px; background: #fff; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.two div { height: 50px; border-radius: 14px; display: grid; place-items: center; font-weight: 700; font-size: 15px; }
+.ghost { background: #fff; border: 1px solid #E0D8CE; } .go { background: var(--danger); color: #fff; }
+</style>
+<h1>Restart, keep the clock</h1>
+<p class="lede">The Restart pop-up gets one switch. It works in every game that has Restart.</p>
+<div class="row">
+  <figure><div class="phone"><div class="scrim"><div class="sheet"><h2>Start over?</h2><p>Your marks and time on this puzzle will be cleared.</p>
+    <div class="two"><div class="ghost">Keep playing</div><div class="go">Start over</div></div></div></div></div>
+    <figcaption><b>Today</b>Restart always wipes the clock.</figcaption></figure>
+  <figure><div class="phone"><div class="scrim"><div class="sheet"><h2>Start over?</h2><p>Your marks on this puzzle will be cleared.</p>
+    <div class="opt new"><span>Keep my time<small>The clock carries on from 4:12</small></span><i class="sw"></i></div>
+    <div class="two"><div class="ghost">Keep playing</div><div class="go">Start over</div></div></div></div></div>
+    <figcaption><b>New</b>Clears the board and keeps the clock. The app remembers your choice. When it's on, your hints so far count too, so a restart can't wipe them.</figcaption></figure>
+</div>

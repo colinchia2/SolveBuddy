@@ -473,7 +473,8 @@ $("undoBtn").onclick = () => {
   render();
 };
 const openMore = moreMenu({ settingsNote: "Timer, show mistakes", onSettings: () => { s.settingsOpen = true; render(); },
-  onRestart: () => { clearSaved("nonogram", packName, pid()); load(idx); } });
+  now: () => ({ ms: (s.pausedAt ?? Date.now()) - s.started, hints: s.hints ?? 0, hd: s.hd }),
+  onRestart: (kept) => { clearSaved("nonogram", packName, pid()); load(idx); if (kept) Object.assign(s, { started: Date.now() - kept.ms, hints: kept.hints, hd: kept.hd }); } });
 $("settingsBtn").onclick = () => { s.settingsOpen = true; render(); };
 $("restartBtn").onclick = () => openMore("confirm");
 $("hintBtn").onclick = () => { haptic("pick"); openHint(); };

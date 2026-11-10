@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 2026-11-10 — Restart can keep the clock
+- Colin: Restart shouldn't have to reset the timer. Mockup https://claude.ai/artifact/MmG5qTxiQED62DkE69zCg2
+  (`docs/design/restart_keep_time_mockup.html`); approved, switch on by default.
+- Built (pages only): "Start over?" has a "Keep my time" switch ("The clock carries on from m:ss"), remembered under
+  `solvebuddy.keepTime`. On: the board clears, the time and hints used so far stay. All five games with Restart
+  (`bridge.js` moreMenu `now` / `onRestart(kept)`).
+- Known gap: a kept time on an empty board isn't saved if you leave before making a move (the games only save a
+  board with marks on it).
+- Check: pages_smoke "Restart keeps the clock" (every game, on and off). run_all 68 PASS, pages_smoke 176 PASS.
+
 ## 2026-11-10 — Star Battle: Try it
 - Colin: a button that saves the board so he can test a what-if, then jump back if it fails, with the first move
   marked. Mockup https://claude.ai/artifact/GiHqp1CCAr8aoXbt31cupg (`docs/design/try_it_mockup.html`).
