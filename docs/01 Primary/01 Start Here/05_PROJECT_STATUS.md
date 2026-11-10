@@ -1,5 +1,7 @@
 # SolveBuddy — project status
 
+**2026-11-10:** Five Letters words are numbered and played in order, with an All words sheet (pages only, pushed). Build log 11/10.
+
 **2026-11-10:** Restart can keep the clock ("Keep my time", on by default; every game; pages only, pushed). Build log 11/10.
 
 **2026-11-10:** Star Battle "Try it": save the board, test a move, go back or keep (setting, off by default; pages only, pushed). Build log 11/10.

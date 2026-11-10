@@ -2185,6 +2185,35 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   await ctx.close();
 }
 
+// Five Letters numbered words (Colin 11/10): word #1 first, in order; All words shows how each went; a finished word
+// opens read-only; "Play it again" doesn't change the record.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  const { answers } = JSON.parse(await (await fetch(`${BASE}../packs/fiveletters-words.json`)).text());
+  await p.goto(`${BASE}fiveletters.html`); await p.waitForTimeout(1200);
+  const type = async (w) => { for (const ch of w) await p.keyboard.press(ch); await p.keyboard.press("Enter"); await p.waitForTimeout(1300); };
+  const sub1 = await p.textContent("#sub");
+  await type(answers[0]);
+  await p.evaluate(() => document.querySelectorAll(".scrim:not(#words)").forEach((x) => (x.hidden = true))); // the Solved! card
+  await p.goto(`${BASE}fiveletters.html`); await p.waitForTimeout(1200);
+  const sub2 = await p.textContent("#sub");
+  await p.click("#wordsBtn"); await p.waitForTimeout(300);
+  const tiles = await p.evaluate(() => [1, 2, 3].map((n) => { const t = document.querySelector(`.w[data-n="${n}"]`); return `${t.className.replace("w", "").trim() || "-"}:${t.querySelector("small").textContent.trim()}`; }).join(" "));
+  const sum = await p.evaluate(() => document.getElementById("wordsSum").innerText.replace(/\s+/g, " "));
+  await p.click('.w[data-n="1"]'); await p.waitForTimeout(300);
+  const view = await p.evaluate(() => ({ sub: document.getElementById("sub").textContent, pad: document.getElementById("pad").hidden, bar: !document.getElementById("viewBar").hidden }));
+  await p.click("#againBtn"); await p.waitForTimeout(300);
+  const replaySub = await p.textContent("#sub");
+  await type(answers[0]);
+  const played = await p.evaluate(() => { const d = JSON.parse(localStorage.getItem("solvebuddy.fiveletters")); return `${d.played}/${Object.keys(d.results).length}`; });
+  check(`Five Letters numbered words: "${sub1}" → won → "${sub2}"; All words ${tiles}; ${sum}; #1 opens "${view.sub}" read-only (${view.pad && view.bar}); replay "${replaySub}" leaves the record at ${played}`,
+    sub1 === "#1 · Try 1 of 6" && sub2 === "#2 · Try 1 of 6" && tiles === "won:1 TRY now:PLAYING -:" && /^1 played 1 won 1\.0/.test(sum)
+    && view.sub === "#1 · Solved in 1" && view.pad && view.bar && replaySub === "#1 · Try 1 of 6 · replay" && played === "1/1");
+  await ctx.close();
+}
+
 check("no page errors anywhere", errors.length === 0);
 if (errors.length) console.log(errors.join("\n"));
 await browser.close();

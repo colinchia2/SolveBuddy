@@ -1,0 +1,80 @@
+<title>Five Letters All Words</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: three phone screens in a row (wrapping), captions under each. App tokens from web/common.css + fiveletters.html. */
+:root { --bg: #F6F4F1; --ink: #2A211B; --body: #4E433A; --muted: #6B5D52; --page: #E9E5DF; --board: #FFFDF9; --line: #E6DACD;
+  --right: #2E9E5B; --near: #E8A33D; --miss: #8A7E74; --brand: #2F6FD6; --brand-dark: #1F57B5;
+  --disp: 'Bricolage Grotesque', system-ui, sans-serif; --text: Inter, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--text);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 40px; }
+h1 { font-family: var(--disp); font-weight: 800; font-size: 26px; margin: 0 0 4px; text-align: center; }
+.lede { margin: 0 auto 24px; max-width: 60ch; text-align: center; color: var(--body); }
+.row { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+figure { margin: 0; width: 312px; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+figcaption { font-size: 14px; color: var(--body); line-height: 1.45; } figcaption b { display: block; color: var(--ink); font-size: 15px; }
+.frame { width: 312px; height: 675px; max-width: 100%; overflow: hidden; border-radius: 24px; box-shadow: 0 20px 50px rgba(30,30,30,.16); }
+.phone { width: 390px; height: 844px; transform: scale(.8); transform-origin: 0 0; background: var(--bg); padding: 46px 16px 24px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+header { display: flex; align-items: center; gap: 6px; }
+.sq { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(30,30,30,.07); }
+.title { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.title b { font-family: var(--disp); font-weight: 800; font-size: 21px; } .title span { font-size: 12px; color: var(--muted); }
+.fgrid { display: grid; grid-template-columns: repeat(5, 54px); gap: 6px; justify-content: center; margin: 14px 0; }
+.ft { height: 54px; border: 2px solid var(--line); border-radius: 11px; background: var(--board); display: grid; place-items: center; font: 700 24px var(--text); }
+.ft.r { background: var(--right); border-color: var(--right); color: #fff; } .ft.n { background: var(--near); border-color: var(--near); } .ft.m { background: var(--miss); border-color: var(--miss); color: #fff; }
+.pad { display: grid; gap: 6px; } .kr { display: flex; gap: 4px; } .k { flex: 1; height: 48px; border-radius: 8px; background: #E6E1DA; display: grid; place-items: center; font-weight: 600; }
+.k.wide { flex: 1.6; font-size: 12px; }
+.dock { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: auto; }
+.tool { height: 46px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
+  background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.9); box-shadow: 0 6px 18px rgba(30,30,30,.07); }
+.tool.hint { color: var(--brand-dark); } .tool.new { box-shadow: 0 0 0 2px var(--brand); }
+.sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sum div { background: rgba(255,255,255,.6); border-radius: 14px; padding: 10px; text-align: center; }
+.sum b { display: block; font: 800 22px var(--disp); font-variant-numeric: tabular-nums; } .sum span { font-size: 12px; color: var(--muted); }
+.list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow: hidden; }
+.w { height: 58px; border-radius: 12px; background: var(--board); border: 1.5px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+.w b { font-size: 15px; font-variant-numeric: tabular-nums; } .w small { font-size: 10px; font-weight: 700; letter-spacing: .02em; }
+.w.won { background: #E3F3E9; border-color: #BFE3CC; } .w.won small { color: var(--right); }
+.w.lost { background: #EEEAE6; } .w.lost small { color: var(--miss); }
+.w.now { border: 2.5px solid var(--brand); } .w.now small { color: var(--brand-dark); }
+.w.locked { opacity: .55; }
+.lbl { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 4px 4px 0; }
+.ended { text-align: center; color: var(--body); font-weight: 600; }
+.btn { height: 50px; border-radius: 14px; display: grid; place-items: center; font-weight: 700; }
+.btn.dark { background: var(--ink); color: #fff; } .btn.light { background: #fff; border: 1px solid #E0D8CE; }
+.q { max-width: 60ch; margin: 28px auto 0; padding: 16px 18px; background: var(--board); border-radius: 14px; color: var(--body); }
+.q b { color: var(--ink); }
+</style>
+<h1>Five Letters: all the words</h1>
+<p class="lede">Every word gets a number and you play them in order. One screen shows them all, with how each one went.</p>
+<div class="row" id="row"></div>
+<p class="q"><b>Good to know:</b> your games so far weren't saved by word, so the list starts at #1. Your streak and totals carry over.</p>
+<script>
+const back = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>';
+const tile = (s, c = "") => [...s].map((ch, i) => `<div class="ft ${c[i] ?? ""}">${ch.trim()}</div>`).join("");
+const grid = (rows) => `<div class="fgrid">${rows.map(([w, c]) => tile(w, c)).join("")}</div>`;
+const pad = `<div class="pad"><div class="kr">${[..."QWERTYUIOP"].map((k) => `<div class="k">${k}</div>`).join("")}</div><div class="kr">${[..."ASDFGHJKL"].map((k) => `<div class="k">${k}</div>`).join("")}</div><div class="kr"><div class="k wide">Enter</div>${[..."ZXCVBNM"].map((k) => `<div class="k">${k}</div>`).join("")}<div class="k wide">Delete</div></div></div>`;
+const blank = ["     ", ""];
+const dock = `<div class="dock"><div class="tool hint">Hint</div><div class="tool">Next word</div><div class="tool new">All words</div></div>`;
+const words = [];
+for (let n = 1; n <= 40; n++) {
+  if (n <= 36) { const lost = [9, 22, 30].includes(n); words.push(`<div class="w ${lost ? "lost" : "won"}"><b>${n}</b><small>${lost ? "MISSED" : `${[3, 4, 4, 5, 3, 2, 4][n % 7]} TRIES`}</small></div>`); }
+  else if (n === 37) words.push(`<div class="w now"><b>37</b><small>PLAYING</small></div>`);
+  else words.push(`<div class="w"><b>${n}</b><small>&nbsp;</small></div>`);
+}
+const screens = [
+  { t: "1. Playing word #37", d: "The top says which word you're on. “New word” becomes “Next word”, and “All words” is new.",
+    html: `<header><div class="sq">${back}</div><div class="title"><b>Five Letters</b><span>#37 · Try 3 of 6</span></div><span class="sq" style="visibility:hidden"></span></header>`
+      + grid([["CRANE", "mnmmr"], ["SLOPE", "mmrmr"], blank, blank, blank, blank]) + pad + dock },
+  { t: "2. All words", d: "A summary on top, then every number. Green shows how many tries it took, grey means missed, and blue is the one you're on. Tap any word to play it or look back at it.",
+    html: `<header><div class="sq">${back}</div><div class="title"><b>All words</b><span>884 words</span></div><span class="sq" style="visibility:hidden"></span></header>
+      <div class="sum"><div><b>36</b><span>played</span></div><div><b>33</b><span>won</span></div><div><b>3.6</b><span>tries on average</span></div></div>
+      <p class="lbl">1–40</p><div class="list">${words.join("")}</div>` },
+  { t: "3. Looking back at #22", d: "A finished word opens your board as you left it, with the answer. You can play it again, but a replay doesn't change your record.",
+    html: `<header><div class="sq">${back}</div><div class="title"><b>Five Letters</b><span>#22 · Missed</span></div><span class="sq" style="visibility:hidden"></span></header>`
+      + grid([["STARE", "mmmmr"], ["OUNCE", "rmmmr"], ["OLIVE", "rmrmr"], ["OGLED", "rmmnn"], ["OMBRE", "rmmmr"], ["OPINE", "rmrmr"]])
+      + `<p class="ended">The word was OXIDE</p><div style="display:grid;gap:10px;margin-top:auto"><div class="btn dark">Play it again</div><div class="btn light">Back to all words</div></div>` },
+];
+document.getElementById("row").innerHTML = screens.map((s) => `<figure><div class="frame"><div class="phone">${s.html}</div></div><figcaption><b>${s.t}</b>${s.d}</figcaption></figure>`).join("");
+</script>

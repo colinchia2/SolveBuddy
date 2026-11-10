@@ -42,6 +42,23 @@
   html.tablet .phone[data-tablet] .zview { zoom: 1; transform: translateX(calc(354px * var(--bz, 1) * 0.06)) scale(var(--fz)); transform-origin: 0 0; }
   html.tablet.land .phone[data-tablet] .screen > .zview, html.tablet.port .phone[data-tablet] .screen > .zview { margin-right: calc(354px * (var(--bz, 1) - 1)); margin-bottom: calc(402px * (var(--fz) - 1)); }
   html.tablet .k { height: 62px; font-size: 19px; } html.tablet .k.wide { font-size: 14px; }
+  /* All words (Colin 11/10): a tall sheet with a summary and every number. */
+  .dock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pad[hidden], .dock[hidden], .viewbar[hidden] { display: none; }
+  .viewbar { margin-top: auto; display: grid; gap: 10px; }
+  .viewbar .ghost { min-height: 50px; }
+  #words .sheet { max-height: 88%; padding-bottom: 0; }
+  .wsum { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .wsum div { background: rgba(255,255,255,.6); border-radius: 14px; padding: 10px; text-align: center; }
+  .wsum b { display: block; font: 800 22px 'Bricolage Grotesque', sans-serif; font-variant-numeric: tabular-nums; }
+  .wsum span { font-size: 12px; color: var(--muted); }
+  .wlist { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; overflow-y: auto; padding: 2px 2px 24px; min-height: 0; }
+  .w { height: 58px; border-radius: 12px; background: var(--board); border: 1.5px solid var(--line); display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1px; padding: 0; font-family: Inter, sans-serif; color: var(--ink); }
+  .w b { font-size: 15px; font-variant-numeric: tabular-nums; } .w small { font-size: 10px; font-weight: 700; letter-spacing: .02em; }
+  .w.won { background: #E3F3E9; border-color: #BFE3CC; } .w.won small { color: #2E9E5B; }
+  .w.lost { background: #EEEAE6; } .w.lost small { color: #8A7E74; }
+  .w.now { border: 2.5px solid var(--brand); } .w.now small { color: var(--brand-dark); }
 </style>
 </head>
 <body>
@@ -52,9 +69,11 @@
     <div class="info"><span class="fsay" id="say" style="flex:1"></span></div>
     <div class="zview" id="zview"><div class="fgrid" id="grid"></div></div>
     <div class="pad" id="pad"></div>
-    <div class="dock">
+    <div class="viewbar" id="viewBar" hidden><button class="dark" id="againBtn">Play it again</button><button class="ghost" id="allBtn">Back to all words</button></div>
+    <div class="dock" id="dock">
       <button class="tool glass hint-tool" id="hintBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg><span>Hint</span></button>
-      <button class="tool glass" id="newBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg><span>New word</span></button>
+      <button class="tool glass" id="newBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg><span>Next word</span></button>
+      <button class="tool glass" id="wordsBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z"/></svg><span>All words</span></button>
     </div>
   </div>
   <section class="hint" id="hint" hidden aria-label="Hint">
@@ -64,6 +83,13 @@
     <p class="h2" id="hintBody"></p>
     <button class="dark" id="hintNext"><span id="hintNextLabel"></span></button>
   </section>
+  <div class="scrim" id="words" hidden>
+    <section class="sheet" role="dialog" aria-label="All words">
+      <div class="sheet-top"><h2>All words</h2><button class="sq" style="background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.9)" id="wordsClose" aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A211B" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></div>
+      <div class="wsum" id="wordsSum"></div>
+      <div class="wlist" id="wordsList"></div>
+    </section>
+  </div>
 </div>
 <script type="module" src="fiveletters.js"></script>
 </body>

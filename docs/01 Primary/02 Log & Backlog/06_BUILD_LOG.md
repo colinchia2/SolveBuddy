@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 2026-11-10 — Five Letters: numbered words + All words
+- Colin: a way to see old words instead of always a random one. Mockup https://claude.ai/artifact/E95zCsU8kvcvSLx3REgGLo
+  (`docs/design/fiveletters_all_words_mockup.html`); approved ("do it").
+- Built (pages only): `packs/fiveletters-words.json` answers shuffled once into play order (word #n = answers[n-1];
+  add new words at the END so numbers never change). Words play in order; "New word" → "Next word" (next unplayed);
+  new "All words" sheet (played / won / average tries, then every number: green tries, grey missed, blue playing).
+  A finished word opens read-only ("Play it again" / "Back to all words"); a replay doesn't touch the record.
+  Results saved in `solvebuddy.fiveletters` `results`. Old totals and streak kept; a half game from before is dropped.
+- Small change from the mockup: All words is a tall bottom sheet with a close button (not its own screen), so the
+  app's back button still leaves the game.
+- Check: pages_smoke "Five Letters numbered words". run_all 68 PASS, pages_smoke 177 PASS.
+
 ## 2026-11-10 — Restart can keep the clock
 - Colin: Restart shouldn't have to reset the timer. Mockup https://claude.ai/artifact/MmG5qTxiQED62DkE69zCg2
   (`docs/design/restart_keep_time_mockup.html`); approved, switch on by default.
