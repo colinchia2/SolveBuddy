@@ -1,0 +1,1672 @@
+{
+ "id": "starbattle8-hard",
+ "game": "starbattle",
+ "size": 8,
+ "difficulty": "Hard",
+ "puzzles": [
+  {
+   "id": "starbattle8-hard-1",
+   "regions": [
+    "BBBBBAAA",
+    "DBDBBCFA",
+    "DBDBBCFA",
+    "DDDDDCFF",
+    "DDDGEEEF",
+    "DHGGGGEF",
+    "HHHGGGEE",
+    "HHHHGGGG"
+   ],
+   "solution": [
+    6,
+    1,
+    5,
+    2,
+    4,
+    7,
+    3,
+    0
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Row inside one region",
+    "Last cell in row",
+    "2 regions, 2 rows",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-2",
+   "regions": [
+    "BBAAAAAA",
+    "BBBBAAAA",
+    "CBBBDAAA",
+    "CCBEDDDA",
+    "CCEEEDDD",
+    "FFFGEHHD",
+    "FFGGEEHD",
+    "FGGHHHHD"
+   ],
+   "solution": [
+    7,
+    2,
+    0,
+    6,
+    4,
+    1,
+    3,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "3 regions, 3 rows",
+    "3 columns, 3 regions",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-3",
+   "regions": [
+    "DDDAAAAB",
+    "DDCCAEBB",
+    "DDFCAEEE",
+    "DHFEEEEE",
+    "HHFEEGGG",
+    "HHFFGGGG",
+    "HHFFGGGG",
+    "HHHFFGGG"
+   ],
+   "solution": [
+    5,
+    7,
+    3,
+    0,
+    4,
+    2,
+    6,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "Column inside one region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-4",
+   "regions": [
+    "CBBBBBAA",
+    "CCCCBBDA",
+    "CCCCCEDD",
+    "CGCCEEED",
+    "GGFFFEEF",
+    "GGFHFFFF",
+    "GGGHFFHH",
+    "GGGHHHHH"
+   ],
+   "solution": [
+    6,
+    4,
+    1,
+    7,
+    5,
+    2,
+    0,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 regions, 2 rows",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-5",
+   "regions": [
+    "AAACCBBB",
+    "AFACCBBB",
+    "AFFCCCDD",
+    "FFFFEEED",
+    "GGGFEEEE",
+    "GGGFFFEE",
+    "GGHFHHHE",
+    "GGHHHHHH"
+   ],
+   "solution": [
+    1,
+    6,
+    4,
+    7,
+    5,
+    3,
+    0,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "2 regions, 2 rows",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-6",
+   "regions": [
+    "BAAAAACC",
+    "BBBAAAAC",
+    "BBBBAACC",
+    "DBBGACCC",
+    "DDDGGGCE",
+    "DGGGFFEE",
+    "DGGGFEEH",
+    "DFFFFHHH"
+   ],
+   "solution": [
+    3,
+    1,
+    6,
+    0,
+    7,
+    4,
+    2,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "3 rows, 3 regions",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-7",
+   "regions": [
+    "BBBAACCC",
+    "BDAACCCC",
+    "DDDACCCE",
+    "DDFFEEEE",
+    "DFFGGEEE",
+    "FFFHGGEE",
+    "FFFHHGEE",
+    "HHHHGGEE"
+   ],
+   "solution": [
+    4,
+    0,
+    6,
+    1,
+    7,
+    2,
+    5,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region",
+    "Confined region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-8",
+   "regions": [
+    "DDCCAAAB",
+    "DDCCABBB",
+    "DDDCCCEE",
+    "DFDDCEEE",
+    "DFFFCCEE",
+    "FFHFGCGE",
+    "FFHHGCGE",
+    "HHHHGGGG"
+   ],
+   "solution": [
+    5,
+    7,
+    3,
+    0,
+    6,
+    1,
+    4,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "3 columns, 3 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Confined region",
+    "Last cell in row",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-9",
+   "regions": [
+    "BBAAAAAA",
+    "BBBBCCAA",
+    "BBBCCAAC",
+    "DEBCCCCC",
+    "DEEEECCG",
+    "DDHFFCCG",
+    "DDHFFGGG",
+    "DDHHFGGG"
+   ],
+   "solution": [
+    5,
+    1,
+    7,
+    0,
+    2,
+    4,
+    6,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 rows, 3 regions",
+    "Confined region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Row inside one region",
+    "Last cell in row",
+    "Column inside one region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-10",
+   "regions": [
+    "DAAABBBB",
+    "DDDAACBB",
+    "DDDAECCC",
+    "DDDEEEEC",
+    "DDDEEECC",
+    "FDEEEGGG",
+    "FFFFGGGG",
+    "FFGGGHHH"
+   ],
+   "solution": [
+    2,
+    7,
+    5,
+    1,
+    3,
+    0,
+    4,
+    6
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 rows",
+    "3 columns, 3 regions",
+    "Column inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-11",
+   "regions": [
+    "BBDAAACE",
+    "BDDACCCE",
+    "BFDACCCE",
+    "BFDDCCCE",
+    "BFFDCCGE",
+    "HHFGGGGG",
+    "HHHGGHHG",
+    "HHHHHHGG"
+   ],
+   "solution": [
+    5,
+    0,
+    6,
+    3,
+    7,
+    2,
+    4,
+    1
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 rows, 2 regions",
+    "Last cell in row",
+    "Star rules out",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-12",
+   "regions": [
+    "FBBBBAAA",
+    "FFBBCCCA",
+    "FFFBBCCD",
+    "FFFBEDDD",
+    "FFEEEDDD",
+    "HFHEGGGG",
+    "HFHEGGGG",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    6,
+    2,
+    5,
+    7,
+    3,
+    1,
+    4,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "3 regions, 3 columns",
+    "Confined region",
+    "Row inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-13",
+   "regions": [
+    "BBBBCCAA",
+    "BBBBBCCA",
+    "BBBCCCAA",
+    "BBCCEAAD",
+    "HHHEEDDD",
+    "HHHEFFDD",
+    "HHGGGFFD",
+    "HHHGGGFF"
+   ],
+   "solution": [
+    6,
+    1,
+    4,
+    7,
+    3,
+    5,
+    2,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 rows, 3 regions",
+    "2 regions, 2 columns",
+    "Confined region",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-14",
+   "regions": [
+    "FFBBAAAC",
+    "FBBBDACC",
+    "FBBBDECC",
+    "FFBDDECC",
+    "FFFFDEEE",
+    "HFHFDGGG",
+    "HHHHDDDG",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    4,
+    2,
+    6,
+    3,
+    5,
+    1,
+    7,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 columns",
+    "Last cell in region",
+    "Star rules out",
+    "2 regions, 2 rows",
+    "Confined region",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-15",
+   "regions": [
+    "AAAABBBB",
+    "AAAAAABB",
+    "CCAADDDD",
+    "CCDDDEEE",
+    "CCDDEEEE",
+    "CCHHEFFF",
+    "CCHHHGGF",
+    "CCHHHHGG"
+   ],
+   "solution": [
+    1,
+    6,
+    0,
+    2,
+    4,
+    7,
+    5,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 regions, 2 rows",
+    "2 rows, 2 regions",
+    "2 columns, 2 regions",
+    "Row inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-16",
+   "regions": [
+    "BBBAAAAA",
+    "BBBBAAAC",
+    "BBDDAAAC",
+    "EEEDDDCC",
+    "FFEDHHCC",
+    "FEEHHCCC",
+    "FGGGHCCC",
+    "FFGHHHCC"
+   ],
+   "solution": [
+    6,
+    1,
+    7,
+    4,
+    2,
+    0,
+    3,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "2 columns, 2 regions",
+    "3 regions, 3 rows",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-17",
+   "regions": [
+    "AAAADBBB",
+    "AAAADDDB",
+    "ACAADDBB",
+    "CCCDDDEE",
+    "CCCCDDEE",
+    "GGCCFFHE",
+    "GGCGFFHH",
+    "GGGGHHHH"
+   ],
+   "solution": [
+    2,
+    7,
+    1,
+    3,
+    6,
+    4,
+    0,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "3 columns, 3 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Confined region",
+    "Last cell in region",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-18",
+   "regions": [
+    "AAAAAABB",
+    "AAACCCBB",
+    "CCCCBBBE",
+    "CCDBBBEE",
+    "CDDDEEEE",
+    "DDFFFFFE",
+    "DFFHGGGE",
+    "FFFHHHGG"
+   ],
+   "solution": [
+    1,
+    7,
+    0,
+    2,
+    5,
+    3,
+    6,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "Confined region",
+    "3 columns, 3 regions",
+    "2 rows, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-19",
+   "regions": [
+    "BBBBBAAC",
+    "BBBDDACC",
+    "BDBDDDCE",
+    "FDDDDDCE",
+    "FFFFDHEE",
+    "FFFFGHHH",
+    "FFGGGHHH",
+    "FFFGHHHH"
+   ],
+   "solution": [
+    5,
+    1,
+    6,
+    3,
+    7,
+    0,
+    2,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "3 regions, 3 rows",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-20",
+   "regions": [
+    "CCBBBAAA",
+    "CCBFBDDD",
+    "CEEFBDDD",
+    "CEEFFFDD",
+    "EEEEFFDG",
+    "EHHHFFGG",
+    "EHHHHFFG",
+    "EHHHHGGG"
+   ],
+   "solution": [
+    5,
+    2,
+    0,
+    6,
+    1,
+    4,
+    7,
+    3
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "3 regions, 3 columns",
+    "2 rows, 2 regions",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-21",
+   "regions": [
+    "CCBBAAAA",
+    "CCBBDDAD",
+    "CCCBDAAD",
+    "CCCBDDDD",
+    "CEEEEDDD",
+    "EEEGFFDF",
+    "HEHGFFFF",
+    "HHHGFFFF"
+   ],
+   "solution": [
+    5,
+    2,
+    0,
+    6,
+    4,
+    7,
+    3,
+    1
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "3 regions, 3 rows",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-22",
+   "regions": [
+    "AAAAABBB",
+    "AAFAACBB",
+    "FAFFCCBD",
+    "FFFFCEDD",
+    "FHHGEEEE",
+    "FHHGGGEE",
+    "HHGGGGGG",
+    "HHHHGGGG"
+   ],
+   "solution": [
+    2,
+    6,
+    4,
+    7,
+    5,
+    0,
+    3,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "Confined region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-23",
+   "regions": [
+    "AAAAAABB",
+    "AAAABABB",
+    "CCCABBBB",
+    "DCFFBBBB",
+    "DCCFFEEE",
+    "DDCCFFFE",
+    "HGGGFFEE",
+    "HHGGGGEE"
+   ],
+   "solution": [
+    4,
+    6,
+    2,
+    0,
+    7,
+    5,
+    3,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-24",
+   "regions": [
+    "EEDDDBAA",
+    "EDDBBBBA",
+    "EEDDDFFC",
+    "EEDDFFCC",
+    "EFFFFFGG",
+    "HHFHFFGG",
+    "HHHHFGGG",
+    "HHHHHHGG"
+   ],
+   "solution": [
+    6,
+    4,
+    7,
+    3,
+    0,
+    2,
+    5,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Column inside one region",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-25",
+   "regions": [
+    "AAAAABBB",
+    "AAAABBBD",
+    "ACAAABDD",
+    "CCCCABDD",
+    "CFCEGBDD",
+    "FFFEGDDD",
+    "FFEEGGDD",
+    "FHHHGGGG"
+   ],
+   "solution": [
+    4,
+    6,
+    1,
+    7,
+    3,
+    0,
+    5,
+    2
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-26",
+   "regions": [
+    "AAAAAABB",
+    "AAAADDDB",
+    "CCCAADEB",
+    "CCDDDDEB",
+    "CDDDDEEE",
+    "CFEEEEEG",
+    "FFFEEEGG",
+    "HHHGGGGG"
+   ],
+   "solution": [
+    4,
+    7,
+    0,
+    3,
+    5,
+    1,
+    6,
+    2
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 rows",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-27",
+   "regions": [
+    "BBBBCAAA",
+    "FCBCCCCD",
+    "FCCCCCCD",
+    "FFCEDDDD",
+    "FFEEEEGD",
+    "FHEHEHGG",
+    "FHHHHHHG",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    5,
+    2,
+    4,
+    6,
+    3,
+    0,
+    7,
+    1
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Would block",
+    "2 rows, 2 regions",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-28",
+   "regions": [
+    "CAAABBBB",
+    "CCCBBEFF",
+    "CCDDEEFF",
+    "DDDDEFFF",
+    "DDEEEEEF",
+    "DDEEEFFF",
+    "DDEEGFFH",
+    "DGGGGHHH"
+   ],
+   "solution": [
+    1,
+    3,
+    0,
+    2,
+    5,
+    7,
+    4,
+    6
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 rows",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-29",
+   "regions": [
+    "BAAAAAAA",
+    "BBAAAAAA",
+    "EBBBDCAC",
+    "EDDDDCCC",
+    "EDDFDDDC",
+    "EEDFFFCC",
+    "GGGGHFCC",
+    "GGHHHFFF"
+   ],
+   "solution": [
+    6,
+    1,
+    7,
+    3,
+    0,
+    5,
+    2,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "2 rows, 2 regions",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in row",
+    "Row inside one region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-30",
+   "regions": [
+    "BBBBAAAA",
+    "BBCCAADD",
+    "BBCCCADD",
+    "BBCCDDDD",
+    "EFFCCDDD",
+    "EEFFGGDG",
+    "HEHFGDDG",
+    "HHHGGGGG"
+   ],
+   "solution": [
+    5,
+    1,
+    4,
+    6,
+    0,
+    3,
+    7,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "3 regions, 3 rows",
+    "3 regions, 3 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-31",
+   "regions": [
+    "CCCCAABB",
+    "CCCEEABB",
+    "CCCEDABD",
+    "CCCEDABD",
+    "CEEEDDDD",
+    "EEEFFFFD",
+    "EEHHHGDD",
+    "EHHHGGGD"
+   ],
+   "solution": [
+    4,
+    6,
+    0,
+    7,
+    1,
+    3,
+    5,
+    2
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "2 regions, 2 rows",
+    "Column inside one region",
+    "Would block",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in region"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-32",
+   "regions": [
+    "AABBBCCC",
+    "ABBBDDDC",
+    "ABBDDDDC",
+    "EEBDDFDH",
+    "EBBFFFHH",
+    "EGGFFFHH",
+    "EEGFFHHH",
+    "EGGHHHHH"
+   ],
+   "solution": [
+    1,
+    3,
+    7,
+    4,
+    0,
+    5,
+    2,
+    6
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 columns",
+    "Confined region",
+    "2 regions, 2 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-33",
+   "regions": [
+    "AAACCCBB",
+    "AAECCCBB",
+    "ADECCBBF",
+    "ADEECFFF",
+    "DDEEFFFF",
+    "GGEFFHFH",
+    "GEEHHHHH",
+    "GGHHHHHH"
+   ],
+   "solution": [
+    2,
+    7,
+    4,
+    1,
+    3,
+    6,
+    0,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "2 regions, 2 rows",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-34",
+   "regions": [
+    "AADDCCBB",
+    "ADDDCCBB",
+    "EDDDDCCG",
+    "EEDFDDCG",
+    "EEEFGGGG",
+    "FFFFHHGG",
+    "FFHFHHGG",
+    "FHHHHHHG"
+   ],
+   "solution": [
+    1,
+    7,
+    5,
+    2,
+    0,
+    3,
+    6,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "Confined region",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-35",
+   "regions": [
+    "BBAAAAAA",
+    "BBBAAAAA",
+    "BDBBBAAC",
+    "BDBBBECC",
+    "BDFFEEEC",
+    "DDFFGGCC",
+    "DHFFFGCG",
+    "HHFFFGGG"
+   ],
+   "solution": [
+    4,
+    2,
+    7,
+    1,
+    6,
+    3,
+    5,
+    0
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 rows, 2 regions",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-36",
+   "regions": [
+    "AAAADDBB",
+    "AAAADDDB",
+    "CACAAADD",
+    "CCCADDDH",
+    "ECCCDDHH",
+    "EFFFDHHG",
+    "EEFFHHGG",
+    "EFFHHHHH"
+   ],
+   "solution": [
+    1,
+    7,
+    2,
+    5,
+    0,
+    3,
+    6,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 columns",
+    "3 regions, 3 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-37",
+   "regions": [
+    "BBBBCCAA",
+    "BBBDDCCA",
+    "BDDDDCEA",
+    "BBDDDCEA",
+    "BFDDEEEA",
+    "BFFFGGEE",
+    "FFGGGHHH",
+    "FFFFGGGH"
+   ],
+   "solution": [
+    6,
+    0,
+    5,
+    2,
+    4,
+    1,
+    3,
+    7
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 columns",
+    "Confined region",
+    "Column inside one region",
+    "2 regions, 2 rows",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-38",
+   "regions": [
+    "AAAAAABB",
+    "CAAAABBB",
+    "CCCAAAAB",
+    "CCCCDBBB",
+    "EEEDDDBG",
+    "FFEEDDDG",
+    "FHHEDGGG",
+    "FFHHGGGG"
+   ],
+   "solution": [
+    5,
+    7,
+    1,
+    4,
+    2,
+    0,
+    6,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "Last cell in row",
+    "Star rules out",
+    "2 columns, 2 regions",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-39",
+   "regions": [
+    "EBBBCAAA",
+    "EEEBCCCC",
+    "EEEBDCCC",
+    "EEEDDDDF",
+    "HEGGGDDF",
+    "HHGGHDDF",
+    "HHGHHFFF",
+    "HHHHHFFF"
+   ],
+   "solution": [
+    5,
+    3,
+    6,
+    4,
+    1,
+    7,
+    2,
+    0
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 regions, 2 rows",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-40",
+   "regions": [
+    "AAAAABBB",
+    "ACAAAABB",
+    "ACCAAABB",
+    "CCDDEEBF",
+    "CDDEEEEF",
+    "CHHEEEEF",
+    "CHGGGGGG",
+    "CHHGGGGG"
+   ],
+   "solution": [
+    0,
+    6,
+    1,
+    3,
+    5,
+    7,
+    4,
+    2
+   ],
+   "techniquesUsed": [
+    "Confined region",
+    "Would block",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "Column inside one region",
+    "2 regions, 2 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-41",
+   "regions": [
+    "CCCCBBAA",
+    "CCCBBDAD",
+    "CECCBDDD",
+    "CEEEBDFF",
+    "EEGGBFFF",
+    "HHHGGFFG",
+    "HHHHGGGG",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    7,
+    3,
+    0,
+    5,
+    1,
+    6,
+    4,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "3 regions, 3 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-42",
+   "regions": [
+    "BBBBBAAA",
+    "BBBBBCCA",
+    "DBBCBCAA",
+    "DDDCCCCA",
+    "DDECCCCA",
+    "DEEFFCGG",
+    "EEHFFFFG",
+    "EEHHHGGG"
+   ],
+   "solution": [
+    6,
+    1,
+    5,
+    0,
+    2,
+    4,
+    7,
+    3
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "3 regions, 3 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "Column inside one region",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-43",
+   "regions": [
+    "BBBAAAAA",
+    "BBBBCAAA",
+    "BBEECCCC",
+    "BBECCDCC",
+    "BEEDDDCH",
+    "BEEGFFFH",
+    "EEGGFHHH",
+    "EEEGFFHH"
+   ],
+   "solution": [
+    3,
+    0,
+    7,
+    5,
+    1,
+    4,
+    2,
+    6
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 columns, 2 regions",
+    "Last cell in column",
+    "Star rules out",
+    "3 regions, 3 rows",
+    "Last cell in region",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-44",
+   "regions": [
+    "BBBAAAAA",
+    "BBBABAAA",
+    "BCBBBADD",
+    "CCEEFAAD",
+    "EEEFFDDD",
+    "HHEFGDGD",
+    "HEEFGGGD",
+    "HHHGGDDD"
+   ],
+   "solution": [
+    6,
+    4,
+    1,
+    7,
+    0,
+    3,
+    5,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "3 regions, 3 columns",
+    "Last cell in region",
+    "Star rules out",
+    "Confined region",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-45",
+   "regions": [
+    "DDCCAAAB",
+    "DDCCAABB",
+    "DDCCCEEE",
+    "DDDCCCEE",
+    "DDDCCEEE",
+    "HHHCGGFF",
+    "HHHGGGFF",
+    "HHHHHGGG"
+   ],
+   "solution": [
+    4,
+    6,
+    2,
+    0,
+    5,
+    7,
+    3,
+    1
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "3 regions, 3 rows",
+    "2 regions, 2 columns",
+    "Confined region",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in row",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-46",
+   "regions": [
+    "BBBAAAAA",
+    "BBBBBAAA",
+    "CCCBDAAA",
+    "CEDBDAAG",
+    "CEDDDFAG",
+    "EEEFFFGG",
+    "HEFFFGGG",
+    "HHHGGGGG"
+   ],
+   "solution": [
+    6,
+    3,
+    0,
+    4,
+    1,
+    5,
+    7,
+    2
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "2 columns, 2 regions",
+    "Column inside one region",
+    "Row inside one region",
+    "2 regions, 2 rows",
+    "Last cell in column",
+    "Star rules out",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-47",
+   "regions": [
+    "CCCBAAAA",
+    "CCBBBAAA",
+    "DCCBAAEE",
+    "DDDEEEEE",
+    "GEEEFFFF",
+    "GGGGFHFH",
+    "GGHHHHHH",
+    "GGHHHHHH"
+   ],
+   "solution": [
+    7,
+    4,
+    2,
+    0,
+    3,
+    6,
+    1,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 rows, 2 regions",
+    "Row inside one region",
+    "2 regions, 2 columns",
+    "Confined region",
+    "Last cell in row",
+    "Star rules out",
+    "Last cell in region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-48",
+   "regions": [
+    "AAAAAAAC",
+    "ADBBBBBC",
+    "DDBBBBCC",
+    "DDDBBBCF",
+    "DDDEEEFF",
+    "DDEEEEEF",
+    "DDEGEEHF",
+    "GGGGHHHF"
+   ],
+   "solution": [
+    0,
+    2,
+    6,
+    1,
+    4,
+    7,
+    3,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "2 regions, 2 rows",
+    "2 regions, 2 columns",
+    "Last cell in row",
+    "Star rules out",
+    "Confined region",
+    "Row inside one region",
+    "Last cell in column"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-49",
+   "regions": [
+    "CCCCAABB",
+    "CCCCDAAB",
+    "CECDDDAA",
+    "EECDHHFF",
+    "EEEEHHHF",
+    "EGEHHHFF",
+    "EGGGGHHF",
+    "GGGGGHHH"
+   ],
+   "solution": [
+    4,
+    7,
+    0,
+    3,
+    1,
+    6,
+    2,
+    5
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "4 regions, 4 rows",
+    "2 regions, 2 columns",
+    "Last cell in column",
+    "Star rules out",
+    "2 regions, 2 rows",
+    "Confined region",
+    "Last cell in region",
+    "Last cell in row"
+   ]
+  },
+  {
+   "id": "starbattle8-hard-50",
+   "regions": [
+    "BBAAAAAA",
+    "BBAAAAAC",
+    "BBBBFAAC",
+    "DBBBFFAC",
+    "DDEEEFCC",
+    "GGEHHFCC",
+    "GGGGHCCC",
+    "GGGGHCCC"
+   ],
+   "solution": [
+    6,
+    1,
+    7,
+    0,
+    3,
+    5,
+    2,
+    4
+   ],
+   "techniquesUsed": [
+    "Would block",
+    "Confined region",
+    "3 regions, 3 rows",
+    "2 regions, 2 rows",
+    "Last cell in region",
+    "Star rules out",
+    "Last cell in column",
+    "Last cell in row"
+   ]
+  }
+ ]
+}

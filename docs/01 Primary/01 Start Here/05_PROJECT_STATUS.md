@@ -1,5 +1,6 @@
 # SolveBuddy — project status
 
+**2026-11-11:** Star Battle one-star has a Hard level with 50 puzzles, between Easy and Expert (pages only, pushed). Build log 11/11.
 **2026-11-10:** Five Letters words are numbered and played in order, with an All words sheet (pages only, pushed). Build log 11/10.
 
 **2026-11-10:** Restart can keep the clock ("Keep my time", on by default; every game; pages only, pushed). Build log 11/10.

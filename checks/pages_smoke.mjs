@@ -41,7 +41,7 @@ await page.waitForTimeout(400);
 const one = await page.evaluate(() => ({ title: document.querySelector(".c-title h1").textContent, tiles: document.querySelectorAll(".ptile").length,
   badges: document.querySelectorAll(".ptile-star").length, key: [...document.querySelectorAll(".gp-key span")].map((e) => e.textContent) }));
 check(`one pack: "${one.title}", ${one.tiles} puzzles, key ${one.key.join(" / ")}`,
-  one.title === "Single" && one.tiles === 20 && one.badges === 0 && one.key.join() === "Solved, best time,In progress");
+  one.title === "Single" && one.tiles === 70 && one.badges === 0 && one.key.join() === "Solved, best time,In progress");
 
 // Packs tab (Colin 10/23): one block per pack family, named once, totals from the real pack files; nothing that's
 // playable is listed as coming soon (it once listed Killer and Thermo); tapping a block opens that pack.
@@ -2211,6 +2211,20 @@ for (const u of ["starbattle.html?pack=double&p=3", "starbattle.html?pack=triple
   check(`Five Letters numbered words: "${sub1}" → won → "${sub2}"; All words ${tiles}; ${sum}; #1 opens "${view.sub}" read-only (${view.pad && view.bar}); replay "${replaySub}" leaves the record at ${played}`,
     sub1 === "#1 · Try 1 of 6" && sub2 === "#2 · Try 1 of 6" && tiles === "won:1 TRY now:PLAYING -:" && /^1 played 1 won 1\.0/.test(sum)
     && view.sub === "#1 · Solved in 1" && view.pad && view.bar && replaySub === "#1 · Try 1 of 6 · replay" && played === "1/1");
+  await ctx.close();
+}
+
+// One-star Hard (Colin 11/10): the Single pack lists Easy, Hard, Expert; Hard #50 opens and draws an 8×8 board.
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  p.on("pageerror", (e) => errors.push(`${p.url()}: ${e.message}`));
+  await p.goto(`${BASE}packs.html`); await p.waitForTimeout(600);
+  await p.click('.btile[data-g="starbattle"][data-set="0"]'); await p.waitForTimeout(900);
+  const levels = await p.evaluate(() => [...document.querySelectorAll(".gp-level-head b")].map((e) => e.textContent).join());
+  await p.goto(`${BASE}starbattle.html?pack=hard&p=50`); await p.waitForTimeout(1200);
+  const cells = await p.evaluate(() => document.querySelectorAll(".cell").length);
+  check(`Star Battle Single lists ${levels}; Hard #50 draws ${cells} cells`, levels === "Easy,Hard,Expert" && cells === 64);
   await ctx.close();
 }
 

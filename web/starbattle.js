@@ -14,6 +14,7 @@ import { makeZoom, second } from "./zoom.js";
 const loadPack = async (f) => globalThis.SB_PACKS?.[f] ?? (await fetch(`../packs/${f}`)).json();
 const PACKS = {
   easy: await loadPack("starbattle8-easy-starter.json"),
+  hard: await loadPack("starbattle8-hard.json"), // one star, groups but no What if (Colin 11/10)
   expert: await loadPack("starbattle8-expert.json"),
   double: await loadPack("starbattle10-double-expert.json"),
   triple: await loadPack("starbattle12-triple-expert.json"), // 12×12, 3 stars (Colin, 10/22)

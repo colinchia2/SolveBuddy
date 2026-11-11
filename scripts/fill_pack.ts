@@ -1,6 +1,6 @@
 // Top a pack up to a number of puzzles, keeping the ones already in it (saves and solves point at puzzle numbers).
 // Run: node scripts/fill_pack.ts sudoku medium 10   ·   node scripts/fill_pack.ts starbattle expert 10
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { makeEasy as sudokuEasy, makeLevel } from "../engine/sudoku/makePuzzle.ts";
 import { makeEasy as starEasy, makePuzzle } from "../engine/starbattle/makePuzzle.ts";
 import { grade } from "../engine/starbattle/grade.ts";
@@ -10,15 +10,25 @@ const FILES: Record<string, string> = {
   "sudoku/easy": "packs/sudoku9-easy-starter.json", "starbattle/easy": "packs/starbattle8-easy-starter.json",
   "sudoku/medium": "packs/sudoku9-medium.json", "sudoku/hard": "packs/sudoku9-hard.json",
   "sudoku/expert": "packs/sudoku9-expert.json", "starbattle/expert": "packs/starbattle8-expert.json",
+  "starbattle/hard": "packs/starbattle8-hard.json", // one star, between Easy and Expert (Colin 11/10)
 };
 // Each level must show its own trick at least once (same rule as the first puzzle of each pack).
 const SUDOKU_TRICKS: Record<string, string[]> = { medium: ["Pointing"], hard: ["Pairs"], expert: ["X-wing", "Y-wing"] };
 // A hint must never show a trick from a harder level (a Medium once showed a Y-wing).
-const ABOVE: Record<string, string[]> = { easy: ["Pointing", "Claiming", "Pairs", "Hidden pairs", "X-wing", "Y-wing"], medium: ["Pairs", "Hidden pairs", "X-wing", "Y-wing"], hard: ["X-wing", "Y-wing"] };
+const ABOVE: Record<string, string[]> = { "starbattle/hard": ["What if"], easy: ["Pointing", "Claiming", "Pairs", "Hidden pairs", "X-wing", "Y-wing"], medium: ["Pairs", "Hidden pairs", "X-wing", "Y-wing"], hard: ["X-wing", "Y-wing"] };
 const file = FILES[`${game}/${level}`];
 if (!file) throw new Error(`no pack for ${game}/${level}`);
-const pack = JSON.parse(readFileSync(file, "utf8"));
 const Level = level[0].toUpperCase() + level.slice(1);
+const pack = existsSync(file) ? JSON.parse(readFileSync(file, "utf8"))
+  : { id: file.slice(6, -5), game, size: 8, difficulty: Level, puzzles: [] };
+
+// Star Battle Hard: needs a group move (never a What if); of 6 tries keep the one with the most group moves.
+function starHard() {
+  const groups = (p: { techniquesUsed: string[] }) => p.techniquesUsed.filter((t) => /\d/.test(t)).length;
+  const best = Array.from({ length: 6 }, () => makePuzzle("Hard", 8)).sort((a, b) => groups(b) - groups(a))[0];
+  const { tries, ...puzzle } = best;
+  return puzzle;
+}
 
 // Star Battle Expert: of 6 tries keep the toughest (most "What if" moves, then most group moves), like puzzle 1.
 function starExpert() {
@@ -37,9 +47,9 @@ const seen = new Set(pack.puzzles.map((p: any) => JSON.stringify(p.givens ?? p.r
 while (pack.puzzles.length < want) {
   const t0 = Date.now();
   const p: any = game === "sudoku" ? (level === "easy" ? sudokuEasy() : makeLevel(Level as any, SUDOKU_TRICKS[level])!)
-    : level === "easy" ? (({ tries, ...q }) => q)(starEasy()) : starExpert();
+    : level === "easy" ? (({ tries, ...q }) => q)(starEasy()) : level === "hard" ? starHard() : starExpert();
   const k = JSON.stringify(p.givens ?? p.regions);
-  if (seen.has(k) || p.techniquesUsed.some((t: string) => (ABOVE[level] ?? []).includes(t))) continue;
+  if (seen.has(k) || p.techniquesUsed.some((t: string) => (ABOVE[game === "starbattle" ? `${game}/${level}` : level] ?? []).includes(t))) continue;
   seen.add(k);
   const n = pack.puzzles.length + 1;
   pack.puzzles.push({ id: `${pack.id.replace(/-starter$/, "")}-${n}`, ...p });

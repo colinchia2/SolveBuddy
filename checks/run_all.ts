@@ -268,6 +268,31 @@ if (existsSync(sbPackFile)) {
   check("SB hint points at a wrong star first", h1.kind === "mistake" && h1.clear![1] === wrongCol);
 }
 
+// One-star Hard (Colin 11/10): 50 puzzles, one answer each, even regions, graded Hard (a group move, never a What if),
+// all different, and "Show me" over and over finishes every one with every move right.
+const sbHardFile = "packs/starbattle8-hard.json";
+check("SB Hard pack exists", existsSync(sbHardFile));
+if (existsSync(sbHardFile)) {
+  const hp = JSON.parse(readFileSync(sbHardFile, "utf8")).puzzles as SbSaved[];
+  const hardOk = (p: SbSaved) => {
+    const { min, max } = regionSizes(p.regions);
+    return starsOk(p.solution) && min >= MIN_REGION && max <= MAX_REGION && sbCount(p.regions) === 1 && sbGrade(p.regions).level === "Hard";
+  };
+  check(`SB Hard pack: 50 different puzzles, one answer each, even regions, graded Hard`,
+    hp.length === 50 && new Set(hp.map((p) => p.regions.join())).size === 50 && hp.every(hardOk));
+  const hardHints = hp.every((p) => {
+    const b = p.regions.map(() => Array(8).fill(SB_EMPTY));
+    for (let i = 0; i < 300; i++) {
+      const h = sbHint(b, p.regions, p.solution);
+      if (h.kind !== "step" || h.chain) break;
+      if (h.star) { if (p.solution[h.star[0]] !== h.star[1]) return false; b[h.star[0]][h.star[1]] = SB_STAR; }
+      for (const [r, c] of h.cross) { if (p.solution[r] === c) return false; b[r][c] = SB_CROSS; }
+    }
+    return p.solution.every((c, r) => b[r][c] === SB_STAR);
+  });
+  check("SB Hard: hints alone solve all 50 with no What if, every move correct", hardHints);
+}
+
 // The harder tricks (Would block, groups, What if) must never make a move that disagrees with the answer.
 const sbSound = Array.from({ length: 15 }, () => {
   const sol = placeStars(8);

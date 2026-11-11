@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 2026-11-11 — Star Battle: one-star Hard level (50 puzzles)
+- Colin: "a lot more hard one star star battles". He chose a new Hard level between Easy and Expert, 50 puzzles.
+- Hard = 8×8, one star, needs a group move ("2 regions, 2 rows" etc.) but never a What if. Of 6 tries per slot the one with
+  the most group moves is kept. Made with `node scripts/fill_pack.ts starbattle hard 50` (re-run with a bigger number to add more; numbers never change).
+- `packs/starbattle8-hard.json`; listed in bridge.js GAMES (Starter – Single: Easy, Hard, Expert) and starbattle.js packs.
+- Checks: run_all "SB Hard pack" (50 different, one answer, graded Hard, hints solve all with no What if); pages_smoke "Single lists Easy,Hard,Expert" (Single pack tile count 20 → 70). run_all 71 PASS, pages_smoke 178 PASS.
+
 ## 2026-11-10 — Five Letters: numbered words + All words
 - Colin: a way to see old words instead of always a random one. Mockup https://claude.ai/artifact/E95zCsU8kvcvSLx3REgGLo
   (`docs/design/fiveletters_all_words_mockup.html`); approved ("do it").
