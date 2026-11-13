@@ -20,6 +20,8 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
    - Bring it in line with the 10/23 calmer screens.
 6. **Make Shikaku puzzles by hand in Import** · M
    - Today only Claude adds them from a screenshot.
+7. **App opens instantly on weak signal** · S · needs an app build, only on Colin's go
+   - app.json `fallbackToCacheTimeout` 3000 makes launch wait up to 3 s for an update. Set it to 0. (Fonts part shipped 11/10.)
 
 ## Backlog
 1. **FactPack: next cards** · High · M
@@ -62,8 +64,12 @@ Top item = what's next. Lists set by Colin's triage on 11/1 (priority High / Med
 - Everything from the 11/5 voice note except the snake game (Colin checked it all on phone and iPad, 11/9): bigger
   Sudoku numbers on iPad, hints that leave pencil marks alone, step-by-step hints for every Sudoku hint type, Star Battle
   hints that head for the next star, the Nonogram clue bar off the board on iPad, Five Letters, Groups.
+- Everything from the 11/10 voice note (build log 11/10–11/11): Star Battle Try it, Restart keeps the clock, Five
+  Letters numbered words + All words, pages load on weak signal (own fonts), one-star Hard Star Battle (50).
 
 ## Decided
+- 11/10 (Colin): **Try it** is off by default; Go back leaves the tried cell as it was, ringed, "That didn't work",
+  same for a star or an ×. **Keep my time** on Restart is on by default. One-star Star Battle is Easy, Hard, Expert.
 - **SolveBuddy is blue (Colin, 10/21).** App icon = the blue light-bulb face. The app's terracotta accent changes to blue
   (web change, no build). Hints keep red for blocked cells, separate from the brand blue. Mock it first.
 - 10/20: v1 = **Star Battle + Sudoku** (Classic 9×9). Both have finished screens, and they're
